@@ -1,0 +1,24 @@
+{  "elements": [
+		{ "server" : {"url" : "dev.xxx.com", "port": 389, "secureConnection": false, "descr": "GD LDAP Server"},
+		  "domain" : {"admin_username" : "gdadtest@xxx.com", "admin_password": "Pa55word", 
+		                "domain_name" : "dev.xxx.com", "base_dn" : "OU=hospital1,DC=xxx,DC=com", 
+		                "user_dn" : "OU=users", "user_filter": "(&(objectCategory=Person)(objectClass=User))", "user_search_filter": " (|(uid=?)(sAMAccountName=?))", 
+		                "group_dn" : "OU=groups", "group_filter": "(&(objectclass=group)(objectclass=top))", "group_search_filter": " (|(cn=?)(name=?))", 
+		                "descr":"xxx.com xxx Domain"},
+		  "roleGroups" : [	{ "roleId":"CarCo",  "groupCn" : "Care Coodinators"}, 
+		  					{ "roleId":"SA",  "groupCn" : "itadmins"}
+						  ]
+		},
+		{ "server" : {"url" : "capsicohealth.com", "port":	389, "descr":	"Capsico Health LDAP Server"},
+		  "domain" : {"admin_username" : "capadtest@xxx.com", "admin_password": "Pa55word", 
+		  "domain_name" : "capsicohealth.com", "base_dn" : "DC=capsicohealth,DC=com", 
+		  "user_dn" : "OU=users", "user_filter": "(&((&(objectCategory=Person)(objectClass=User)))", "user_search_filter": "(email=?)", 
+		  "group_dn" : "OU=groups", "group_filter": "(&((&(objectclass=Person)(objectclass=group)))", "group_search_filter": "(gid=?)", 
+		  "descr":"capsicohealth.com Capsico Health LDAP domain name"},
+		  
+		  "roleGroups" : [	{ "roleId":"CarCo", "groupCn" : "Capsico Care Coodinators"}, 
+		  					{ "roleId":"SA", "groupCn" : "Capsico itadmins"}
+						  ]
+		}
+    ]
+}

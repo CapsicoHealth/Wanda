@@ -1,0 +1,767 @@
+{
+  "package":"wanda.data",
+  "dependencies": ["tilda/data/_tilda.Tilda.json"],
+  "documentation": {
+     "description": [
+         "<B>Copyright (c) 2015, CapsicoHealth Inc., All rights reserved.</B>"
+      ]
+   }
+
+ ,"extraDDL":{
+     "before":[]
+    ,"after":["_tilda.Wanda.postgres.after.sql"]
+  }
+
+ ,"enumerations": [
+
+     { "name":"Role",
+       "description":"blah blah",
+       "id"    : { "type":"STRING", "size":  10 },
+       "value" : { "type":"STRING", "size":  50 }
+     }
+   ]
+
+ ,"objects":[
+    { "name":"User"
+     ,"description":"blah blah"
+     ,"columns":[
+           { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255,              "description":"The account's email address" }
+          ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100,              "description":"The first line of the address"}
+          ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                              "description":"The last time the user logged in." }
+          ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50 ,             "description":"The IP Address for the last login"}
+          ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                           "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
+          ,{ "name":"loginCount"     , "type"  :"INTEGER"  , "nullable": false,                           "description":"The login counts for this user"
+                                     , "values": [
+                                        { "name":"Create", "value":"0", "description":"Default Password Creation Time", "default":"CREATE" }
+                                      ]
+           }
+          ,{ "name":"roles"          , "sameas":"Role.id",                                                             "description":"The comma-separated role(s) for this user"
+                                      ,"enum": { "srcColumns": [], "destObject":"Role", "multi":"SET" }
+           }
+          ,{ "name":"pswd"           , "type":"STRING"   , "nullable": false, "size": 100,                             "description":"The hashed password"}
+          ,{ "name":"pswdCreate"     , "type":"DATETIME" , "nullable": false,                                          "description":"The date/time the password was created"
+                                     , "values": [ { "name":"Create", "value":"NOW", "description":"Default Password Creation Time", "default":"CREATE"}
+                                                 ]
+           }
+          ,{ "name":"pswdResetCode"  , "type":"STRING"   ,                    "size":  20,                             "description":"The hashed password"}
+          ,{ "name":"pswdResetCreate", "type":"DATETIME" ,                                                             "description":"The date/time the password was created"}
+          ,{ "name":"failCount"      , "type":"INTEGER"  ,                                                             "description":"The count of failed logins"
+                                     , "values": [ { "name":"Create", "value":"0", "description":"Default failedCount is 0", "default":"CREATE" }
+                                                 ]
+           }
+          ,{ "name":"failCycleCount"  , "type":"INTEGER"  ,                                                             "description":"The count of failed logins cycle"
+                                      , "values": [ { "name":"Create", "value":"0", "description":"Default failedCycleCount is 0", "default":"CREATE" }
+                                                 ]
+           }
+          ,{ "name":"failFirst"      , "type":"DATETIME" ,                                                             "description":"The date/time of the first login fail"}
+          ,{ "name":"locked"         , "type":"DATETIME" ,                                                             "description":"If null: not locked, if 1899-12-31 00:00:00, then locked by sysadmin, if another timestamp, when the account was locked because of bad logins"}
+          ,{ "name":"pswdHist"       , "type":"STRING[]" ,                                                             "description":"The comma-separated list of past passwords"}
+          ,{ "name":"loginType"      , "type":"STRING"   , "nullable": false, "size":  2,                              "description":"The user type, local or ldap",
+                                       "values": 
+                                       [ 
+                                          {"name":"Local", "value":"LO", "description":"Local Login", "label":"Local Logn", "default":"CREATE" } 
+                                         ,{"name":"Ldap" , "value":"LD", "description":"LDAP Login" , "label":"LDAP Login"  }
+                                       ]
+           }
+          ,{ "name":"inviteCancelled"      , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify cancelled invites" }
+          ,{ "name":"invitedUser"          , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify if user is invited" }
+          ,{ "name":"emailUnverified"      , "type"  :"STRING"  ,                    "size": 255,                             "description":"Unverified Email Address" }
+          ,{ "name":"emailVerificationCode", "type"  :"STRING"  ,                    "size":  20,                             "description":"The hashed password"}
+          ,{ "name":"appData"              , "type"  :"JSON[]"  ,                    "nullable": true,                        "description":"Spoonful App Details"
+            ,"jsonSchema": {
+               "typeName": "AppData"
+              ,"descr": "Spoonful App Details"
+              ,"fields": [
+                 {"name": "dbName" , "type": "STRING", "description":"DB Name/Id" }
+                ,{"name": "dbKey"  , "type": "STRING", "description":"DB Encryption Key" }
+               ]
+             }
+           }
+      ]
+     ,"primary": { "autogen": true }
+     ,"foreign": [
+       ]
+     ,"queries": [
+        {
+            "name": "PswdResetCodeLike"
+            ,"description": "User with Given Reset Password Code"
+            ,"wheres": [
+                { "db": "*", "clause": "pswdResetCode LIKE ?()" }
+            ]
+            ,"orderBy": ["email ASC"]
+        }
+       ,{
+            "name": "EmailVerificationCodeLike"
+            ,"description": "User with Given Email Verification Code"
+            ,"wheres": [
+                { "db": "*", "clause": "emailVerificationCode LIKE ?()" }
+            ]
+            ,"orderBy": ["email ASC"]
+        }
+    ]
+     ,"outputMaps": [
+           { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
+       ]
+     ,"indices":[ 
+          { "name":"id"          , "columns":["id"]    , "db": true }
+         ,{ "name":"Email"       , "columns":["email"] , "db": true }
+         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
+       ]
+    },
+    
+    
+    { "name":"UserDetail",
+      "description":"blah blah",
+      "columns":[
+          { "name":"userRefnum"   , "sameas":"User.refnum",              "invariant": true,           "description":"The user PK"}
+         ,{ "name":"nameTitle"    , "type":"STRING"  ,                    "size":  16,                "description":"The title for a user, i.e., Mr, Miss, Mrs..."}
+         ,{ "name":"nameLast"     , "type":"STRING"  , "nullable": false, "size": 100,                "description":"The last name for a user"}
+         ,{ "name":"nameFirst"    , "sameas":"nameLast",                                              "description":"The first name for a user" }
+         ,{ "name":"nameMiddle"   , "sameas":"nameLast", "nullable": true,                            "description":"The middle name for a user"}
+         ,{ "name":"nameShortComp", "sameas":"nameLast",                  "mode":"CALCULATED",        "description":"The short composite name for a user to be trackable, but not PHI"}
+         ,{ "name":"nameStandard" , "type":"STRING"  ,                    "mode":"CALCULATED",        "description":"A standard representation of a full name" }
+         ,{ "name":"dob"          , "type":"DATETIME", "nullable": true ,                             "description":"The date of birth" }
+         ,{ "name":"currentAge"   , "type":"INTEGER" , "nullable": false, "mode":"CALCULATED",        "description":"The age at this current time" }
+         ,{ "name":"dod"          , "type":"DATETIME",                                                "description":"The date of death" }
+         ,{ "name":"gender"       , "type":"STRING"  , "nullable": true , "size":   2,                "description":"Gender" }
+         ,{ "name":"race"         , "type":"STRING"  ,                    "size":  64,                "description":"Race" }
+         ,{ "name":"ethnicity"    , "type":"STRING"  ,                    "size":  64,                "description":"Ethnicity" }
+         ,{ "name":"citizenship"  , "type":"STRING"  ,                    "size":  64,                "description":"Citizenship" }
+         ,{ "name":"religion"     , "type":"STRING"  ,                    "size":  64,                "description":"Religion" }
+         ,{ "name":"languages"    , "type":"STRING"  ,                    "size":  64,                "description":"Languages spoken" }
+         ,{ "name":"marital"      , "type":"STRING"  ,                    "size":  64,                "description":"Marital status" }
+         ,{ "name":"picture"      , "type":"BOOLEAN" ,                                                "description":"Whether a picture is available for this user" }
+         ,{ "name":"address1"     , "type"  : "STRING"  ,                  "size": 100,               "description":"The first line of the address" }
+         ,{ "name":"address2"     , "sameas":"address1",                                              "description":"The second line of the address" }
+         ,{ "name":"city"         , "type"  : "STRING"  ,                  "size":  50,               "description":"The city" }
+         ,{ "name":"zipPostal"    , "type"  : "STRING"  ,                  "size":  12,               "description":"The zip or postal code" }
+         ,{ "name":"county"       , "sameas":"city"    ,                                              "description":"The county" }
+         ,{ "name":"stateProv"    , "sameas":"city"    ,                                              "description":"The state, province, or whatever" }
+         ,{ "name":"country"      , "sameas":"city"    ,                                              "description":"The country" }
+         ,{ "name":"telHome"      , "type"  : "STRING"  ,                  "size":  20,               "description":"The home telephone number" }
+         ,{ "name":"telMobile"    , "sameas":"telHome",                                               "description":"The mobile telephone number" }
+         ,{ "name":"telMobileText", "type"  : "BOOLEAN" ,                                             "description":"Whether the user can receive texts at the mobiler number or not" }
+         ,{ "name":"telOffice"    , "sameas":"telHome",                                               "description":"The office telephone number" }
+         ,{ "name":"telOfficeExt" , "sameas":"telHome",                                               "description":"The office telephone extension" }
+         ,{ "name":"telFax"       , "sameas":"telHome",                                               "description":"The Fax number"}
+         ,{ "name":"emailHome"    , "type"  : "STRING"  ,                  "size":  50,               "description":"The home email address" }
+         ,{ "name":"emailOffice"  , "sameas":"emailHome",                                             "description":"The office email address" }
+         ,{ "name":"emailLevel"   , "type"  : "INTEGER" ,                                             "description":"The level of emails allowed" }
+       ]
+     ,"foreign": [
+          { "name":"User",  "srcColumns":["userRefnum"], "destObject":"User" }
+       ]
+     ,"indices":[ 
+          { "name":"UserRefnum", "columns":["userRefnum"], "db": true }
+       ]
+     ,"queries": [
+       ]
+     ,"json":[
+          { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
+       ]
+    },
+    
+
+    { "name": "Tenant",
+       "description": "Tenant Details",
+       "columns": [
+            {"name":"name"        ,  "type"  :"STRING",     "size": 50,                              "description": "Tenant Name"               }
+           ,{"name":"description" ,  "type"  :"STRING",     "size": 100,                             "description": "Description"               }
+           ,{"name":"loginMsg"    ,  "type"  :"STRING",     "size": 1000,                            "description": "Welcome Message"           }
+           ,{"name":"connectionId",  "sameas":"tilda.data.tilda.connection.id", "nullable": false,   "description": "Tenant Connection Details" }
+           ,{"name":"active"      ,  "type"  :"BOOLEAN",                                             "description": "Tenant Status"             }
+           ,{"name":"loadPath"    ,  "type"  :"STRING", "size": 255           , "nullable": true,    "description": "Relative Directory for the tenant's uploaded files." }
+        ],
+       "primary": { "autogen": true },
+       "foreign": [
+            { "name":"Connection_FK",  "srcColumns":["connectionId"], "destObject":"tilda.data.tilda.connection" }
+        ],
+        "indices": [
+            { "name": "ByConnectionId", "columns": ["connectionId"]}
+           ,{ "name": "ByName"        , "columns": ["name"]}
+        ],
+        "outputMaps": [
+            { "name": "", "outTypes":["JSON"], "columns": ["refnum", "name", "description", "connectionId"] }
+        ]
+    }
+    
+   ,{
+      "name": "TenantUser",
+      "description": "Tenant And User mapping table",
+      "columns": [
+          {"name":"userRefnum"  , "sameas":"User.refnum",     "description":"User Foreign Key"   }
+         ,{"name":"tenantRefnum", "sameas":"Tenant.refnum" ,     "description":"Tenant Foreign Key" }
+         ,{"name":"active"      , "type":"BOOLEAN",              "description":"TenantUser Status",
+                                  "values": [
+                                     {"name":"Active"    , "value":true   , "description":"A nurse for the patient", "default":"CREATE" } 
+                                    ,{"name":"Inactive"  , "value":false  , "description":"Tenant Inactive"                               } 
+                                   ]
+          }
+         ,{ "name":"lastEula"   , "type":"DATETIME", "nullable": true , "description":"The last time the user signed the EULA for this tenant." }
+
+       ],
+      "primary":{ "autogen": true},
+      "foreign":[
+         { "name":"TenantUser_User_FK"     , "srcColumns":["userRefnum"]   , "destObject":"User"   }
+        ,{ "name":"TenantUser_Tenant_FK"   , "srcColumns":["tenantRefnum"] , "destObject":"Tenant" }
+       ],
+      "indices":[
+         { "name": "UserTenant", "columns": ["userRefnum", "tenantRefnum"]}
+       ],
+      "queries": [
+         { "name"  : "Active",
+           "description":"Active TenantUser ",
+           "from"  : [], 
+           "wheres": [
+               { "db":"*", "clause":"refnum = ?() AND active IS TRUE" }
+            ]
+         }
+      ]
+    }
+
+
+   ,{ "name": "App"
+     ,"description": "App Details"
+     ,"columns": [
+         {"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
+        ,{"name":"home"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App home page"   }
+        ,{"name":"label"   , "type":"STRING"  , "size":250, "nullable":false, "description":"Label for the application header"                }
+        ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
+        ,{"name":"icon"    , "type":"STRING"  , "size":250,                   "description":"Icon for the application"                        }
+        ,{"name":"pages"   , "type":"STRING[]",                               "description":"Other pages for this app, besides the home page" }
+        ,{"name":"services", "type":"STRING[]",                               "description":"Services URLs consumed by this app"              }
+        ,{"name":"active"  , "type":"BOOLEAN" ,                               "description":"App's actioe status"                             }
+       ]
+     ,"primary": { "autogen": true }
+     ,"foreign": [
+       ]
+     ,"indices": [
+         { "name":"ByPathHome", "columns":["path", "home"]}
+        ,{ "name":"ByLabel"   , "columns":["label"]}
+       ]
+     ,"queries": [
+         { "name"  :"LastUpdated",
+           "description":"Gets the apps last updated prior than the supplied timestamp and not deleted.",
+           "from"  :[], 
+           "wheres":[
+               { "db":"*", "clause":"lastUpdated < ?() and deleted is null" }
+            ],
+           "orderBy":["lastUpdated desc"]
+         }
+        ,{ "name"  :"Active",
+           "description":"Gets the apps with an active flag and not deleted.",
+           "from"  :[], 
+           "wheres":[
+               { "db":"*", "clause":"deleted is null and active=true" }
+            ],
+           "orderBy":["seq asc", "label asc"]
+         }
+        ,{ "name"  :"All",
+           "description":"Gets the apps not deleted.",
+           "from"  :[],
+           "wheres":[
+               { "db":"*", "clause":"deleted is null" }
+            ],
+           "orderBy":["seq asc", "label asc"]
+         }
+       ]
+     ,"json": [
+         { "name":"", "columns":["refnum", "path", "home", "label", "seq", "icon", "active"] }
+       ]
+    }
+
+   ,{ "name":"AppUser"
+     ,"description":"App And User mapping table"
+     ,"columns": [
+          {"name":"appRefnum" , "sameas":"App.refnum"    , "nullable":false, "description":"App Foreign Key"  }
+         ,{"name":"userRefnum", "sameas":"User.refnum", "nullable":true , "description":"User Foreign Key" }
+       ]
+     ,"foreign":[
+         { "name":"App" , "srcColumns":["appRefnum" ], "destObject":"App"  }
+        ,{ "name":"User", "srcColumns":["userRefnum"], "destObject":"User" }
+       ]
+     ,"indices":[
+         { "name":"UserApp"  , "columns":["userRefnum", "appRefnum"]  }
+       ]
+     ,"queries": [
+         { "name"  :"UnassignedApps"
+          ,"description":"Gets the raw list of apps, i.e., userRefnum is null"
+          ,"from"  :[]
+          ,"wheres":[
+               { "db":"*", "clause":"userRefnum is null" }
+            ]
+         }
+        ,{ "name"  :"UnassignedApp"
+          ,"description":"Gets the raw entry for an app, i.e., with userRefnum is null"
+          ,"from"  :[]
+          ,"wheres":[
+               { "db":"*", "clause":"appRefnum=?() and userRefnum is null" }
+            ]
+         }
+      ]
+    }
+
+
+   ,{ "name": "Config"
+     ,"description": "App Details"
+     ,"columns": [
+         {"name":"id"              , "type":"STRING"  , "size":250, "nullable":false, "description":"Configuration Id"    }
+        ,{"name":"masterPaths"     , "type":"STRING[]", "description":"Master paths that receive master connections (in a multi-tenant environment)" }
+        ,{"name":"authPassthroughs", "type":"STRING[]", "description":"Path allowed in without authentication, i.e., anonymous"                      }
+       ]
+     ,"foreign": [
+       ]
+     ,"indices": [
+         { "name":"Id"  , "columns":["id"]  }
+       ]
+     ,"queries": [
+         { "name"  : "Config",
+           "description":"Gets the one query",
+           "from"  : [], 
+           "wheres": [
+               { "db":"*", "clause":"1=1" }
+            ],
+           "orderBy": []
+         }
+       ]
+     ,"json": [
+       ]
+    }
+
+    
+   ,{
+    	"name": "AccessLog",
+    	"description": "Logs HTTP URL, Params & Response",
+    	"columns": [
+           { "name": "requestUUID"   , "type": "STRING", "size": 50, "nullable": false, "description": "HTTP Request UUID" }
+ 		  ,{ "name": "user_rn"       , "sameas": "User.refnum"     , "nullable": true , "description": "User foreign key" }
+          ,{ "name": "userEmail"     , "type": "STRING", "size": 256                  , "description": "User Email for failed login attempts" }
+   		  ,{ "name": "ipAddress"     , "type": "STRING", "size": 40                   , "description": "User Login IP Address" }
+          ,{ "name": "servlet"       , "type": "STRING", "size": 256                  , "description": "Servlet Path" }
+          ,{ "name": "url"           , "type": "STRING", "size": 256                  , "description": "HTTP Url" }
+          ,{ "name": "responseCode"  , "type": "SHORT"                                , "description": "HTTP Response Code" }
+          ,{ "name": "responseStatus", "type": "STRING", "size": 2048                 , "description": "HTTP Response status" }
+          ,{ "name": "parameters"    , "type": "STRING", "size": 262144               , "description": "parameters sent with http request" }
+          ,{ "name": "login"         , "type": "BOOLEAN"                              , "description": "Login status: null=not login, true=successfull login, false=failed login" }
+    	],
+      "primary": { "autogen": true },
+        "foreign": [
+            { "name":"user", "srcColumns":["user_rn"], "destObject":"User" }
+        ]
+      ,"indices":[ 
+         { "name":"user_rn", "columns":["user_rn"], "orderBy":["created desc"], "db": true }
+       ]
+    }
+    
+    
+   ,{ "name":"LDAPServer",
+     "description":"Server or Virtual Machine info",
+     "columns":[
+        { "name":"url"                  , "type": "STRING"  , "nullable":false  , "size": 1024  , "description":"URL of the virtual machine" },
+        { "name":"port"                 , "type": "INTEGER" , "nullable":false                  , "description":"Port of the virtual machine" },
+        { "name":"secureConnection"     , "type": "BOOLEAN"                                     , "description":"Whether to use SSL protocol or not" 
+                                        ,"values": [ { "name":"Secure", "value": "true" , "description":"Default Secure value", "default":"CREATE" }]},
+        { "name":"descr"                , "type": "STRING"  , "nullable":true   , "size": 1024  , "description":"Description about the server" }
+       ],   
+     "primary": { "autogen":true, "keyBatch": 1000 },
+     "indices":[ 
+          { "name":"UrlPort", "columns":["url", "port"]}
+      ],
+     "json":[
+          { "name":"", "columns":["refnum", "url", "port", "secureConnection", "descr", "created", "lastUpdated"] }
+      ],
+      "queries": [
+           { "name"  : "Url",
+           "description": "get record by Url",
+           "wheres": [
+               { "db": "*", "clause": "url=?()" }
+            ]
+         }
+       ]
+    },
+    { "name":"LDAPDomain",
+      "description":"An organization entity that has an association to the server ",
+      "columns":[
+        { "name":"server_rn"      , "sameas":"LDAPServer.refnum", "invariant": true,  "description":"The Server this Domain is mapped to"},
+        { "name":"admin_username"                           , "type":"STRING"    , "nullable": true, "size": 50,  "description":"Admin username to fetch user details from the LDAP server" },
+        { "name":"admin_password"                           , "type":"STRING"    , "nullable": true, "size": 50,  "description":"Admin password to login to the LDAP server" },
+        { "name":"domain_name"                              , "type":"STRING"    , "nullable": false, "size": 150, "description":"LDAP domiain name" },
+        { "name":"base_dn"                                  , "type":"STRING"    , "nullable": false, "size": 150, "description":"LDAP base distinguished name" },
+        { "name":"user_dn"                                  , "type":"STRING"    , "nullable": true, "size": 150, "description":"LDAP user DN" },
+        { "name":"user_filter"                              , "type":"STRING"    , "nullable": true, "size": 150, "description":"LDAP user filter" },
+        { "name":"user_search_filter"                       , "type":"STRING"    , "nullable": true, "size": 150, "description":"LDAP user search filter" },
+        { "name":"group_dn"                                 , "type":"STRING"    , "nullable": true, "size": 150, "description":"LDAP group DN" },
+        { "name":"group_filter"                             , "type":"STRING"    , "nullable": true, "size": 150, "description":"LDAP group filter" },
+        { "name":"group_search_filter"                      , "type":"STRING"    , "nullable": true, "size": 150, "description":"LDAP group search filter" },
+        { "name":"descr"                                    , "type":"STRING"    , "nullable": true, "size": 1024,"description":"Description about the Domain" }
+       ],
+      "primary": { "autogen": true, "keyBatch": 5000 },
+      "foreign": [
+         { "name":"LDAPServer", "srcColumns":["server_rn"], "destObject":"LDAPServer" }
+      ],
+      "json":[
+          { "name":"", "columns":["refnum", "server_rn", "admin_username", "admin_password", "domain_name", "base_dn", "user_dn", "user_filter", "user_search_filter", "group_dn", "group_filter", "group_search_filter", "descr", "created", "lastUpdated"] }
+      ],
+      "queries": [
+           { "name"  : "DomainName",
+           "description": "get record by domain name",
+           "wheres": [
+               { "db": "*", "clause": "domain_name=?()" }
+            ]
+         }
+       ]
+    },
+    { "name":"LDAPRoleGroup"
+     ,"description":"Capsico Role to LDAP group mapping"
+     ,"columns":[
+           { "name":"roleId"        , "type": "STRING", "size":  10, "nullable": false,  "description":"Role refnum this permission is mapped to"}
+          ,{ "name":"domain_rn"     , "sameas":"LDAPDomain.refnum", "invariant": true,           "description":"Domain refnum this permission is mapped to"}
+          ,{ "name":"groupCn"       , "type"  :"STRING"     , "nullable": false, "size": 100,                             "description":"Group CN in the LDAP configuration to give access to"}
+       ]
+     ,"primary": { "autogen":true, "keyBatch": 1000 }
+     ,"foreign": [
+          { "name":"LDAPDomain", "srcColumns":["domain_rn"], "destObject":"LDAPDomain" }
+       ]
+     ,"json": [
+           { "name":"", "columns": ["refnum", "domain_rn", "roleId", "groupCn", "created", "lastUpdated"] }
+       ]
+     ,"indices":[ 
+          { "name":"RoleGroup"        , "columns":["roleId", "groupCn"]     , "db": true }
+       ]
+    }
+    
+   ,{ "name": "TenantJob",
+      "description": "User and Jobs mapping table",
+      "columns": [
+        {"name": "userRefnum"  ,   "sameas": "User.refnum"                , "description": "User Foreign Key"   },
+        {"name": "jobRefnum"   ,   "sameas": "tilda.data.tilda.Job.refnum", "description": "Job Foreign Key"    },
+        {"name": "tenantRefnum",   "sameas": "Tenant.refnum"              , "description": "Tenant Foreign Key" }
+      ],
+      "primary": {"autogen": true},
+      "foreign": [
+         { "name":"TenantUserJob_Job_FK"    , "srcColumns":["jobRefnum"]    , "destObject":"tilda.data.tilda.Job" },
+         { "name":"TenantUserJob_Tenant_FK" , "srcColumns":["tenantRefnum"] , "destObject":"Tenant"               },
+         { "name":"TenantUserJob_User_FK"   , "srcColumns":["userRefnum"]   , "destObject":"User"                 }
+      ]
+    }    
+    
+  ]
+  
+ ,"views":[
+    {
+      "name": "UserResetPasswordView",
+      "description": "View that has basic user details with pswdResetCode",
+      "columns": [
+        { "sameas":"User.refnum"               , "name":"userRefnum"  },
+        { "sameas":"User.pswdResetCode"                               },
+        { "sameas":"User.id"                                          },
+        { "sameas":"User.email"                                       },
+        { "sameas":"UserDetail.nameTitle"                             },
+        { "sameas":"UserDetail.nameLast"                              },
+        { "sameas":"UserDetail.nameFirst"                             },
+        { "sameas":"UserDetail.nameMiddle"                            },
+        { "sameas":"UserDetail.telMobile"                             }
+      ],
+    "subWhere": "User.locked is null AND User.deleted is null AND UserDetail.deleted is null AND User.loginCount = 0",
+    "queries": [
+      {
+        "name": "PswdResetCodeLike"
+        ,"description": "User with Given Reset Password Code"
+        ,"wheres": [
+          { "db": "*", "clause": "pswdResetCode LIKE ?()" }
+        ]
+        ,"orderBy": ["userRefnum ASC"]
+      }
+    ],
+      "json": [
+        { "name": "", "columns": ["userRefnum", "pswdResetCode", "id", "email", "nameTitle", "nameFirst", "nameMiddle", "nameLast"] }     
+      ]
+    },
+    {
+      "name": "AdminUsersView",
+      "description": "View that has basic user details",
+      "columns": [
+          { "sameas": "User.refnum"          , "name":"personRefnum"          },
+          { "sameas": "User.email"           , "name":"personId"              },
+          { "sameas": "User.invitedUser"                                      },
+          { "sameas": "User.locked"                                           },
+          { "sameas": "User.roles"                                            },
+          { "sameas": "User.inviteCancelled"                                  },
+          { "sameas": "User.loginCount"                                       },
+          { "sameas": "User.lastLogin"                                        },
+          { "sameas": "UserDetail.nameTitle"                                  },
+          { "sameas": "UserDetail.nameLast"                                   },
+          { "sameas": "UserDetail.nameFirst"                                  },
+          { "sameas": "UserDetail.nameMiddle"                                 },
+          { "sameas": "UserDetail.telMobile"                                  }
+      ]
+     ,"queries": [
+        {
+          "name": "AllButExceptRefnum"
+          ,"description": "TBD"
+          ,"wheres": [
+            { "db": "*", "clause": "personRefnum <> ?()" }
+          ]
+          ,"orderBy": ["personRefnum ASC"]
+        }
+      ]
+      ,"json": [
+        { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"] }     
+      ]
+    },
+    
+    {
+      "name": "AdminUsersAndTenantsView",
+      "description": "View that has basic user details",
+      "columns": [
+          { "sameas": "User.refnum"            , "name":"personRefnum"             },
+          { "sameas": "User.email"             , "name":"personId"                 },
+          { "sameas": "User.invitedUser"                                           },
+          { "sameas": "User.locked"                                                },
+          { "sameas": "User.roles"                                                 },
+          { "sameas": "User.inviteCancelled"                                       },
+          { "sameas": "User.loginCount"                                            },
+          { "sameas": "User.lastLogin"                                             },
+          { "sameas": "TenantUser.refnum"      , "name": "tenantUserRefnum"        },
+          { "sameas": "TenantUser.tenantRefnum", "name": "tenantRefnum"            },
+          { "sameas": "TenantUser.active"      , "name": "tenantUserActive"        },
+          { "sameas": "Tenant.name"            , "name": "tenantName"              },
+          { "sameas": "UserDetail.nameTitle"                                       },
+          { "sameas": "UserDetail.nameLast"                                        },
+          { "sameas": "UserDetail.nameFirst"                                       },
+          { "sameas": "UserDetail.nameMiddle"                                      },
+          { "sameas": "UserDetail.telMobile"                                       }
+      ]
+     ,"joins": [
+        { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
+      ]
+     ,"queries": [
+        {
+          "name": "AllButExceptRefnum"
+          ,"description": "TBD"
+          ,"wheres": [
+            { "db": "*", "clause": "personRefnum <> ?()" }
+          ]
+          ,"orderBy": ["personRefnum ASC"]
+        }
+       ]
+      ,"json": [
+        { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"] }     
+       ]
+    },
+    {
+      "name": "TenantView",
+      "description": "View that has Tenant + TenantUser",
+      "columns": [
+          { "sameas": "TenantUser.refnum"     , "name": "tenantUserRefnum"   }
+         ,{ "sameas": "TenantUser.userRefnum" , "name": "userRefnum"         }
+         ,{ "sameas": "TenantUser.active"     , "name": "tenantUserActive"   }
+         ,{ "sameas": "TenantUser.lastEula"   , "name": "tenantUserLastEula" }
+         ,{ "sameas": "Tenant.name"           , "name": "name"               }
+         ,{ "sameas": "Tenant.refnum"         , "name": "refnum"             }
+         ,{ "sameas": "Tenant.active"         , "name": "tenantActive"       }
+         ,{ "sameas": "Tenant.description"    , "name": "description"        }
+         ,{ "sameas": "Tenant.connectionId"   , "name": "connectionId"       }
+      ]
+     ,"joins": [
+        { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
+      ]
+      ,"json": [
+         { "name": "tenantJson", "columns": ["refnum", "name", "description", "connectionId", "tenantUserActive"] }
+        ,{ "name": "tenantUserJson", "columns": ["name", "tenantUserRefnum", "tenantUserActive"] }
+      ]
+    },
+    
+    {
+        "name": "TenantConnectionView",
+        "description": "Tenant + Connection",
+        "columns": [
+          { "sameas": "Tenant.refnum"                          },
+          { "sameas": "Tenant.name"                            },
+          { "sameas": "Tenant.description"                     },
+          { "sameas": "Tenant.loginMsg"                        },
+          { "sameas": "Tenant.connectionId"                    },
+          { "sameas": "Tenant.active"                          },
+          { "sameas": "tilda.data.tilda.connection.driver"     },
+          { "sameas": "tilda.data.tilda.connection.db"         },
+          { "sameas": "tilda.data.tilda.connection.user"       },
+          { "sameas": "tilda.data.tilda.connection.pswd"       },
+          { "sameas": "tilda.data.tilda.connection.initial"    },
+          { "sameas": "tilda.data.tilda.connection.max"        },
+          { "sameas": "tilda.data.tilda.connection.active", "name": "connectionActive"     }
+        ],
+        "json": [
+          { "name": "", "columns": [ "refnum", "name", "connectionId", "driver", "db", "user", "initial", "max", "active", "connectionActive" ] }
+        ]
+    }
+
+   ,{ "name":"AppView",
+      "description":"View of apps that have not been deleted",
+      "columns":[
+          { "sameas":"App.refnum"        , "name":"appRefnum" }
+         ,{ "sameas":"App.seq"           , "name":"appSeq"    }
+         ,{ "sameas":"App.label"         , "name":"appLabel"  }
+         ,{ "sameas":"App.home"          , "name":"appHome"   }
+         ,{ "sameas":"App.path"          , "name":"appPath"   }
+         ,{ "sameas":"App.active"        , "name":"appActive" }
+       ]
+     ,"subWhere": "App.deleted is null"
+     ,"json":[
+          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appPath", "appActive" ] }
+       ]
+     ,"queries": [
+          { "name"  :"All",
+            "description":"Get all Apps.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"1=1" }
+             ],
+            "orderBy": ["appSeq"]
+          }
+       ]
+    }
+
+   ,{ "name":"AppUserView",
+      "description":"View that has Tenant + TenantUser",
+      "columns":[
+          { "sameas":"App.refnum"        , "name":"appRefnum" }
+         ,{ "sameas":"App.seq"           , "name":"appSeq"    }
+         ,{ "sameas":"App.label"         , "name":"appLabel"  }
+         ,{ "sameas":"App.home"          , "name":"appHome"   }
+         ,{ "sameas":"App.path"          , "name":"appPath"   }
+         ,{ "sameas":"App.active"        , "name":"appActive" }
+         ,{ "sameas":"User.refnum"    , "name":"userRefnum"}
+         ,{ "sameas":"User.id"           , "name":"userId"    }
+         ,{ "sameas":"User.email"        , "name":"userEmail" }
+         ,{ "sameas":"AppUser.userRefnum", "name":"enabled", "expression":"case when ? is not null then 1 else 0 end", "type":"SHORT" }
+       ]
+     ,"joins":[
+          { "object": "User"   , "joinType": "INNER", "on": [ { "db":"*", "clause":"1=1" } ] }
+         ,{ "object": "AppUser", "joinType": "LEFT" , "on": [ { "db":"*", "clause":"AppUser.\"appRefnum\" = App.refnum and AppUser.\"userRefnum\" = WANDA.User.refnum" } ] }
+       ]
+     ,"subWhere": "App.deleted is null"
+     ,"queries": [
+          { "name"  :"AppByUser",
+            "description":"Get users for app.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"appRefnum=?() and enabled=1" }
+             ],
+            "orderBy": ["userId"]
+          }
+         ,{ "name"  :"UserByActiveApp",
+            "description":"Get apps for a user.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"userRefnum=?() and enabled=1 and appActive=true" }
+             ],
+            "orderBy": ["appSeq"]
+          }
+         ,{ "name"  :"UserByAllApp",
+            "description":"Get all apps, including inactive or unthorized ones, with a user.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"userRefnum=?()" }
+             ],
+            "orderBy": ["appSeq"]
+          }
+       ]
+     ,"json":[
+          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appPath", "appActive", "userRefnum", "userId", "enabled" ] }
+       ]
+    }
+
+   ,{ "name":"AccessLogDailyView",
+      "description":"View that has Tenant + TenantUser",
+      "columns":[
+          { "sameAs":"AccessLog.created"    , "name":"day"                   , "expression":"date_trunc('day', ?)::DATE", "type":"DATE" }
+         ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
+         ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 200" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 400" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 401" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 404" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 500" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(\"responseCode\",0) NOT IN (200, 400, 401, 500)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"\"login\"=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"\"login\"=false" }
+       ]
+     ,"queries": [
+          { "name"  :"Day",
+            "description":"Get the logs info by day from >= start and < end.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"day >= ?(Start) and day < ?(End)" }
+             ],
+            "orderBy": ["day desc"]
+          }
+       ]
+     ,"outputMaps":[
+          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
+   ,{ "name":"AccessLogHourlyView",
+      "description":"View that has Tenant + TenantUser",
+      "columns":[
+          { "sameAs":"AccessLog.created"    , "name":"hour"                  , "expression":"date_trunc('hour', ?)", "type":"DATETIME" }
+         ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
+         ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 200" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 400" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 401" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 404" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 500" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(\"responseCode\",0) NOT IN (200, 400, 401, 500)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"\"login\"=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"\"login\"=false" }
+       ]
+     ,"queries": [
+          { "name"  :"Hour",
+            "description":"Get the logs info by day from >= start and < end.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"hour >= ?(Start) and hour < ?(End)" }
+             ],
+            "orderBy": ["hour desc"]
+          }
+       ]
+     ,"outputMaps":[
+          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
+    
+   ,{ "name":"TenantJobView",
+      "description":"User Job + Tenant",
+      "columns":[
+         { "sameas":"TenantJob.refnum"            , "name":"refnum"      }
+        ,{ "sameas":"Tenant.refnum"               , "name":"tenantRefnum"}
+        ,{ "sameas":"Tenant.name"                 , "name":"tenantName"  }
+        ,{ "sameas":"TenantJob.userRefnum"        , "name":"userRefnum"  }
+        ,{ "sameas":"TenantJob.jobRefnum"         , "name":"jobRefnum"   }
+        ,{ "sameas":"TenantJob.created"           , "name":"created"     }
+        ,{ "sameas":"tilda.data.tilda.Job.status" , "name":"jobStatus"   }
+        ,{ "sameas":"tilda.data.tilda.Job.start"  , "name":"startTime"   }
+        ,{ "sameas":"tilda.data.tilda.Job.end"    , "name":"endTime"     }
+        ,{ "sameas":"tilda.data.tilda.Job.type"   , "name":"loadMode"    }
+        ,{ "sameas":"tilda.data.tilda.Job.name"   , "name":"zipFile"     }
+        ,{ "sameas":"tilda.data.tilda.Job.msg"    , "name":"error"       }
+       ]
+     ,"queries":[
+         { "name": "MyTenantJobs"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "tenantRefnum = ?() AND refnum = ?()" }
+             ]
+         }
+       ]
+     ,"json": [
+          { "name": "", "columns": [ "refnum", "tenantName", "userRefnum", "jobRefnum", "tenantRefnum", "error" ] },
+          { "name": "complex", "columns": [ "jobStatus", "loadMode",  "error", "zipFile", "endTime", "startTime", "refnum", "tenantName", "userRefnum", "jobRefnum", "tenantRefnum" ] }
+       ]
+    }
+  ]
+}    
+
+

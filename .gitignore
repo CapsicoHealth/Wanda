@@ -1,0 +1,5 @@
+/bin/
+/src/wanda/data/_Tilda
+*.DS_Store
+/wanda-docs.jar
+/wanda.jar

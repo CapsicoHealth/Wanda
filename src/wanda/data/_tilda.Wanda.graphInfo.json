@@ -1,0 +1,799 @@
+{
+  "com.capsico.people.data#false#contact": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 140,
+      "y": 40
+    },
+    "size": {
+      "width": 84,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "f6088a6b-38b6-4317-a7ad-ed39edcd190c",
+    "z": 2,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "Contact"
+      },
+      "id": {
+        "0": "c",
+        "1": "o",
+        "2": "n",
+        "3": "t",
+        "4": "a",
+        "5": "c",
+        "6": "t"
+      }
+    }
+  },
+  "com.capsico.people.data#false#user": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 300,
+      "y": 130
+    },
+    "size": {
+      "width": 48,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "e3384b95-bf31-4873-8b60-31ad05ad4e7e",
+    "z": 3,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "User"
+      },
+      "id": {
+        "0": "u",
+        "1": "s",
+        "2": "e",
+        "3": "r"
+      }
+    }
+  },
+  "com.capsico.people.data#false#personrel": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 370,
+      "y": 30
+    },
+    "size": {
+      "width": 108,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "a5785139-6ed3-4c7e-8460-2bca289ac1d8",
+    "z": 4,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "PersonRel"
+      },
+      "id": {
+        "0": "p",
+        "1": "e",
+        "2": "r",
+        "3": "s",
+        "4": "o",
+        "5": "n",
+        "6": "r",
+        "7": "e",
+        "8": "l"
+      }
+    }
+  },
+  "com.capsico.people.data#false#role": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 440,
+      "y": 130
+    },
+    "size": {
+      "width": 48,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "cb2bdf2a-08bf-4818-9c27-4fdd567e9fae",
+    "z": 5,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(251,229,214)",
+        "stroke": "rgb(248,203,173)",
+        "stroke-width": 1
+      },
+      "text": {
+        "fill": "black",
+        "text": "Role"
+      },
+      "id": {
+        "0": "r",
+        "1": "o",
+        "2": "l",
+        "3": "e"
+      }
+    }
+  },
+  "com.capsico.people.data#true#contact": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 140,
+      "y": 140
+    },
+    "size": {
+      "width": 84,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "1b2bcbce-4032-4f63-b010-abbd59f8360b",
+    "z": 4,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "Contact"
+      },
+      "id": {
+        "0": "c",
+        "1": "o",
+        "2": "n",
+        "3": "t",
+        "4": "a",
+        "5": "c",
+        "6": "t"
+      }
+    }
+  },
+  "com.capsico.people.data#true#person": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 430,
+      "y": 140
+    },
+    "size": {
+      "width": 72,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "bdcc12af-b795-41c3-8d1c-1a4bd90fa3d8",
+    "z": 2,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "Person"
+      },
+      "id": {
+        "0": "p",
+        "1": "e",
+        "2": "r",
+        "3": "s",
+        "4": "o",
+        "5": "n"
+      }
+    }
+  },
+  "com.capsico.people.data#false#connection": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 530,
+      "y": 30
+    },
+    "size": {
+      "width": 120,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "76f0249b-9ed1-4a9c-ba3e-02174c213556",
+    "z": 11,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(166,201,232)",
+        "stroke": "white",
+        "stroke-width": 0
+      },
+      "text": {
+        "fill": "white",
+        "text": "connection"
+      },
+      "id": {
+        "0": "c",
+        "1": "o",
+        "2": "n",
+        "3": "n",
+        "4": "e",
+        "5": "c",
+        "6": "t",
+        "7": "i",
+        "8": "o",
+        "9": "n"
+      }
+    }
+  },
+  "com.capsico.people.data#false#tenant": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 560,
+      "y": 80
+    },
+    "size": {
+      "width": 72,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "99927cd4-d708-4d37-a5ea-7f20245a813d",
+    "z": 4,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "Tenant"
+      },
+      "id": {
+        "0": "t",
+        "1": "e",
+        "2": "n",
+        "3": "a",
+        "4": "n",
+        "5": "t"
+      }
+    }
+  },
+  "com.capsico.people.data#false#tenantuser": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 370,
+      "y": 80
+    },
+    "size": {
+      "width": 120,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "79d3a1a9-1a25-4c45-99b7-e601d179a6c2",
+    "z": 5,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "TenantUser"
+      },
+      "id": {
+        "0": "t",
+        "1": "e",
+        "2": "n",
+        "3": "a",
+        "4": "n",
+        "5": "t",
+        "6": "u",
+        "7": "s",
+        "8": "e",
+        "9": "r"
+      }
+    }
+  },
+  "com.capsico.people.data#true#tenantconnectionview": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 610,
+      "y": 360
+    },
+    "size": {
+      "width": 240,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "732afee9-82a7-4731-ad58-7656d17abcfe",
+    "z": 7,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(169,209,142)",
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1,
+        "stroke-dasharray": "3,3"
+      },
+      "text": {
+        "fill": "black",
+        "text": "TenantConnectionView"
+      }
+    }
+  },
+  "com.capsico.people.data#true#userresetpasswordview": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 60,
+      "y": 410
+    },
+    "size": {
+      "width": 252,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "e28e8674-e00b-4a23-a1ae-28f925c8c5e2",
+    "z": 2,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(169,209,142)",
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1,
+        "stroke-dasharray": "3,3"
+      },
+      "text": {
+        "fill": "black",
+        "text": "UserResetPasswordView"
+      }
+    }
+  },
+  "com.capsico.people.data#true#adminusersview": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 380,
+      "y": 410
+    },
+    "size": {
+      "width": 168,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "3dd5b755-8b29-41d9-908a-734666c2da8c",
+    "z": 3,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(169,209,142)",
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1,
+        "stroke-dasharray": "3,3"
+      },
+      "text": {
+        "fill": "black",
+        "text": "AdminUsersView"
+      }
+    }
+  },
+  "com.capsico.people.data#true#personview": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 270,
+      "y": 30
+    },
+    "size": {
+      "width": 120,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "5eec8c31-0b5b-4ca3-b5c0-ebf17987b2eb",
+    "z": 1,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(169,209,142)",
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1,
+        "stroke-dasharray": "3,3"
+      },
+      "text": {
+        "fill": "black",
+        "text": "PersonView"
+      }
+    }
+  },
+  "com.capsico.people.data#true#user": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 440,
+      "y": 560
+    },
+    "size": {
+      "width": 48,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "938c27c8-cd0d-4471-b510-0f953bdf2d3d",
+    "z": 10,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "User"
+      },
+      "id": {
+        "0": "u",
+        "1": "s",
+        "2": "e",
+        "3": "r"
+      }
+    }
+  },
+  "com.capsico.people.data#true#tenantuser": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 1030,
+      "y": 140
+    },
+    "size": {
+      "width": 120,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "d19dedad-028b-4a29-bd29-e3309fa03d10",
+    "z": 17,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "TenantUser"
+      },
+      "id": {
+        "0": "t",
+        "1": "e",
+        "2": "n",
+        "3": "a",
+        "4": "n",
+        "5": "t",
+        "6": "u",
+        "7": "s",
+        "8": "e",
+        "9": "r"
+      }
+    }
+  },
+  "com.capsico.people.data#true#adminusersandtenantsview": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 550,
+      "y": 140
+    },
+    "size": {
+      "width": 288,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "db3386ff-1f42-4796-9fbb-edbf8e713e77",
+    "z": 4,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(169,209,142)",
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1,
+        "stroke-dasharray": "3,3"
+      },
+      "text": {
+        "fill": "black",
+        "text": "AdminUsersAndTenantsView"
+      }
+    }
+  },
+  "com.capsico.people.data#true#tenant": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 690,
+      "y": 260
+    },
+    "size": {
+      "width": 72,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "66b1e5b9-0255-4a5d-9274-425e5b431f7e",
+    "z": 19,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "Tenant"
+      },
+      "id": {
+        "0": "t",
+        "1": "e",
+        "2": "n",
+        "3": "a",
+        "4": "n",
+        "5": "t"
+      }
+    }
+  },
+  "com.capsico.people.data#true#connection": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 930,
+      "y": 360
+    },
+    "size": {
+      "width": 120,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "f27ec2ed-4628-4251-807e-089ca0d3335e",
+    "z": 27,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(166,201,232)",
+        "stroke": "white",
+        "stroke-width": 0
+      },
+      "text": {
+        "fill": "white",
+        "text": "connection"
+      },
+      "id": {
+        "0": "c",
+        "1": "o",
+        "2": "n",
+        "3": "n",
+        "4": "e",
+        "5": "c",
+        "6": "t",
+        "7": "i",
+        "8": "o",
+        "9": "n"
+      }
+    }
+  },
+  "com.capsico.people.data#true#tenantuserview": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 1170,
+      "y": 90
+    },
+    "size": {
+      "width": 168,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "94a5ad29-a597-45ac-83b5-1238e124deed",
+    "z": 5,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(169,209,142)",
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1,
+        "stroke-dasharray": "3,3"
+      },
+      "text": {
+        "fill": "black",
+        "text": "TenantUserView"
+      }
+    }
+  },
+  "com.capsico.people.data#true#tenantview": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 1030,
+      "y": 260
+    },
+    "size": {
+      "width": 120,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "7724242e-87bb-4dc5-a7fd-622c4bae81ee",
+    "z": 6,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(169,209,142)",
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1,
+        "stroke-dasharray": "3,3"
+      },
+      "text": {
+        "fill": "black",
+        "text": "TenantView"
+      }
+    }
+  },
+  "com.capsico.people.data#true#tenantview#tenantuser": {
+    "type": "link",
+    "source": {
+      "id": "7724242e-87bb-4dc5-a7fd-622c4bae81ee"
+    },
+    "target": {
+      "id": "d19dedad-028b-4a29-bd29-e3309fa03d10"
+    },
+    "attrs": {
+      ".marker-target": {
+        "d": "M 10 0 L 0 5 L 10 10 z"
+      },
+      "key": "com.capsico.people.data#true#TenantView#TenantUser",
+      ".connection": {
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1
+      }
+    },
+    "id": "c8971c70-76da-4272-b607-19dca9ead04c",
+    "z": 25,
+    "vertices": []
+  },
+  "com.capsico.people.data#false#person": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 150,
+      "y": 130
+    },
+    "size": {
+      "width": 72,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "6a1bba18-721a-4ddc-9ead-19eb29d74ef4",
+    "z": 1,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "Person"
+      },
+      "id": {
+        "0": "p",
+        "1": "e",
+        "2": "r",
+        "3": "s",
+        "4": "o",
+        "5": "n"
+      }
+    }
+  },
+  "com.capsico.people.data#false#accesslog": {
+    "type": "basic.Rect",
+    "position": {
+      "x": 270,
+      "y": 210
+    },
+    "size": {
+      "width": 108,
+      "height": 30
+    },
+    "angle": 0,
+    "id": "4dce2ef9-06c2-45b9-ac15-f48bdee4d79a",
+    "z": 6,
+    "attrs": {
+      "rect": {
+        "fill": "rgb(46,117,182)",
+        "stroke": "rgb(65,113,156)",
+        "stroke-width": 2
+      },
+      "text": {
+        "fill": "white",
+        "text": "AccessLog"
+      },
+      "id": {
+        "0": "a",
+        "1": "c",
+        "2": "c",
+        "3": "e",
+        "4": "s",
+        "5": "s",
+        "6": "l",
+        "7": "o",
+        "8": "g"
+      }
+    }
+  },
+  "com.capsico.people.data#true#adminusersandtenantsview#tenantuser": {
+    "type": "link",
+    "source": {
+      "id": "db3386ff-1f42-4796-9fbb-edbf8e713e77"
+    },
+    "target": {
+      "id": "d19dedad-028b-4a29-bd29-e3309fa03d10"
+    },
+    "attrs": {
+      ".marker-target": {
+        "d": "M 10 0 L 0 5 L 10 10 z"
+      },
+      "key": "com.capsico.people.data#true#AdminUsersAndTenantsView#TenantUser",
+      ".connection": {
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1
+      }
+    },
+    "id": "1a5ad3d7-3a09-4747-b648-0d53e9ba4343",
+    "z": 18,
+    "vertices": []
+  },
+  "com.capsico.people.data#true#adminusersandtenantsview#user": {
+    "type": "link",
+    "source": {
+      "id": "db3386ff-1f42-4796-9fbb-edbf8e713e77"
+    },
+    "target": {
+      "id": "938c27c8-cd0d-4471-b510-0f953bdf2d3d"
+    },
+    "attrs": {
+      ".marker-target": {
+        "d": "M 10 0 L 0 5 L 10 10 z"
+      },
+      "key": "com.capsico.people.data#true#AdminUsersAndTenantsView#User",
+      ".connection": {
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1
+      }
+    },
+    "id": "7bf352c4-ca33-4109-b949-e2fde137a698",
+    "z": 17,
+    "vertices": [
+      {
+        "x": 580,
+        "y": 280
+      },
+      {
+        "x": 580,
+        "y": 500
+      }
+    ]
+  },
+  "com.capsico.people.data#true#adminusersandtenantsview#contact": {
+    "type": "link",
+    "source": {
+      "id": "db3386ff-1f42-4796-9fbb-edbf8e713e77"
+    },
+    "target": {
+      "id": "1b2bcbce-4032-4f63-b010-abbd59f8360b"
+    },
+    "attrs": {
+      ".marker-target": {
+        "d": "M 10 0 L 0 5 L 10 10 z"
+      },
+      "key": "com.capsico.people.data#true#AdminUsersAndTenantsView#Contact",
+      ".connection": {
+        "stroke": "rgb(0,176,80)",
+        "stroke-width": 1
+      }
+    },
+    "id": "04d2167b-d778-4eb8-b700-ccdb0ed5d7b5",
+    "z": 22,
+    "vertices": [
+      {
+        "x": 610,
+        "y": 60
+      }
+    ]
+  }
+}

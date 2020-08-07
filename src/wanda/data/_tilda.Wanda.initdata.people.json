@@ -1,0 +1,10 @@
+
+{  "roles": [
+       { "id":"SA"      , "label":"Super Admin"         , "value":"Super Administrator" }
+      ,{ "id":"TA"      , "label":"Tenant Admin"        , "value":"Tenant Administrator"}
+      ,{ "id":"Creator" , "label":"Creator"             , "value":"Creator"             }
+      ,{ "id":"FU"      , "label":"File Uploader"       , "value":"File Uploader"       }
+    ]
+  ,"people": [
+    ]
+}
