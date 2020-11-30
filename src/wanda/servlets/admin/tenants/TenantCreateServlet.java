@@ -68,7 +68,7 @@ public class TenantCreateServlet extends SimpleServlet
             throw new SimpleServletException(HttpStatus.BadRequest, "Failed to create Tenant");
           }
 
-        Res.Success();        
+        Res.success();        
       }  
     
 

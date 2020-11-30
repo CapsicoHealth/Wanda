@@ -20,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.annotation.WebServlet;
 
 import wanda.data.User_Data;
@@ -31,6 +32,7 @@ import tilda.utils.CompareUtil;
 import tilda.utils.EncryptionUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.exceptions.NotFoundException;
@@ -44,6 +46,12 @@ public class SetPassword extends SimpleServlet
     public SetPassword()
       {
         super(false, false);
+      }
+
+    @Override
+    public void init(ServletConfig Conf)
+      {
+        SessionFilter.addMaskedUrlNvp("password");
       }
 
     @Override
@@ -96,6 +104,6 @@ public class SetPassword extends SimpleServlet
         user.setLockedNull();
         user.pushToPswdHistory(hashedPassword);
         user.write(C);
-        Res.Success();
+        Res.success();
       }
   }

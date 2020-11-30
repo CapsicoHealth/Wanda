@@ -52,6 +52,6 @@ public class ForgotPassword extends SimpleServlet
           {
             u.sendForgotPswdEmail(C);
           }
-        Res.Success();
+        Res.success();
       }
   }

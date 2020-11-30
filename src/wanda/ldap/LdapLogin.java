@@ -28,6 +28,7 @@ import wanda.data.User_Data;
 import tilda.db.Connection;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionFilter;
 import wanda.web.SimpleServlet;
 import wanda.web.exceptions.NotFoundException;
 
@@ -52,8 +53,9 @@ public class LdapLogin extends SimpleServlet
     @Override
     public void init(ServletConfig Conf)
       {
-        // TODO: do a dry run. validate the config and basic login tests
+        SessionFilter.addMaskedUrlNvp("password");
       }
+
 
     @Override
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
@@ -73,7 +75,7 @@ public class LdapLogin extends SimpleServlet
 
         Req.setSessionUser(U);
         
-        Res.Success();
+        Res.success();
       }
 
   }

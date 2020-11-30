@@ -69,7 +69,7 @@ public class Verifications extends SimpleServlet
               throw new BadRequestException("token", "is Invalid / Expired");
             }
           }
-        Res.Success();
+        Res.success();
       }
 
   }

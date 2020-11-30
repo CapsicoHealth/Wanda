@@ -119,7 +119,7 @@ public class InviteUserServlet extends SimpleServlet
           }
         
         Req.throwIfErrors();
-        Res.Success();        
+        Res.success();        
       }
 
   }

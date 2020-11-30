@@ -69,7 +69,7 @@ public class GroupToRole extends SimpleServlet
 
         if (rg != null)
           {
-            Res.Success();
+            Res.success();
           }
         else
           throw new NotFoundException("RoleGroup", groupCn+"|"+domainRn);
