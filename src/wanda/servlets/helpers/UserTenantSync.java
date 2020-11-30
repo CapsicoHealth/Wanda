@@ -71,14 +71,8 @@ public class UserTenantSync
                 throw new ServletException(ErrMessage);
               }
             TenantConnection = ConnectionPool.get(Tenant.getConnectionId());
-            User_Data TenantDbUser = User_Factory.lookupByPrimaryKey(MasterDbUser.getRefnum());
-            UserDetail_Data TenantDbPerson = UserDetail_Factory.lookupByUserRefnum(MasterDbUser.getRefnum());
-            MasterDbPerson.copyTo(TenantDbPerson);
-            if (TenantDbPerson.write(TenantConnection) == false)
-              {
-                UserDetail_Data.cloneWithCreateMode(MasterDbPerson).write(TenantConnection);
-              }
             
+            User_Data TenantDbUser = User_Factory.lookupByPrimaryKey(MasterDbUser.getRefnum());
             if(TenantDbUser.read(TenantConnection) == true)
               {
                 MasterDbUser.copyTo(TenantDbUser);
@@ -86,7 +80,21 @@ public class UserTenantSync
               }              
             else
               {
-                User_Data.cloneWithCreateMode(MasterDbUser).write(TenantConnection);
+                User_Data tenantDbUser = User_Data.cloneWithCreateMode(MasterDbUser);
+                tenantDbUser.write(TenantConnection);
+              }
+
+            UserDetail_Data TenantDbPerson = UserDetail_Factory.lookupByUserRefnum(MasterDbUser.getRefnum());
+            MasterDbPerson.copyTo(TenantDbPerson);
+            if (TenantDbPerson.write(TenantConnection) == false)
+              {
+                TenantDbPerson = UserDetail_Data.cloneWithCreateMode(MasterDbPerson);
+                LOG.debug("\n\nMasterDbUser: "  +MasterDbUser.getRefnum()
+                           +"\nTenantDbUser: "  +TenantDbUser.getRefnum()
+                           +"\nMasterDbPerson: "+MasterDbPerson.getUserRefnum()                           
+                           +"\nTenantDbPerson: "+TenantDbPerson.getUserRefnum()
+                           +"\n\n");
+                TenantDbPerson.write(TenantConnection);
               }
             TenantConnection.commit();
           }
