@@ -181,7 +181,7 @@
            ,{ "name": "ByName"        , "columns": ["name"]}
         ],
         "outputMaps": [
-            { "name": "", "outTypes":["JSON"], "columns": ["refnum", "name", "description", "connectionId"] }
+            { "name": "", "outTypes":["JSON"], "columns": ["refnum", "name", "description", "connectionId", "active"] }
         ]
     }
     

@@ -28,18 +28,16 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.servlets.helpers.RoleHelper;
-import wanda.web.config.WebBasics;
-
 import tilda.db.Connection;
 import tilda.utils.CollectionUtil;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
+import wanda.servlets.helpers.RoleHelper;
 import wanda.web.SystemMailSender;
+import wanda.web.config.WebBasics;
 import wanda.web.exceptions.BadRequestException;
-import wanda.web.exceptions.NotFoundException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 
@@ -226,6 +224,11 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           {
             UD = UserDetail_Factory.create(U.getRefnum(), lastName, firstName);
           }
+        else
+          {
+            UD.setNameLast(lastName);
+            UD.setNameFirst(firstName);
+          }
         U.setEmail(email);
         U.setRoles(new HashSet<String>(Arrays.asList(roles)));
         if (isResetPassword)
@@ -342,7 +345,6 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
     public static User_Data cloneWithCreateMode(User_Data Dst)
     throws Exception
       {
-        long personRefnum = Dst.getRefnum();
         String email = Dst.getEmail();
         String id = Dst.getId();
         String pswd = Dst.getPswd();
@@ -354,6 +356,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
         User_Data NewObject = User_Factory.create(email, id, user_roles, pswd);
         Dst.copyTo(NewObject);
+        NewObject.setRefnum(Dst.getRefnum());
         return NewObject;
       }
 
