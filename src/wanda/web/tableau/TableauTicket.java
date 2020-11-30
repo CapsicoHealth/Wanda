@@ -1,5 +1,5 @@
 /* ===========================================================================
- * Copyright (C) 2019 CapsicoHealth Inc.
+ * Copyright (C) 2020 CapsicoHealth Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,15 +23,26 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.utils.FileUtil;
+import wanda.web.config.WebBasics;
 
 public class TableauTicket
   {
     static final Logger LOG = LogManager.getLogger(TableauTicket.class.getName());
 
-    final static public String get(String url, String userName)
+    final static public String get(String subConfigName)
+    throws Exception
+      {
+        String url  = WebBasics.getExtra("tableau-"+subConfigName, "url");
+        String user = WebBasics.getExtra("tableau-"+subConfigName, "user");
+
+        return get(url, user);
+      }
+    
+    final static protected String get(String url, String userName)
       {
         try
           {
+            LOG.debug("Getting Tableau URL for '"+url+"'"+userName+"'.");
             Map<String, String> params = new HashMap<>();
             params.put("username", userName);
             // params.put("target_site", "Default");
