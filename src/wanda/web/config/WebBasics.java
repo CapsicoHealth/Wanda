@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
@@ -41,7 +42,7 @@ import wanda.data.App_Data;
 import wanda.data.App_Factory;
 import wanda.data.Config_Data;
 import wanda.data.Config_Factory;
-import wanda.web.tableau.TableauTicket;
+
 
 public class WebBasics
   {
@@ -259,7 +260,7 @@ public class WebBasics
       {
         return TextUtil.isNullOrEmpty(_Config._laf._logoBigPostLogin) == false ? _Config._laf._logoBigPostLogin : _Config._laf._logoBig;
       }
-    
+
     public static String getLogoSmall()
       {
         return _Config._laf._logoSmall;
@@ -279,6 +280,7 @@ public class WebBasics
       {
         return _Config._laf._pageTitle;
       }
+
     public static String getPageTitlePostLogin()
       {
         return TextUtil.isNullOrEmpty(_Config._laf._pageTitlePostLogin) == false ? _Config._laf._pageTitlePostLogin : _Config._laf._pageTitle;
@@ -309,11 +311,6 @@ public class WebBasics
         return _Config._twofishesUrl;
       }
 
-    public static String getTableauTicketUrl()
-      {
-        return TableauTicket.get(_Config._tableauUrl, _Config._tableauUser);
-      }
-
     public static Eula getEula(String TenantName)
       {
         if (TenantName == null)
@@ -328,5 +325,18 @@ public class WebBasics
                 e = E;
             }
         return e;
+      }
+
+    public static Map<String, String> getExtra(String configName)
+      {
+        return _Config._extras == null ? null : _Config._extras.get(configName);
+      }
+    public static String getExtra(String configName, String elementName)
+      {
+        if (_Config._extras == null)
+         return null;
+        
+        Map<String, String> config = _Config._extras.get(configName);
+        return config == null ? null : config.get(elementName);
       }
   }
