@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package wanda.data.importers.people;
+package wanda.data.importers.roles;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,11 +22,13 @@ import com.google.gson.annotations.SerializedName;
 
 import tilda.Importer;
 import tilda.db.Connection;
+import wanda.data.Role_Data;
+import wanda.data.Role_Factory;
 
 public class RootImporter implements Importer
   {
     /*@formatter:off*/
-    @SerializedName("people") public List<User>      _Users = new ArrayList<User>();
+    @SerializedName("roles" ) public List<Role_Data> _Roles = new ArrayList<Role_Data>();
     /*@formatter:on*/
 
     @Override
@@ -35,11 +37,13 @@ public class RootImporter implements Importer
       {
         int Count = 0;
 
-        for (User obj : _Users)
+        for (Role_Data obj : _Roles)
           {
             ++Count;
-            obj.write(C);
+            if (obj.upsert(C, true) == false)
+              throw new Exception("Cannot upsert Role record");
           }
+        Role_Factory.initMappings(C);
 
         return Count;
       }

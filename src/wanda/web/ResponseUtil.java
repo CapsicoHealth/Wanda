@@ -19,6 +19,7 @@ package wanda.web;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -103,6 +104,27 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         JSONUtil.response(_Out, JsonExportName, L);
       }
+    
+    /**
+     * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
+     * is typically yo return the json data packaged inside a textarea. This function does that. It is exactly
+     * equivalent to the "plain" response method except the jsonable object is output inside a textarea and the
+     * writer is expected to be set up as an HTML one.
+     * @param Out
+     * @param JsonExportName
+     * @param Obj
+     * @throws Exception
+     */
+    public void successDojoMultipartConfig()
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.HTML);
+        _Out.write("<textarea>\n");
+        success();
+        _Out.write("</textarea>\n");
+      }
+    
 
     /**
      * This is meant for a serious system issue and will return a traditional error sequence for HTTP.
