@@ -49,7 +49,7 @@ public class Logout extends SimpleServlet
       throws Exception
       {
         Req.removeSessionUser();
-        Res.Success();        
+        Res.success();        
       }
 
   }

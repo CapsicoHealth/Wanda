@@ -64,7 +64,7 @@ public class TenantServlet extends SimpleServlet
             // connection.setActive(active);
             // connection.write(C);
           }
-        Res.Success();        
+        Res.success();        
       }
 
   }

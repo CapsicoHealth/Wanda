@@ -52,7 +52,7 @@ public class UserValidationServlet extends SimpleServlet
           ListResults<AdminUsersView_Data> users = AdminUsersView_Factory.withEmail(C, email);
           if (users.size() > 0) throw new BadRequestException("email", "already exists");
         }
-        Res.Success();        
+        Res.success();        
       }
 
   }

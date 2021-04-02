@@ -5,6 +5,4 @@
       ,{ "id":"Creator" , "label":"Creator"             , "value":"Creator"             }
       ,{ "id":"FU"      , "label":"File Uploader"       , "value":"File Uploader"       }
     ]
-  ,"people": [
-    ]
 }

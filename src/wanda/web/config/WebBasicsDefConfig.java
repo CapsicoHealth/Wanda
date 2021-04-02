@@ -19,6 +19,7 @@ package wanda.web.config;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.annotations.SerializedName;
@@ -42,10 +43,11 @@ public class WebBasicsDefConfig
     @SerializedName("lookAndFeel"     )         LookAndFeel                         _laf                    = null;
     @SerializedName("eulas"           )         List<Eula>                          _eulas                  = new ArrayList<Eula>();
     @SerializedName("twofishes-url"   )         String                              _twofishesUrl           = null;
-    @SerializedName("tableauUrl"     )         String                               _tableauUrl             = null;
-    @SerializedName("tableauUser"    )         String                               _tableauUser            = null;
+    @SerializedName("tableauUrl"      )         String                               _tableauUrl             = null;
+    @SerializedName("tableauUser"     )         String                               _tableauUser            = null;
     @SerializedName("jobCheckIntervalSeconds")  int                                 _jobCheckIntervalSeconds= 20;
     @SerializedName("beacon"          )         BeaconConfig                        _beacon                 = null;
+    @SerializedName("extras"          )         Map<String, Map<String, String>>    _extras                 = null;
     /*@formatter:on*/
 
     public boolean validate()

@@ -137,7 +137,7 @@ public class Login extends SimpleServlet
             ClearUserForEula(C, Req, U, TenantUserRefnum);
             if (TenantUserRefnum != SystemValues.EVIL_VALUE)
               UserTenantSync.sync(C, U, TenantUserRefnum);
-            Res.Success();
+            Res.success();
           }
         else if (TenantUserRefnum != SystemValues.EVIL_VALUE && U != null)
           { // User Selected a Tenant

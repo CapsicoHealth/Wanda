@@ -31,12 +31,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.data.User_Data;
-import wanda.web.config.WebBasics;
-
 import tilda.db.Connection;
 import tilda.utils.HttpStatus;
-import tilda.utils.SystemValues;
+import wanda.data.User_Data;
+import wanda.web.config.WebBasics;
 import wanda.web.exceptions.SimpleServletException;
 
 /**
@@ -140,40 +138,9 @@ public abstract class SimpleServlet extends javax.servlet.http.HttpServlet imple
     protected abstract void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception;
 
-    /**
-     * A helper class to standadize getting paging attributes from the request. It expects the attributes "start" and "size". If not specified,
-     * the values 0 and 100 will be used as defaults. If size is > masSize, then maxSize is returned instead.
-     * 
-     * @author Laurent Hasson
-     *
-     */
-    protected static class Paging
-      {
-        /**
-         * Processes the request to extract "start" and "size" values. if "start" is not specified, 0 is used by default. If "size"
-         * is not specified, 100 is used by default. if "size" > masSize, then maxSize is used (to avoid DOS attacks or misuses).
-         * 
-         * @param Req
-         * @param maxSize
-         */
-        public Paging(RequestUtil Req, int maxSize)
-          {
-            int start = Req.getParamInt("start", false);
-            if (start == SystemValues.EVIL_VALUE)
-              start = 0;
-            int size = Req.getParamInt("size", false);
-            if (size < 100 || size > maxSize)
-              size = maxSize;
-            _start = start;
-            _size = size;
-          }
-
-        public final int _start;
-        public final int _size;
-      }
 
     /**
-     * Checkes if the user's password has expired. Mostly used for the login servlet. Wondering if it should be elsewhere.
+     * Checks if the user's password has expired. Mostly used for the login servlet. Wondering if it should be elsewhere.
      * 
      * @param U
      * @return

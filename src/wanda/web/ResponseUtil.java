@@ -16,16 +16,24 @@
 
 package wanda.web;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import tilda.interfaces.CSVable;
+import tilda.interfaces.JSONable;
 import tilda.utils.HttpStatus;
+import tilda.utils.TextUtil;
+import tilda.utils.json.JSONUtil;
 import wanda.web.exceptions.SimpleServletException;
 
 
@@ -43,7 +51,7 @@ public class ResponseUtil
 
     public enum ContentType
       {
-      JSON("text/json"), XML("text/xml"), CSV("text/csv");
+      JSON("text/json"), XML("text/xml"), CSV("text/csv"), HTML("text/html");
 
         protected String _ContentType;
 
@@ -68,12 +76,12 @@ public class ResponseUtil
         return _Out;
       }
 
-    public void setDownloadFileName(String FileName)
+    public void setDownloadFileName(String fileName)
       {
-        _Res.setHeader("Content-Disposition", "attachment; filename=\"" + FileName + "\"");
+        _Res.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
       }
 
-    public void Success()
+    public void success()
     throws IOException
       {
         if (_Out == null)
@@ -81,11 +89,49 @@ public class ResponseUtil
         _Out.println("{\"code\":" + HttpStatus.OK._Code + ",\"data\":{}}");
       }
 
+    public void successJson(String JsonExportName, JSONable obj)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        JSONUtil.response(_Out, JsonExportName, obj);
+      }
+
+    public void successJson(String JsonExportName, List<? extends JSONable> L)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        JSONUtil.response(_Out, JsonExportName, L);
+      }
+    
     /**
-     * This is meant for a serious system issue and will return a traditional error sequence for HTTP. 
+     * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
+     * is typically yo return the json data packaged inside a textarea. This function does that. It is exactly
+     * equivalent to the "plain" response method except the jsonable object is output inside a textarea and the
+     * writer is expected to be set up as an HTML one.
+     * @param Out
+     * @param JsonExportName
+     * @param Obj
+     * @throws Exception
+     */
+    public void successDojoMultipartConfig()
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.HTML);
+        _Out.write("<textarea>\n");
+        success();
+        _Out.write("</textarea>\n");
+      }
+    
+
+    /**
+     * This is meant for a serious system issue and will return a traditional error sequence for HTTP.
      * This is expected mostly to be used by frameworks on top of WebBasics. If you have an application
-     * error from a simpleServlet, you should use the standard {@link SimpleServletException} mechanism 
+     * error from a simpleServlet, you should use the standard {@link SimpleServletException} mechanism
      * to return a regular HTTPStatus=200 response, but with a JSON error payload.
+     * 
      * @param Code
      * @param Msg
      * @throws IOException
@@ -96,6 +142,41 @@ public class ResponseUtil
       {
         _Res.sendError(Code._Code, Msg);
         throw new ServletException(Msg);
+      }
+
+    /**
+     * Streams a file's binary data using a default content type of application/octet-stream
+     * 
+     * @param fileName
+     * @param f
+     * @throws IOException
+     */
+    public void success(String fileName, File f)
+    throws Exception
+      {
+        success(fileName, f, null);
+      }
+
+    /**
+     * Streams a file's binary data using the supplied content type, or, if missing, the default of application/octet-stream.
+     * The file must exist and an exception will be thrown if it doesn't exist.
+     * 
+     * @param fileName
+     * @param f
+     * @param contentType
+     * @throws IOException
+     */
+    public void success(String fileName, File f, String contentType)
+    throws Exception
+      {
+        if (f.exists() == false)
+          {
+            LOG.error("The file '" + f.getCanonicalPath() + "' cannot be found or accessed.");
+            throw new Exception("File " + fileName + " cannot be found");
+          }
+        _Res.setContentType(TextUtil.isNullOrEmpty(contentType) == true ? "application/octet-stream" : contentType);
+        setDownloadFileName(fileName);
+        FileUtils.copyFile(f, _Res.getOutputStream());
       }
 
   }

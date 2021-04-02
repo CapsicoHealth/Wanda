@@ -181,7 +181,7 @@
            ,{ "name": "ByName"        , "columns": ["name"]}
         ],
         "outputMaps": [
-            { "name": "", "outTypes":["JSON"], "columns": ["refnum", "name", "description", "connectionId"] }
+            { "name": "", "outTypes":["JSON"], "columns": ["refnum", "name", "description", "connectionId", "active"] }
         ]
     }
     
@@ -226,6 +226,7 @@
          {"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
         ,{"name":"home"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App home page"   }
         ,{"name":"label"   , "type":"STRING"  , "size":250, "nullable":false, "description":"Label for the application header"                }
+        ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":true , "description":"App unique Id"   }
         ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
         ,{"name":"icon"    , "type":"STRING"  , "size":250,                   "description":"Icon for the application"                        }
         ,{"name":"pages"   , "type":"STRING[]",                               "description":"Other pages for this app, besides the home page" }
@@ -236,8 +237,9 @@
      ,"foreign": [
        ]
      ,"indices": [
-         { "name":"ByPathHome", "columns":["path", "home"]}
-        ,{ "name":"ByLabel"   , "columns":["label"]}
+         { "name":"PathHome", "columns":["path", "home"]}
+        ,{ "name":"Label"   , "columns":["label"]}
+        ,{ "name":"Id"      , "columns":["id"]}
        ]
      ,"queries": [
          { "name"  :"LastUpdated",
@@ -273,7 +275,7 @@
    ,{ "name":"AppUser"
      ,"description":"App And User mapping table"
      ,"columns": [
-          {"name":"appRefnum" , "sameas":"App.refnum"    , "nullable":false, "description":"App Foreign Key"  }
+          {"name":"appRefnum" , "sameas":"App.refnum" , "nullable":false, "description":"App Foreign Key"  }
          ,{"name":"userRefnum", "sameas":"User.refnum", "nullable":true , "description":"User Foreign Key" }
        ]
      ,"foreign":[
@@ -303,7 +305,7 @@
 
 
    ,{ "name": "Config"
-     ,"description": "App Details"
+     ,"description": "Configuration paths"
      ,"columns": [
          {"name":"id"              , "type":"STRING"  , "size":250, "nullable":false, "description":"Configuration Id"    }
         ,{"name":"masterPaths"     , "type":"STRING[]", "description":"Master paths that receive master connections (in a multi-tenant environment)" }

@@ -20,6 +20,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
@@ -32,6 +33,7 @@ import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionFilter;
 import wanda.web.SimpleServlet;
 import wanda.web.config.WebBasics;
 import wanda.web.exceptions.NotFoundException;
@@ -39,13 +41,17 @@ import wanda.web.exceptions.NotFoundException;
 @WebServlet("/svc/user/onboarding")
 public class UserOnBoarding extends SimpleServlet
   {
-
-
     private static final long serialVersionUID = 2358369573367773870L;
 
     public UserOnBoarding()
       {
         super(false, true);
+      }
+    
+    @Override
+    public void init(ServletConfig Conf)
+      {
+        SessionFilter.addMaskedUrlNvp("password");
       }
 
     @Override
@@ -68,7 +74,7 @@ public class UserOnBoarding extends SimpleServlet
 
         ListResults<User_Data> users = User_Factory.lookupWherePswdResetCodeLike(C, token, 0, 1);
         if (users.size() < 1 || (users.size() > 0 && users.get(0).read(C) == false))
-          throw new NotFoundException("User", "" + token);
+          throw new NotFoundException("User Token", "" + token);
 
         User_Data user = users.get(0);
         /*

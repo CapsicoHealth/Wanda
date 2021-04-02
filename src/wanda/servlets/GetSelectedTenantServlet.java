@@ -49,7 +49,7 @@ public class GetSelectedTenantServlet extends SimpleServlet
         TenantView_Data TV = TenantView_Factory.getTenantByTenantUserRefnum(C, U.getRefnum(), Req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString()));
         if(TV == null)
           {
-            Res.Success();
+            Res.success();
             return;
           }
         JSONUtil.response(Out, "tenantUserJson", TV);

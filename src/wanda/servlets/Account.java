@@ -18,6 +18,7 @@ package wanda.servlets;
 
 import java.util.List;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
@@ -29,6 +30,7 @@ import wanda.data.User_Data;
 import wanda.servlets.helpers.UserTenantSync;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.WebBasics;
@@ -42,6 +44,12 @@ public class Account extends SimpleServlet
     public Account()
       {
         super(true, false);
+      }
+    
+    @Override
+    public void init(ServletConfig Conf)
+      {
+        SessionFilter.addMaskedUrlNvp("password");
       }
 
     @Override
@@ -98,6 +106,6 @@ public class Account extends SimpleServlet
             UserTenantSync.sync(C, U, TenantUserRefnum);
           }
          
-        Res.Success();
+        Res.success();
       }
   }

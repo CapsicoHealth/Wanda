@@ -198,6 +198,12 @@ public class RequestUtil
         return ParseUtil.parseZonedDateTime(Name, Mandatory, _Req.getParameter(Name), _Errors);
       }
 
+    public ZonedDateTime getParamZonedDateTime(String Name, ZonedDateTime DefaultValue)
+      {
+        ZonedDateTime ZDT = ParseUtil.parseZonedDateTime(Name, false, _Req.getParameter(Name), _Errors);
+        return ZDT != null ? ZDT : DefaultValue;
+      }
+
     public ZonedDateTime[] getParamsZonedDateTime(String Name, boolean Mandatory)
       {
         return ParseUtil.parseZonedDateTime(Name, Mandatory, _Req.getParameterValues(Name), _Errors);

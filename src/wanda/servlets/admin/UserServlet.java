@@ -82,7 +82,7 @@ public class UserServlet extends SimpleServlet
         if (resetPswd)
           user.sendForgotPswdEmail(C);
         user.write(C);
-        Res.Success();        
+        Res.success();        
       }
 
   }
