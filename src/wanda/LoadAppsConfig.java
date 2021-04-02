@@ -28,21 +28,20 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.data.AppUser_Data;
-import wanda.data.AppUser_Factory;
-import wanda.data.App_Data;
-import wanda.data.App_Factory;
-import wanda.data.Config_Data;
-import wanda.data.Config_Factory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.utils.AsciiArt;
-import tilda.utils.DateTimeUtil;
 import tilda.utils.FileUtil;
 import tilda.utils.TextUtil;
+import wanda.data.AppUser_Data;
+import wanda.data.AppUser_Factory;
+import wanda.data.App_Data;
+import wanda.data.App_Factory;
+import wanda.data.Config_Data;
+import wanda.data.Config_Factory;
 import wanda.web.config.AppDef;
 import wanda.web.config.AppDefDetails;
 import wanda.web.config.WebBasicsDefApps;
@@ -154,16 +153,28 @@ public class LoadAppsConfig
     public static void process(Connection C, WebBasicsDefApps DA)
     throws Exception
       {
-        ZonedDateTime ZDT = DateTimeUtil.nowLocal();
+        ZonedDateTime ZDT = C.getCurrentTimestamp();
+
         int i = -1;
         for (AppDef ad : DA._apps)
           if (ad != null)
             {
-              App_Data A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, ++i);
+              App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home);
+              A.setLabel(ad._AppDefDetail._label);
+              A.setSeq(++i);
+              A.setId(ad._id);
               A.setServices(ad._AppDefDetail._services);
               A.setPages(ad._AppDefDetail._pages);
-              if (A.upsert(C, true) == false)
-                throw new Exception("Cannot insert/update App record");
+              A.setId(ad._id);
+              if (A.write(C) == false)
+                {
+                  A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, i);
+                  A.setId(ad._id);
+                  A.setServices(ad._AppDefDetail._services);
+                  A.setPages(ad._AppDefDetail._pages);
+                  if (A.write(C) == false)
+                   throw new Exception("Cannot insert/update App record");
+                }
               A.refresh(C);
               AppUser_Data AU = AppUser_Factory.lookupByUnassignedApp(A.getRefnum());
               if (AU.read(C) == false)
@@ -173,6 +184,8 @@ public class LoadAppsConfig
                    throw new Exception("Cannot insert default app record for app "+A.getRefnum());
                }
             }
+
+        // App not updated in this round, i.e., lastUpdated < ZDT, have likely been removed, so they should be marked as deleted.
         List<App_Data> L = App_Factory.lookupWhereLastUpdated(C, ZDT, 0, -1);
         for (App_Data A : L)
           {
