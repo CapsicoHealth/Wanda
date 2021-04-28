@@ -128,21 +128,32 @@ public class RequestUtil
         return getParamsString(Name, Mandatory, null, null, false);
       }
 
+    public short getParamShort(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseShort(Name, Mandatory, _Req.getParameter(Name), _Errors);
+      }
+    public short getParamShort(String Name, short Default)
+      {
+        return ParseUtil.parseShort(_Req.getParameter(Name), Default);
+      }
+    public short[] getParamsShort(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseShort(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
+      }
+
     public int getParamInt(String Name, boolean Mandatory)
       {
         return ParseUtil.parseInteger(Name, Mandatory, _Req.getParameter(Name), _Errors);
       }
-
     public int getParamInt(String Name, int Default)
       {
         return ParseUtil.parseInteger(_Req.getParameter(Name), Default);
       }
-
     public int[] getParamsInt(String Name, boolean Mandatory)
       {
         return ParseUtil.parseInteger(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
       }
-
+    
     public long getParamLong(String Name, boolean Mandatory)
       {
         return ParseUtil.parseLong(Name, Mandatory, _Req.getParameter(Name), _Errors);

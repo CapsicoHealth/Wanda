@@ -95,12 +95,12 @@ public class WebBasicsDefConfig
 
         if (_sessionConfig._loginOrResetAttempts < 3)
           {
-            WebBasics.LOG.error("The WebBasics configuration file defines a 'sessionConfig' property with a 'loginAttempts' value of" + _sessionConfig._loginOrResetAttempts + " < 3.");
+            WebBasics.LOG.error("The WebBasics configuration file defines a 'sessionConfig' property with a '_loginOrResetAttempts' value of" + _sessionConfig._loginOrResetAttempts + " < 3.");
             OK = false;
           }
-        if (_sessionConfig._withinMins < 5)
+        if (_sessionConfig._withinMins < 3)
           {
-            WebBasics.LOG.error("The WebBasics configuration file defines a 'sessionConfig' property with a 'withinMins' value of " + _sessionConfig._withinMins + " < 5.");
+            WebBasics.LOG.error("The WebBasics configuration file defines a 'sessionConfig' property with a 'withinMins' value of " + _sessionConfig._withinMins + " < 3.");
             OK = false;
           }
         if (_sessionConfig._lockForMins < 1)
