@@ -497,6 +497,7 @@
           { "sameas": "UserDetail.nameMiddle"                                 },
           { "sameas": "UserDetail.telMobile"                                  }
       ]
+     ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
         {
           "name": "AllButExceptRefnum"
@@ -537,6 +538,7 @@
      ,"joins": [
         { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
       ]
+     ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
         {
           "name": "AllButExceptRefnum"

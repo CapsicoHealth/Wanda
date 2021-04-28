@@ -23,6 +23,7 @@ package wanda.data;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import wanda.data._Tilda.TILDA__ADMINUSERSANDTENANTSVIEW_Factory.COLS;
 import wanda.servlets.helpers.RoleHelper;
 
 import tilda.db.Connection;
@@ -135,7 +136,8 @@ public class AdminUsersView_Factory extends wanda.data._Tilda.TILDA__ADMINUSERSV
           }
         // Just to keep list consistent,
         // No specific reason for ordering using them.
-        Q.orderBy(COLS.PERSONREFNUM, true);
+        Q.orderBy(COLS.NAMELAST, true);
+        Q.orderBy(COLS.NAMEFIRST, true);
         return runSelect(C, Q, Start, Size);
       }
 
