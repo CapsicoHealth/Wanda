@@ -173,6 +173,8 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.setPswdResetCode(EncryptionUtil.getToken(16, true));
         U.setPswdResetCreateNow();
         U.setInvitedUser(true);
+        U.setInviteCancelledNull();
+        U.setLockedNull();
         if (U.write(C) == false)
          Errors.add(new StringStringPair("User", "Unable to save changes"));
 
@@ -236,9 +238,9 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             U.setPswdResetCode(EncryptionUtil.getToken(16, true));
             U.setPswdResetCreateNow();
             U.setInvitedUser(true);
-            U.setInviteCancelledNull();
-            U.setLockedNull();
           }
+        U.setInviteCancelledNull();
+        U.setLockedNull();
 
         if (U.write(C) == false || UD.write(C) == false)
           {
@@ -438,7 +440,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 if (U.getFailCount() >= WebBasics.getLoginAttempts())
                   {
                     U.setFailCycleCount(U.getFailCycleCount() + 1);
-                    if (U.getFailCycleCount() == WebBasics.getLoginFailedCycle())
+                    if (U.getFailCycleCount() >= WebBasics.getLoginFailedCycle())
                       {
                         U.setLocked(DateTimeUtil.nowUTC().plusDays(WebBasics.getLockForever()));
                       }

@@ -71,6 +71,7 @@ public class UserServlet extends SimpleServlet
           {
             user.setPswdResetCode(EncryptionUtil.getToken(16, true));
             user.setInviteCancelled(true);
+            user.setLockedNow();
           }
         
         // 1 = lock, 0 = unlock

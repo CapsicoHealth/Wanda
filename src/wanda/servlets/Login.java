@@ -90,10 +90,10 @@ public class Login extends SimpleServlet
         // Authenticate using local Login
         username = username.toLowerCase();
         User_Data u = User_Factory.lookupByEmail(username);
-        if (u.read(C) == false)
+        if (u.read(C) == false || u.getDeleted() != null || u.isLocked() == true || u.getInviteCancelled() == true)
           {
-            LOG.error("User '" + username + "' not found in the local DB");
-            loginCallback.onLoginFailure(null);
+            LOG.error("User '" + username + "' not found in the local DB or not in a state where they can log in.");
+            loginCallback.onLoginFailure(u);
           }
 
         if (EncryptionUtil.hash(password).equals(u.getPswd()) == false)
@@ -239,15 +239,36 @@ public class Login extends SimpleServlet
                 public void onLoginFailure(User_Data U)
                 throws Exception
                   {
-                    String ErrorMessage = "Invalid Login Id or Password";
-                    int FailCount = 0;
+                    String ErrorMessage;
                     // Failure logging handled in session filter.
-                    if (U != null)
+                    if (U==null || U.getDeleted() != null || U.isLocked() == true || U.getInviteCancelled() == true)
+                      {
+                        if (U == null)
+                          LOG.error("Patient not found");
+                        else
+                          {
+                            if (U.getDeleted() != null)
+                              LOG.error("Patient is deleted");
+                            if (U.isLocked() == true)
+                              LOG.error("Patient is locked until "+DateTimeUtil.printDateTimeCompact(U.getLocked(), true, true));
+                            if (U.getInviteCancelled() == true)
+                              LOG.error("Patient has been uninvited");
+                          }
+                        ErrorMessage = "Invalid Login Id or Password, or this account is locked.";
+                      }
+                    else
                       {
                         User_Data.markUserLoginFailure(C, U);
-                        FailCount = WebBasics.getLoginAttempts() - U.getFailCount();
-                        ErrorMessage = "\n" + (FailCount <= 0 ? "Your account is locked! You have exeeded the maximum "+WebBasics.getLoginAttempts()+" reset or login attempts"
-                                                              : "Invalid Login Id or Password. You have " + FailCount + " attempt(s) remaining");
+                        int FailCount = WebBasics.getLoginAttempts() - U.getFailCount();
+                        if (U.isLocked() == true)
+                         {
+                           if (U.getFailCycleCount() >= WebBasics.getLoginFailedCycle())
+                            ErrorMessage = "Your account is locked!\nYou have exceeded  the maximum "+WebBasics.getLoginAttempts()+" reset or login attempts.\nPlease contact your Administrator.";
+                           else
+                            ErrorMessage = "You have exceeded the maximum "+WebBasics.getLoginAttempts()+" reset or login attempts.\nPlease try again in "+WebBasics.getLockFor()+" minutes.";
+                         }
+                        else
+                         ErrorMessage = "Invalid Login Id or Password.\nYou have " + FailCount + " attempt(s) remaining";
                       }
                     throw new ResourceNotAuthorizedException("User", Email, ErrorMessage);
                   }
