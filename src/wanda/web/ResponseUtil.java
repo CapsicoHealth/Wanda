@@ -19,7 +19,6 @@ package wanda.web;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -29,7 +28,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import tilda.interfaces.CSVable;
 import tilda.interfaces.JSONable;
 import tilda.utils.HttpStatus;
 import tilda.utils.TextUtil;
@@ -51,7 +49,7 @@ public class ResponseUtil
 
     public enum ContentType
       {
-      JSON("text/json"), XML("text/xml"), CSV("text/csv"), HTML("text/html");
+      JSON("text/json"), XML("text/xml"), CSV("text/csv"), HTML("text/html"), TXT("text/plain");
 
         protected String _ContentType;
 

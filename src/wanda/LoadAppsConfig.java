@@ -42,6 +42,8 @@ import wanda.data.App_Data;
 import wanda.data.App_Factory;
 import wanda.data.Config_Data;
 import wanda.data.Config_Factory;
+import wanda.data.Role_Data;
+import wanda.data.Role_Factory;
 import wanda.web.config.AppDef;
 import wanda.web.config.AppDefDetails;
 import wanda.web.config.WebBasicsDefApps;
@@ -159,21 +161,35 @@ public class LoadAppsConfig
         for (AppDef ad : DA._apps)
           if (ad != null)
             {
-              App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home);
+              App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home); // search by path and home
               A.setLabel(ad._AppDefDetail._label);
               A.setSeq(++i);
               A.setId(ad._id);
+              A.setAdmin(ad._AppDefDetail._admin);
               A.setServices(ad._AppDefDetail._services);
               A.setPages(ad._AppDefDetail._pages);
               A.setId(ad._id);
-              if (A.write(C) == false)
+              if (A.write(C) == false) // not existing
                 {
-                  A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, i);
+                  A = App_Factory.lookupByLabel(ad._AppDefDetail._label); // search by label
+                  A.setPath(ad._path);
+                  A.setHome(ad._AppDefDetail._home);
+                  A.setAdmin(ad._AppDefDetail._admin);
+                  A.setSeq(i);
                   A.setId(ad._id);
                   A.setServices(ad._AppDefDetail._services);
                   A.setPages(ad._AppDefDetail._pages);
+                  A.setId(ad._id);
                   if (A.write(C) == false)
-                   throw new Exception("Cannot insert/update App record");
+                    {                  
+                      A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, i);
+                      A.setId(ad._id);
+                      A.setAdmin(ad._AppDefDetail._admin);
+                      A.setServices(ad._AppDefDetail._services);
+                      A.setPages(ad._AppDefDetail._pages);
+                      if (A.write(C) == false)
+                       throw new Exception("Cannot insert/update App record");
+                    }
                 }
               A.refresh(C);
               AppUser_Data AU = AppUser_Factory.lookupByUnassignedApp(A.getRefnum());
@@ -183,6 +199,17 @@ public class LoadAppsConfig
                  if (AU.write(C) == false)
                    throw new Exception("Cannot insert default app record for app "+A.getRefnum());
                }
+              // Create Administrator role for the application
+              if (TextUtil.isNullOrEmpty(A.getAdmin()) == false)
+                {
+                  Role_Data R = Role_Factory.create("Admin"+A.getId(), "Admin"+A.getId(), "Administrator for application "+A.getLabel());
+                  if (R.write(C) == false)
+                    {
+                      R = Role_Factory.lookupById("Admin"+A.getId());
+                      R.setLabel("Administrator for application "+A.getLabel()); // In case the label changed for the app
+                      R.write(C);
+                    }
+                }
             }
 
         // App not updated in this round, i.e., lastUpdated < ZDT, have likely been removed, so they should be marked as deleted.

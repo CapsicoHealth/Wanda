@@ -21,5 +21,5 @@ public class RoleHelper
     public static final String[]    ADMINROLES          = { "SA", "TA" };
     public static final String[]    SUPERADMIN          = { "SA" };
     public static final String[]    ADMINISTRATOR       = { "TA" };
-    public static final String[]    FILE_UPLOADER       = { "FU" };
+    public static final String[]    FILE_UPLOADER       = { "FU" };    
   }

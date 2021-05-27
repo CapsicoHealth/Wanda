@@ -23,7 +23,6 @@ package wanda.data;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.data._Tilda.TILDA__ADMINUSERSANDTENANTSVIEW_Factory.COLS;
 import wanda.servlets.helpers.RoleHelper;
 
 import tilda.db.Connection;

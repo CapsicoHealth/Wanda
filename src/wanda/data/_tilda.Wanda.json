@@ -16,8 +16,8 @@
 
      { "name":"Role",
        "description":"blah blah",
-       "id"    : { "type":"STRING", "size":  10 },
-       "value" : { "type":"STRING", "size":  50 }
+       "id"    : { "type":"STRING", "size":  254 },
+       "value" : { "type":"STRING", "size":  254 }
      }
    ]
 
@@ -225,6 +225,7 @@
      ,"columns": [
          {"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
         ,{"name":"home"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App home page"   }
+        ,{"name":"admin"   , "type":"STRING"  , "size":250, "nullable":true , "description":"App admin page"  }
         ,{"name":"label"   , "type":"STRING"  , "size":250, "nullable":false, "description":"Label for the application header"                }
         ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":true , "description":"App unique Id"   }
         ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
@@ -606,12 +607,14 @@
          ,{ "sameas":"App.seq"           , "name":"appSeq"    }
          ,{ "sameas":"App.label"         , "name":"appLabel"  }
          ,{ "sameas":"App.home"          , "name":"appHome"   }
+         ,{ "sameas":"App.id"            , "name":"appId"     }
+         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
          ,{ "sameas":"App.path"          , "name":"appPath"   }
          ,{ "sameas":"App.active"        , "name":"appActive" }
        ]
      ,"subWhere": "App.deleted is null"
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appPath", "appActive" ] }
+          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive" ] }
        ]
      ,"queries": [
           { "name"  :"All",
@@ -632,6 +635,8 @@
          ,{ "sameas":"App.seq"           , "name":"appSeq"    }
          ,{ "sameas":"App.label"         , "name":"appLabel"  }
          ,{ "sameas":"App.home"          , "name":"appHome"   }
+         ,{ "sameas":"App.id"            , "name":"appId"     }
+         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
          ,{ "sameas":"App.path"          , "name":"appPath"   }
          ,{ "sameas":"App.active"        , "name":"appActive" }
          ,{ "sameas":"User.refnum"    , "name":"userRefnum"}
@@ -653,6 +658,14 @@
              ],
             "orderBy": ["userId"]
           }
+         ,{ "name"  :"ActiveAppByUser",
+            "description":"Get users for app.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"appRefnum=?() and enabled=1 and appActive=true" }
+             ],
+            "orderBy": ["userId"]
+          }
          ,{ "name"  :"UserByActiveApp",
             "description":"Get apps for a user.",
             "from"  : [], 
@@ -671,7 +684,7 @@
           }
        ]
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appPath", "appActive", "userRefnum", "userId", "enabled" ] }
+          { "name": ""          , "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive", "userRefnum", "userId", "enabled" ] }
        ]
     }
 

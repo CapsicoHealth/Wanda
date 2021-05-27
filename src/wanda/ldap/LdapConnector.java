@@ -36,9 +36,6 @@ import javax.naming.directory.SearchResult;
 
 import wanda.data.LDAPDomain_Data;
 import wanda.data.LDAPServer_Data;
-import wanda.ldap.LdapGroup;
-import wanda.ldap.LdapUser;
-
 import tilda.utils.TextUtil;
 
 /**
