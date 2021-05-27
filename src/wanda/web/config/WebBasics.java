@@ -251,19 +251,17 @@ public class WebBasics
       }
 
 
-    public static String getLogoBig()
+    public static String getPageTitle(boolean LoggedIn)
       {
-        return _Config._laf._logoBig;
+        return LoggedIn==true && TextUtil.isNullOrEmpty(_Config._laf._pageTitlePostLogin) == false ? _Config._laf._pageTitlePostLogin : _Config._laf._pageTitle;
       }
-
-    public static String getLogoBigPostLogin()
+    public static String getLogoBig(boolean LoggedIn)
       {
-        return TextUtil.isNullOrEmpty(_Config._laf._logoBigPostLogin) == false ? _Config._laf._logoBigPostLogin : _Config._laf._logoBig;
+        return LoggedIn==true && TextUtil.isNullOrEmpty(_Config._laf._logoBigPostLogin) == false ? _Config._laf._logoBigPostLogin : _Config._laf._logoBig;
       }
-
-    public static String getLogoSmall()
+    public static String getLogoSmall(boolean LoggedIn)
       {
-        return _Config._laf._logoSmall;
+        return LoggedIn==true && TextUtil.isNullOrEmpty(_Config._laf._logoSmallPostLogin) == false ? _Config._laf._logoSmallPostLogin : _Config._laf._logoSmall;
       }
 
     public static String getPoweredBy()
@@ -274,16 +272,6 @@ public class WebBasics
     public static String getCopyright()
       {
         return _Config._laf._copyright.replace("%%CURRENT_YEAR%%", "" + DateTimeUtil.nowUTC().getYear());
-      }
-
-    public static String getPageTitle()
-      {
-        return _Config._laf._pageTitle;
-      }
-
-    public static String getPageTitlePostLogin()
-      {
-        return TextUtil.isNullOrEmpty(_Config._laf._pageTitlePostLogin) == false ? _Config._laf._pageTitlePostLogin : _Config._laf._pageTitle;
       }
 
     public static List<App_Data> getApps()

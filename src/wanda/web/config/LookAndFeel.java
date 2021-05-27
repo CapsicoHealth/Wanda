@@ -26,6 +26,7 @@ public class LookAndFeel
     @SerializedName("logoBig"           ) public String _logoBig            = null;
     @SerializedName("logoBigPostLogin"  ) public String _logoBigPostLogin   = null;
     @SerializedName("logoSmall"         ) public String _logoSmall          = null;
+    @SerializedName("logoSmallPostLogin") public String _logoSmallPostLogin = null;
     @SerializedName("poweredBy"         ) public String _poweredBy          = null;
     @SerializedName("copyright"         ) public String _copyright          = null;
     @SerializedName("overrideCssFile"   ) public String _overrideCssFile    = null;
