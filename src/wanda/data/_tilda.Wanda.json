@@ -103,7 +103,7 @@
            { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
        ]
      ,"indices":[ 
-          { "name":"id"          , "columns":["id"]    , "db": true }
+          { "name":"Id"          , "columns":["id"]    , "db": true }
          ,{ "name":"Email"       , "columns":["email"] , "db": true }
          ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
        ]

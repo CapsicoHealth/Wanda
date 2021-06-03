@@ -106,7 +106,7 @@ public class LdapUtils implements LoginProvider.Interface
         User_Data userFromDb;
         try
           {
-            userFromDb = User_Factory.lookupByid(user.getUsername());
+            userFromDb = User_Factory.lookupById(user.getUsername());
             if (userFromDb.read(C) == false)
               {
                 userFromDb = createUserInDb(user, C);
