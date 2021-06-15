@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import tilda.interfaces.JSONable;
 import tilda.utils.HttpStatus;
 import tilda.utils.TextUtil;
+import tilda.utils.json.JSONPrinter;
 import tilda.utils.json.JSONUtil;
 import wanda.web.exceptions.SimpleServletException;
 
@@ -101,6 +102,14 @@ public class ResponseUtil
         if (_Out == null)
           setContentType(ContentType.JSON);
         JSONUtil.response(_Out, JsonExportName, L);
+      }
+
+    public void successJson(JSONPrinter J)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        J.print(_Out);
       }
     
     /**

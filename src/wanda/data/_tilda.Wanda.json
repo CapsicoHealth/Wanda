@@ -639,7 +639,7 @@
          ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
          ,{ "sameas":"App.path"          , "name":"appPath"   }
          ,{ "sameas":"App.active"        , "name":"appActive" }
-         ,{ "sameas":"User.refnum"    , "name":"userRefnum"}
+         ,{ "sameas":"User.refnum"       , "name":"userRefnum"}
          ,{ "sameas":"User.id"           , "name":"userId"    }
          ,{ "sameas":"User.email"        , "name":"userEmail" }
          ,{ "sameas":"AppUser.userRefnum", "name":"enabled", "expression":"case when ? is not null then 1 else 0 end", "type":"SHORT" }
