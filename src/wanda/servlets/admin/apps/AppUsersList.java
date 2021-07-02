@@ -23,14 +23,16 @@ import javax.servlet.annotation.WebServlet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.data.AppUserView_Data;
-import wanda.data.AppUserView_Factory;
-import wanda.data.User_Data;
-import wanda.servlets.helpers.RoleHelper;
-
 import tilda.db.Connection;
 import tilda.db.ListResults;
+import tilda.utils.SystemValues;
+import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
+import wanda.data.AppUserView_Data;
+import wanda.data.AppUserView_Factory;
+import wanda.data.App_Data;
+import wanda.data.App_Factory;
+import wanda.data.User_Data;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
@@ -55,14 +57,35 @@ public class AppUsersList extends SimpleServlet
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
-
-        long appRefnum = Req.getParamLong("appRefnum", true);
+        long appRefnum = Req.getParamLong("appRefnum", false);
+        String appId = Req.getParamString("appId", false);
         String filter = Req.getParamString("filter", false);
+
+        // First get the app;
+        App_Data A = null;
+        
+        if (TextUtil.isNullOrEmpty(appId) == false && appRefnum != SystemValues.EVIL_VALUE)
+          Req.addError("appRefnum", "This service cannot be called with both appId and appRefnum. Pick one.");
+        else if (TextUtil.isNullOrEmpty(appId) == false)
+          {
+            A = App_Factory.lookupById(appId);
+            if (A.read(C) == false)
+             Req.addError("appId", "Invalid value");
+            appRefnum = A.getRefnum();
+          }
+        else
+          {
+            A = App_Factory.lookupByPrimaryKey(appRefnum);
+            if (A.read(C) == false)
+             Req.addError("appRefnum", "Invalid value");
+            appId = A.getId();
+          }
+        
         Req.throwIfErrors();
+        boolean superAdmin = throwIfUserNotSuperOrAppAdmin(U, A.getId()); // The user must be a super admin or an app admin to see the list of users
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        ListResults<AppUserView_Data> L = AppUserView_Factory.lookupWhereAppByUser(C, appRefnum, 0, 100);
+        ListResults<AppUserView_Data> L = superAdmin == true ? AppUserView_Factory.lookupWhereAppByUser(C, appRefnum, 0, 100) : AppUserView_Factory.lookupWhereActiveAppByUser(C, appRefnum, 0, 100);
         JSONUtil.response(Out, "", L);
       }
 

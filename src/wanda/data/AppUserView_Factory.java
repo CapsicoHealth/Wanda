@@ -25,7 +25,6 @@ import org.apache.logging.log4j.Logger;
 
 import tilda.db.Connection;
 import tilda.db.ListResults;
-import wanda.servlets.helpers.RoleHelper;
 
 /**
 This is the application class <B>Data_AppUserView</B> mapped to the table <B>PEOPLE.AppUserView</B>.

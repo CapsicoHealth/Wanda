@@ -135,7 +135,8 @@ public class AdminUsersView_Factory extends wanda.data._Tilda.TILDA__ADMINUSERSV
           }
         // Just to keep list consistent,
         // No specific reason for ordering using them.
-        Q.orderBy(COLS.PERSONREFNUM, true);
+        Q.orderBy(COLS.NAMELAST, true);
+        Q.orderBy(COLS.NAMEFIRST, true);
         return runSelect(C, Q, Start, Size);
       }
 

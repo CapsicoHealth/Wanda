@@ -31,6 +31,7 @@ public class AppDefDetails implements JSONable
     /*@formatter:off*/
     @SerializedName("label"   ) public String       _label     = null;
     @SerializedName("home"    ) public String       _home      = null;
+    @SerializedName("admin"   ) public String       _admin     = null;
     @SerializedName("pages"   ) public List<String> _pages     = null;
     @SerializedName("services") public List<String> _services  = null;
     /*@formatter:on*/

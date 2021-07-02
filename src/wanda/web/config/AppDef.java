@@ -22,6 +22,7 @@ import java.time.ZonedDateTime;
 import com.google.gson.annotations.SerializedName;
 
 import tilda.interfaces.JSONable;
+import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
 
 public class AppDef implements JSONable
@@ -46,6 +47,8 @@ public class AppDef implements JSONable
         Out.write("{");
         JSONUtil.print(Out, "path", true, this._path);
         JSONUtil.print(Out, "home", false, this._AppDefDetail._home);
+        JSONUtil.print(Out, "admin", false, this._AppDefDetail._admin);
+        JSONUtil.print(Out, "adminRole", false, TextUtil.isNullOrEmpty(this._AppDefDetail._admin) == true ? "" : "Admin"+this._id);
         JSONUtil.print(Out, "label", false, this._AppDefDetail._label);
         Out.write("}");
 

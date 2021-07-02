@@ -16,8 +16,8 @@
 
      { "name":"Role",
        "description":"blah blah",
-       "id"    : { "type":"STRING", "size":  10 },
-       "value" : { "type":"STRING", "size":  50 }
+       "id"    : { "type":"STRING", "size":  254 },
+       "value" : { "type":"STRING", "size":  254 }
      }
    ]
 
@@ -103,7 +103,7 @@
            { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
        ]
      ,"indices":[ 
-          { "name":"id"          , "columns":["id"]    , "db": true }
+          { "name":"Id"          , "columns":["id"]    , "db": true }
          ,{ "name":"Email"       , "columns":["email"] , "db": true }
          ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
        ]
@@ -225,6 +225,7 @@
      ,"columns": [
          {"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
         ,{"name":"home"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App home page"   }
+        ,{"name":"admin"   , "type":"STRING"  , "size":250, "nullable":true , "description":"App admin page"  }
         ,{"name":"label"   , "type":"STRING"  , "size":250, "nullable":false, "description":"Label for the application header"                }
         ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":true , "description":"App unique Id"   }
         ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
@@ -497,6 +498,7 @@
           { "sameas": "UserDetail.nameMiddle"                                 },
           { "sameas": "UserDetail.telMobile"                                  }
       ]
+     ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
         {
           "name": "AllButExceptRefnum"
@@ -537,6 +539,7 @@
      ,"joins": [
         { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
       ]
+     ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
         {
           "name": "AllButExceptRefnum"
@@ -604,12 +607,14 @@
          ,{ "sameas":"App.seq"           , "name":"appSeq"    }
          ,{ "sameas":"App.label"         , "name":"appLabel"  }
          ,{ "sameas":"App.home"          , "name":"appHome"   }
+         ,{ "sameas":"App.id"            , "name":"appId"     }
+         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
          ,{ "sameas":"App.path"          , "name":"appPath"   }
          ,{ "sameas":"App.active"        , "name":"appActive" }
        ]
      ,"subWhere": "App.deleted is null"
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appPath", "appActive" ] }
+          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive" ] }
        ]
      ,"queries": [
           { "name"  :"All",
@@ -630,9 +635,11 @@
          ,{ "sameas":"App.seq"           , "name":"appSeq"    }
          ,{ "sameas":"App.label"         , "name":"appLabel"  }
          ,{ "sameas":"App.home"          , "name":"appHome"   }
+         ,{ "sameas":"App.id"            , "name":"appId"     }
+         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
          ,{ "sameas":"App.path"          , "name":"appPath"   }
          ,{ "sameas":"App.active"        , "name":"appActive" }
-         ,{ "sameas":"User.refnum"    , "name":"userRefnum"}
+         ,{ "sameas":"User.refnum"       , "name":"userRefnum"}
          ,{ "sameas":"User.id"           , "name":"userId"    }
          ,{ "sameas":"User.email"        , "name":"userEmail" }
          ,{ "sameas":"AppUser.userRefnum", "name":"enabled", "expression":"case when ? is not null then 1 else 0 end", "type":"SHORT" }
@@ -648,6 +655,14 @@
             "from"  : [], 
             "wheres": [
                 { "db":"*", "clause":"appRefnum=?() and enabled=1" }
+             ],
+            "orderBy": ["userId"]
+          }
+         ,{ "name"  :"ActiveAppByUser",
+            "description":"Get users for app.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"appRefnum=?() and enabled=1 and appActive=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -669,7 +684,7 @@
           }
        ]
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appPath", "appActive", "userRefnum", "userId", "enabled" ] }
+          { "name": ""          , "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive", "userRefnum", "userId", "enabled" ] }
        ]
     }
 

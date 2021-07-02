@@ -19,7 +19,6 @@ package wanda.web;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -29,10 +28,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import tilda.interfaces.CSVable;
 import tilda.interfaces.JSONable;
 import tilda.utils.HttpStatus;
 import tilda.utils.TextUtil;
+import tilda.utils.json.JSONPrinter;
 import tilda.utils.json.JSONUtil;
 import wanda.web.exceptions.SimpleServletException;
 
@@ -51,7 +50,7 @@ public class ResponseUtil
 
     public enum ContentType
       {
-      JSON("text/json"), XML("text/xml"), CSV("text/csv"), HTML("text/html");
+      JSON("text/json"), XML("text/xml"), CSV("text/csv"), HTML("text/html"), TXT("text/plain");
 
         protected String _ContentType;
 
@@ -103,6 +102,14 @@ public class ResponseUtil
         if (_Out == null)
           setContentType(ContentType.JSON);
         JSONUtil.response(_Out, JsonExportName, L);
+      }
+
+    public void successJson(JSONPrinter J)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        J.print(_Out);
       }
     
     /**

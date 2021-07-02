@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
@@ -126,6 +127,21 @@ public class RequestUtil
     public String[] getParamsString(String Name, boolean Mandatory)
       {
         return getParamsString(Name, Mandatory, null, null, false);
+      }
+
+    public short getParamShort(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseShort(Name, Mandatory, _Req.getParameter(Name), _Errors);
+      }
+
+    public short getParamShort(String Name, short Default)
+      {
+        return ParseUtil.parseShort(_Req.getParameter(Name), Default);
+      }
+
+    public short[] getParamsShort(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseShort(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
       }
 
     public int getParamInt(String Name, boolean Mandatory)
@@ -230,7 +246,7 @@ public class RequestUtil
       {
         HttpSession S = SessionUtil.getSession(_Req);
         if (S != null)
-        S.setAttribute(SessionUtil.Attributes.USERREFNUM.toString(), Long.valueOf(U.getRefnum()));
+          S.setAttribute(SessionUtil.Attributes.USERREFNUM.toString(), Long.valueOf(U.getRefnum()));
       }
 
 
@@ -243,7 +259,7 @@ public class RequestUtil
       {
         HttpSession S = SessionUtil.getSession(_Req);
         if (S != null)
-        S.setAttribute(Name, Value);
+          S.setAttribute(Name, Value);
       }
 
     public void removeSessionUser()
@@ -399,4 +415,8 @@ public class RequestUtil
         return _Req.getServletPath();
       }
 
+    public Collection<? extends ServletRegistration> getServletList()
+      {
+        return _Req.getServletContext().getServletRegistrations().values();
+      }
   }

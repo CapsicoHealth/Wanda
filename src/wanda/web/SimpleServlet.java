@@ -34,6 +34,7 @@ import org.apache.logging.log4j.Logger;
 import tilda.db.Connection;
 import tilda.utils.HttpStatus;
 import wanda.data.User_Data;
+import wanda.servlets.helpers.RoleHelper;
 import wanda.web.config.WebBasics;
 import wanda.web.exceptions.SimpleServletException;
 
@@ -169,6 +170,24 @@ public abstract class SimpleServlet extends javax.servlet.http.HttpServlet imple
           {
             throw new SimpleServletException(HttpStatus.Forbidden, "User does not have access to this page");
           }
+      }
+
+    /**
+     * Tests is a user is a SuperAdmin or explicitely an App Admin, ie, a user with the role "Admin"+appId.
+     * 
+     * @param U The user to test
+     * @param appId The app id.
+     * @throws Exception A SimpleServletException exception of type HttpStatus.Forbidden
+     */
+    protected static boolean throwIfUserNotSuperOrAppAdmin(User_Data U, String appId)
+    throws Exception
+      {
+        boolean superAdmin = U.hasRoles(RoleHelper.SUPERADMIN);
+        if (!superAdmin && !U.hasRoles(new String[] { "Admin" + appId}))
+          {
+            throw new SimpleServletException(HttpStatus.Forbidden, "User does not have access to this page");
+          }
+        return superAdmin;
       }
 
     /**
