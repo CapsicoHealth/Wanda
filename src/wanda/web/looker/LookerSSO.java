@@ -48,9 +48,7 @@ public class LookerSSO
     final static protected String get(String url, String secret, String embed, String models, String embedURL)
     throws Exception
       {
-        String externalUserID = TextUtil.printJsonQuotedStringValue(EncryptionUtil.getToken(12, true));
-        String firstName = "\"Embed\"";
-        String lastName = "\"Embed\"";
+        String externalUserID = "\"cdwWMpVQygRJ\""; //TextUtil.printJsonQuotedStringValue(EncryptionUtil.getToken(12, true));
         String userPermissions = "[\"see_user_dashboards\",\"see_lookml_dashboards\",\"access_data\",\"see_looks\"]";
         String groupIDs = "[]";
         String externalGroupID = "\"\"";
@@ -82,7 +80,8 @@ public class LookerSSO
         + groupIDs + "\n"
         + externalGroupID + "\n"
         + userAttributes + "\n"
-        + accessFilters;
+        + accessFilters +"\n"
+        ;
         
         LOG.debug(urlToSign);
 
@@ -100,6 +99,8 @@ public class LookerSSO
         "&external_group_id=" + java.net.URLEncoder.encode(externalGroupID, "UTF-8") +
         "&user_attributes=" + java.net.URLEncoder.encode(userAttributes, "UTF-8") +
         "&force_logout_login=" + forceLoginLogout +
+        "&first_name=" + java.net.URLEncoder.encode(TextUtil.printJsonQuotedStringValue("Embed")) +
+        "&last_name=" + java.net.URLEncoder.encode(TextUtil.printJsonQuotedStringValue("Embed")) +
         "&signature=" + java.net.URLEncoder.encode(signature, "UTF-8")
 //        "&embed_domain=" + java.net.URLEncoder.encode(embedDomain, "UTF-8")
         ;

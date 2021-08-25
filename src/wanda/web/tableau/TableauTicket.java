@@ -29,13 +29,20 @@ public class TableauTicket
   {
     static final Logger LOG = LogManager.getLogger(TableauTicket.class.getName());
 
-    final static public String get(String subConfigName)
+
+    final static public String getTrustedUrl(String subConfigName)
     throws Exception
       {
-        String url  = WebBasics.getExtra("tableau-"+subConfigName, "url");
-        String user = WebBasics.getExtra("tableau-"+subConfigName, "user");
+        String url   = WebBasics.getExtra("tableau-"+subConfigName, "url");
+        String user  = WebBasics.getExtra("tableau-"+subConfigName, "user");
 
         return get(url, user);
+      }
+    
+    final static public String getSite(String subConfigName)
+    throws Exception
+      {
+        return WebBasics.getExtra("tableau-"+subConfigName, "site");
       }
     
     final static protected String get(String url, String userName)
@@ -45,7 +52,6 @@ public class TableauTicket
             LOG.debug("Getting Tableau URL for '"+url+"'"+userName+"'.");
             Map<String, String> params = new HashMap<>();
             params.put("username", userName);
-            // params.put("target_site", "Default");
             String response = FileUtil.getContentsFromPostUrl(url+"/trusted", params);
             if (response != null)
               return url + "/trusted/" + response;

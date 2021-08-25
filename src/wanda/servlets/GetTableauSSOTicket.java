@@ -47,11 +47,13 @@ public class GetTableauSSOTicket extends SimpleServlet
         String config = req.getParamString("config", true);
         req.throwIfErrors();
 
-        String tableauBaseUrl = TableauTicket.get(config);
+        String tableauBaseUrl = TableauTicket.getTrustedUrl(config);
+        String tableauBaseSite = TableauTicket.getSite(config);
         
         PrintWriter Out = res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');
         JSONUtil.print(Out, "tableauBaseUrl", true, tableauBaseUrl);
+        JSONUtil.print(Out, "tableauBaseSite", false, tableauBaseSite);
         JSONUtil.end(Out, '}');
       }
   }
