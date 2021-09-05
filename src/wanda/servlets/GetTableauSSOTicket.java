@@ -49,7 +49,8 @@ public class GetTableauSSOTicket extends SimpleServlet
 
         String tableauBaseUrl = TableauTicket.getTrustedUrl(config);
         String tableauBaseSite = TableauTicket.getSite(config);
-        
+        LOG.debug("One-time use Tableau trusted url: '"+tableauBaseUrl+"'");
+
         PrintWriter Out = res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');
         JSONUtil.print(Out, "tableauBaseUrl", true, tableauBaseUrl);
