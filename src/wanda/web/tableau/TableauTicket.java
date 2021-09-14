@@ -23,30 +23,41 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.utils.FileUtil;
+import tilda.utils.TextUtil;
 import wanda.web.config.WebBasics;
 
 public class TableauTicket
   {
     static final Logger LOG = LogManager.getLogger(TableauTicket.class.getName());
 
-    final static public String get(String subConfigName)
+
+    final static public String getTrustedUrl(String subConfigName)
     throws Exception
       {
-        String url  = WebBasics.getExtra("tableau-"+subConfigName, "url");
-        String user = WebBasics.getExtra("tableau-"+subConfigName, "user");
+        String url = WebBasics.getExtra("tableau-" + subConfigName, "url");
+        String user = WebBasics.getExtra("tableau-" + subConfigName, "user");
+        String targetSite = WebBasics.getExtra("tableau-" + subConfigName, "targetSite");
 
-        return get(url, user);
+        return get(url, user, targetSite);
       }
-    
-    final static protected String get(String url, String userName)
+
+    final static public String getSite(String subConfigName)
+    throws Exception
+      {
+        return WebBasics.getExtra("tableau-" + subConfigName, "site");
+      }
+
+    final static protected String get(String url, String userName, String targetSite)
       {
         try
           {
-            LOG.debug("Getting Tableau URL for '"+url+"'"+userName+"'.");
+            LOG.debug("Getting Tableau token for URL '" + url + "', user '" + userName + "' and site '"+TextUtil.print(targetSite, "default")+"'.");
             Map<String, String> params = new HashMap<>();
             params.put("username", userName);
-            // params.put("target_site", "Default");
-            String response = FileUtil.getContentsFromPostUrl(url+"/trusted", params);
+            if (TextUtil.isNullOrEmpty(targetSite) == false)
+              params.put("target_site", targetSite);
+            String response = FileUtil.getContentsFromPostUrl(url + "/trusted", params);
+            LOG.debug("    --> Tableau token: '" + response + "'.");
             if (response != null)
               return url + "/trusted/" + response;
           }
@@ -55,14 +66,15 @@ public class TableauTicket
             LOG.error(E);
           }
 
-        LOG.error("An exception occurred getting a tableau token from: "+url+"/"+userName);
+        LOG.error("An exception occurred getting a Tableau token for URL '" + url + "' and user '" + userName + "'");
         return url;
       }
 
     public static void main(String[] args)
+    throws Exception
       {
         LOG.debug("Getting a tableau token");
-        LOG.debug(get("https://xxxx.capsicohealth.com/trusted", "demo@capsicohealth.com"));
+        LOG.debug(getTrustedUrl("main"));
       }
 
   }
