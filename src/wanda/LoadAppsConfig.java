@@ -169,6 +169,7 @@ public class LoadAppsConfig
               A.setServices(ad._AppDefDetail._services);
               A.setPages(ad._AppDefDetail._pages);
               A.setId(ad._id);
+              A.setDeletedNull();
               if (A.write(C) == false) // not existing
                 {
                   A = App_Factory.lookupByLabel(ad._AppDefDetail._label); // search by label
@@ -180,6 +181,7 @@ public class LoadAppsConfig
                   A.setServices(ad._AppDefDetail._services);
                   A.setPages(ad._AppDefDetail._pages);
                   A.setId(ad._id);
+                  A.setDeletedNull();
                   if (A.write(C) == false)
                     {                  
                       A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, i);
