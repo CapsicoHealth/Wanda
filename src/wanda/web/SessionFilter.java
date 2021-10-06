@@ -239,7 +239,7 @@ public class SessionFilter implements javax.servlet.Filter
               MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
             LOG.info("\n"
             + "   ********************************************************************************************************************************************\n"
-//            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime()-T0) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
+            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime()-T0) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
             + "   ********************************************************************************************************************************************");
           }
         catch (Throwable T)
