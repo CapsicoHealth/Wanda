@@ -25,7 +25,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import javax.servlet.FilterChain;
@@ -40,6 +42,11 @@ import javax.servlet.http.HttpSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.utils.AnsiUtil;
@@ -49,6 +56,8 @@ import tilda.utils.HttpStatus;
 import tilda.utils.SystemValues;
 import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
+import wanda.data.AppUserView_Data;
+import wanda.data.AppUserView_Factory;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.Tenant_Data;
@@ -69,14 +78,11 @@ public class SessionFilter implements javax.servlet.Filter
     public void init(FilterConfig arg0)
     throws ServletException
       {
-        LOG.info("");
-        LOG.info("");
+        LOG.info("\n");
         LOG.info("*************************************************************************************************************************************");
         WebBasics.autoInit();
         ConnectionPool.autoInit();
-        LOG.info("*************************************************************************************************************************************");
-        LOG.info("");
-        LOG.info("");
+        LOG.info("*************************************************************************************************************************************\n\n");
       }
 
     @Override
@@ -140,6 +146,11 @@ public class SessionFilter implements javax.servlet.Filter
                 MasterDbUser.setUserDetail(UD);
               }
 
+            if (isAuthPassthrough == false && isAppAuthorized(Request, MasterConnection, MasterDbUser) == false)
+              {
+                Response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                throw new ServletException("Unauthorized Application Access");
+              }
 
             /* ******* Multi Tenant Logic ******* */
             User_Data TenantDbUser = null;
@@ -228,7 +239,7 @@ public class SessionFilter implements javax.servlet.Filter
               MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
             LOG.info("\n"
             + "   ********************************************************************************************************************************************\n"
-            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D" + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
+//            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime()-T0) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
             + "   ********************************************************************************************************************************************");
           }
         catch (Throwable T)
@@ -300,8 +311,7 @@ public class SessionFilter implements javax.servlet.Filter
           }
       }
 
-    private void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL,
-    HttpServletResponse Response, Throwable T, boolean skipRollback)
+    private void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL, HttpServletResponse Response, Throwable T, boolean skipRollback)
     throws Exception
       {
         // LOG.error(SystemValues.NEWLINEx2);
@@ -342,7 +352,7 @@ public class SessionFilter implements javax.servlet.Filter
             AL.setUser_rn(MasterDbUser.getRefnum());
             AL.setUserEmail(MasterDbUser.getEmail());
           }
-        AL.setResponseCode((short)Response.getStatus());
+        AL.setResponseCode((short) Response.getStatus());
         if (AL.write(MasterConnection) == false)
           throw new Exception("Cannot create a AccessLog record in the database");
       }
@@ -350,13 +360,11 @@ public class SessionFilter implements javax.servlet.Filter
     private AccessLog_Data LogRequestHeader(HttpServletRequest Request)
     throws Exception
       {
-        LOG.info(SystemValues.NEWLINEx2);
         AccessLog_Data AL = AccessLog_Factory.create(SessionUtil.getSession(Request).getId());
         AL.setIpAddress(Request.getRemoteAddr() + ":" + Request.getRemotePort());
         AL.setUrl(Request.getRequestURL().toString());
         AL.setServlet(Request.getServletPath());
-        String Str = getRequestHeaderLogStr(Request, AL, true);
-        LOG.info(Str);
+        LOG.info(getRequestHeaderLogStr(Request, AL, true));
         return AL;
       }
 
@@ -489,7 +497,7 @@ public class SessionFilter implements javax.servlet.Filter
       }
 
     // Helpers
-    private boolean isAuthPassthrough(HttpServletRequest Request)
+    private static boolean isAuthPassthrough(HttpServletRequest Request)
       {
         Iterator<String> I = WebBasics.getAuthPassthroughs();
         while (I.hasNext() == true)
@@ -501,7 +509,7 @@ public class SessionFilter implements javax.servlet.Filter
         return false;
       }
 
-    private boolean isMasterPath(HttpServletRequest Request)
+    private static boolean isMasterPath(HttpServletRequest Request)
       {
         Iterator<String> I = WebBasics.getMasterPaths();
         while (I.hasNext() == true)
@@ -512,6 +520,59 @@ public class SessionFilter implements javax.servlet.Filter
           }
         return false;
       }
+
+    /**
+     * Cache list of app paths a user has access to
+     */
+    static private Cache<Long, String[]> _USER_APPS_CACHE = CacheBuilder.newBuilder().maximumSize(200).expireAfterWrite(5, TimeUnit.MINUTES).build();
+
+    /**
+     * Checks whether an incoming .jsp URL is to an app authorized for the user
+     * @param request
+     * @param C
+     * @param U
+     * @return
+     * @throws Exception
+     */
+    private static boolean isAppAuthorized(HttpServletRequest request, Connection C, User_Data U)
+    throws Exception
+      {
+        // Doesn't apply to servlet calls at this time.
+        if (request.getServletPath().endsWith(".jsp") == false)
+         return true;
+
+        // Check the cache
+        String[] appPaths = _USER_APPS_CACHE.getIfPresent(U.getRefnum());
+        if (appPaths == null)
+          {
+            // Update the cache with an array of appPaths.
+            List<AppUserView_Data> AUVL = AppUserView_Factory.getUserApps(C, U, U.getRefnum(), 0, -1);
+            appPaths = new String[AUVL.size()];
+            for (int i = 0; i < AUVL.size(); ++i)
+              {
+                AppUserView_Data AUV = AUVL.get(i);
+                String path = AUV.getAppPath() + AUV.getAppHome();
+                // the home path includes the jsp, i.e., x/y/z/home.jsp, so we have to remove the last part to get the path.
+                int slash = path.lastIndexOf("/");
+                if (slash == -1)
+                  throw new Exception("Application " + AUV.getAppLabel() + " is defined with an invalid app path that doesn't have a forward slash '/'.");
+                appPaths[i] = path.substring(0, slash);
+              }
+            _USER_APPS_CACHE.put(U.getRefnum(), appPaths);
+          }
+        else
+          LOG.debug("AppUserView list already cached for this user");
+        
+        // Check the incoming request to match the 
+        String servletPath = request.getContextPath() + request.getServletPath();
+        for (String path : appPaths)
+          if (servletPath.startsWith(path) == true)
+            return true;
+
+        // Nothing found... so bad news.
+        return false;
+      }
+
 
     private UserDetail_Data getUserDetail(Connection C, User_Data U, HttpServletResponse Response)
     throws Exception
