@@ -48,11 +48,12 @@ public class LookerSSO
     final static protected String get(String url, String secret, String embed, String models, String embedURL)
     throws Exception
       {
-        String externalUserID = "\"cdwWMpVQygRJ\""; //TextUtil.printJsonQuotedStringValue(EncryptionUtil.getToken(12, true));
+        String externalUserID = "\"cdwWMpVQygRJ\""; // Random stuff.
         String userPermissions = "[\"see_user_dashboards\",\"see_lookml_dashboards\",\"access_data\",\"see_looks\"]";
         String groupIDs = "[]";
-        String externalGroupID = "\"\"";
-        int sessionLength = 60*60*24*7; // 7 days
+//        String externalGroupID = "\"\"";
+        String externalGroupID = "";
+        int sessionLength = 60*60*24*2; // 2 days
         boolean forceLoginLogout = true;
         String accessFilters = "{}";
         String userAttributes = "{}";
@@ -80,11 +81,11 @@ public class LookerSSO
         + groupIDs + "\n"
         + externalGroupID + "\n"
         + userAttributes + "\n"
-        + accessFilters +"\n"
+        + accessFilters // It is VERY important to not have a \n here as a final blank like breaks evrything.
         ;
         
-        LOG.debug(urlToSign);
-
+//        LOG.debug(urlToSign);
+        
         String signature = EncryptionUtil.hmacSHA1(urlToSign, secret);
 
         // you need to %20-encode each parameter before you add to the URL
@@ -99,13 +100,12 @@ public class LookerSSO
         "&external_group_id=" + java.net.URLEncoder.encode(externalGroupID, "UTF-8") +
         "&user_attributes=" + java.net.URLEncoder.encode(userAttributes, "UTF-8") +
         "&force_logout_login=" + forceLoginLogout +
-        "&first_name=" + java.net.URLEncoder.encode(TextUtil.printJsonQuotedStringValue("Embed")) +
-        "&last_name=" + java.net.URLEncoder.encode(TextUtil.printJsonQuotedStringValue("Embed")) +
+        "&first_name=" + java.net.URLEncoder.encode(TextUtil.printJsonQuotedStringValue("Embed"), "UTF-8") +
+        "&last_name=" + java.net.URLEncoder.encode(TextUtil.printJsonQuotedStringValue("Embed"), "UTF-8") +
         "&signature=" + java.net.URLEncoder.encode(signature, "UTF-8")
-//        "&embed_domain=" + java.net.URLEncoder.encode(embedDomain, "UTF-8")
         ;
 
-        return host + path + '?' + signedURL;
+        return "https://" + host + path + '?' + signedURL;
 
       }
 
@@ -114,7 +114,7 @@ public class LookerSSO
     throws Exception
       {
         LOG.debug("Getting the Looker sso embed url");
-        String embedURL = "/embed/dashboards/7?CountyName=&StateCode=&filter_config=%7B%22CountyName%22:%5B%7B%22type%22:%22%3D%22,%22values%22:%5B%7B%22constant%22:%22%22%7D,%7B%7D%5D,%22id%22:4%7D%5D,%22StateCode%22:%5B%7B%22type%22:%22%3D%22,%22values%22:%5B%7B%22constant%22:%22%22%7D,%7B%7D%5D,%22id%22:5%7D%5D%7D";
+        String embedURL = "/embed/dashboards/7";
         LOG.debug(get(embedURL, "asthma"));
       }
 
