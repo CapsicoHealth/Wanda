@@ -16,6 +16,7 @@
 
 package wanda.web.config;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,9 +63,9 @@ public class WebBasicsDefApps
                                                                                                 ,"/svc/config"
                                                                                                });
     
-    @SerializedName("apps"            )  public List<AppDef> _apps                 = null;
-    @SerializedName("authPassthroughs")  public List<String> _authPassthroughs     = _authPassthroughsInternal;
-    @SerializedName("masterPaths"     )  public List<String> _masterPaths          = _masterPathsInternal;
+    @SerializedName("apps"             )  public List<AppDef> _apps                 = null;
+    @SerializedName("authPassthroughs" )  public List<String> _authPassthroughs     = _authPassthroughsInternal;
+    @SerializedName("masterPaths"      )  public List<String> _masterPaths          = _masterPathsInternal;
     /*@formatter:on*/
 
     public boolean validate()

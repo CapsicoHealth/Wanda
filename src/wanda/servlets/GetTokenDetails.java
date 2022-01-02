@@ -51,11 +51,11 @@ public class GetTokenDetails extends SimpleServlet
         String token = req.getParamString("token", true);
         req.throwIfErrors();
 
-        ListResults<UserResetPasswordView_Data> users = UserResetPasswordView_Factory.lookupWherePswdResetCodeLike(C, token, 0, 1);
-        if (users.size() < 1 || !users.get(0).read(C))
+        UserResetPasswordView_Data user = UserResetPasswordView_Factory.lookupByPswdResetCode(token);
+        if (user.read(C) == false)
           throw new NotFoundException("token", "" + token);
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        JSONUtil.response(Out, "", users.get(0));
+        JSONUtil.response(Out, "Mini", user);
       }
   }

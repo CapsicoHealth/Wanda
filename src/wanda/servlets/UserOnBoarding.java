@@ -58,6 +58,7 @@ public class UserOnBoarding extends SimpleServlet
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
+        String email = Req.getParamString("email", true);
         String token = Req.getParamString("token", true);
         String password = Req.getParamString("password", true);
         String phone = Req.getParamString("phone", false);
@@ -72,11 +73,13 @@ public class UserOnBoarding extends SimpleServlet
           }
         Req.throwIfErrors();
 
-        ListResults<User_Data> users = User_Factory.lookupWherePswdResetCodeLike(C, token, 0, 1);
-        if (users.size() < 1 || (users.size() > 0 && users.get(0).read(C) == false))
+        User_Data user = User_Factory.lookupByPswdResetCode(token);
+        if (user.read(C) == false)
           throw new NotFoundException("User Token", "" + token);
+        
+        if (user.getEmail().equalsIgnoreCase(email) == false)
+          throw new NotFoundException("User email", "" + email);
 
-        User_Data user = users.get(0);
         /*
          * find user with +token
          * validate +phone

@@ -19,7 +19,6 @@ package wanda.servlets;
 import javax.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
-import tilda.db.ListResults;
 import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
@@ -44,30 +43,32 @@ public class Verifications extends SimpleServlet
     throws Exception
       {
         String action = Req.getParamString("action", true);
-        String token  = Req.getParamString("token", true);
+        String token = Req.getParamString("token", true);
         Req.throwIfErrors();
-        
+
         if (action.equals("emailVerification"))
           {
-            ListResults<User_Data> users = User_Factory.lookupWhereEmailVerificationCodeLike(C, token, 0, 1);
-            if ( users.size() > 0 && users.get(0).read(C) == true) {
-              User_Data user = users.get(0);
-              user.setEmail(user.getEmailUnverified());
-              user.setEmailUnverifiedNull();
-              user.setEmailVerificationCodeNull();
-              user.write(C);
-              
-              UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());
-              if (contact.read(C) == false)
-                {
-                  contact = UserDetail_Factory.create(user.getRefnum(), user.getId(), user.getId());
-                }
-              contact.setEmailHome(user.getEmail());
-              contact.write(C);              
-              
-            } else {
-              throw new BadRequestException("token", "is Invalid / Expired");
-            }
+            User_Data user = User_Factory.lookupByEmailVerificationCode(token);
+            if (user.read(C) == true)
+              {
+                user.setEmail(user.getEmailUnverified());
+                user.setEmailUnverifiedNull();
+                user.setEmailVerificationCodeNull();
+                user.write(C);
+
+                UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());
+                if (contact.read(C) == false)
+                  {
+                    contact = UserDetail_Factory.create(user.getRefnum(), user.getId(), user.getId());
+                  }
+                contact.setEmailHome(user.getEmail());
+                contact.write(C);
+
+              }
+            else
+              {
+                throw new BadRequestException("token", "is Invalid / Expired");
+              }
           }
         Res.success();
       }

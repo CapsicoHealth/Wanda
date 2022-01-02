@@ -127,7 +127,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
     public void sendForgotPswdEmail(Connection C)
     throws Exception
       {
-        setPswdResetCode(EncryptionUtil.getToken(6, true));
+        setPswdResetCode(EncryptionUtil.getToken(12, true));
         setPswdResetCreateNow();
         write(C);
         String[] to = { getEmail()
@@ -155,9 +155,8 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 sb.append("?action=setPswd");
                 sb.append("&token=");
                 sb.append(getPswdResetCode());
-                sb.append("'>Click to reset password</a></p>");
-                sb.append("or <p> use code: <b>" + getPswdResetCode() + "</b> to reset your password.</p>");
-                SystemMailSender.sendMail(to, cc, bcc, "Reset your password --" + WebBasics.getAppName(), sb.toString(), true, true);
+                sb.append("'>Click to reset password</a></p>.</p>");
+                SystemMailSender.sendMail(to, cc, bcc, "Reset your password -- " + WebBasics.getAppName(), sb.toString(), true, true);
               }
           }.start();
       }

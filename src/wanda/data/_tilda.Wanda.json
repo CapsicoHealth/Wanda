@@ -82,23 +82,19 @@
      ,"foreign": [
        ]
      ,"queries": [
-        {
-            "name": "PswdResetCodeLike"
-            ,"description": "User with Given Reset Password Code"
-            ,"wheres": [
-                { "db": "*", "clause": "pswdResetCode LIKE ?()" }
-            ]
-            ,"orderBy": ["email ASC"]
-        }
-       ,{
-            "name": "EmailVerificationCodeLike"
-            ,"description": "User with Given Email Verification Code"
-            ,"wheres": [
-                { "db": "*", "clause": "emailVerificationCode LIKE ?()" }
-            ]
-            ,"orderBy": ["email ASC"]
-        }
-    ]
+          { "name": "PswdResetCode"
+           ,"description": "User with Given Reset Password Code"
+           ,"wheres": [
+               { "db": "*", "clause": "pswdResetCode = ?()" }
+             ]
+          }
+         ,{ "name": "EmailVerificationCode"
+           ,"description": "User with Given Email Verification Code"
+           ,"wheres": [
+               { "db": "*", "clause": "emailVerificationCode = ?()" }
+             ]
+          }
+       ]
      ,"outputMaps": [
            { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
        ]
@@ -267,6 +263,14 @@
             ],
            "orderBy":["seq asc", "label asc"]
          }
+        ,{ "name"  :"Ids",
+           "description":"Get app list by IDs.",
+           "from"  :[],
+           "wheres":[
+               { "db":"*", "clause":"TILDA.in(id, ?[])" }
+            ],
+           "orderBy":["label asc"]
+         }
        ]
      ,"json": [
          { "name":"", "columns":["refnum", "path", "home", "label", "seq", "icon", "active"] }
@@ -311,6 +315,7 @@
          {"name":"id"              , "type":"STRING"  , "size":250, "nullable":false, "description":"Configuration Id"    }
         ,{"name":"masterPaths"     , "type":"STRING[]", "description":"Master paths that receive master connections (in a multi-tenant environment)" }
         ,{"name":"authPassthroughs", "type":"STRING[]", "description":"Path allowed in without authentication, i.e., anonymous"                      }
+        ,{"name":"guestPaths"      , "type":"STRING[]", "description":"Path allowed for guest users"                      }
        ]
      ,"foreign": [
        ]
@@ -468,16 +473,16 @@
     "subWhere": "User.locked is null AND User.deleted is null AND UserDetail.deleted is null AND User.loginCount = 0",
     "queries": [
       {
-        "name": "PswdResetCodeLike"
+        "name": "PswdResetCode"
         ,"description": "User with Given Reset Password Code"
         ,"wheres": [
-          { "db": "*", "clause": "pswdResetCode LIKE ?()" }
+          { "db": "*", "clause": "pswdResetCode = ?()" }
         ]
-        ,"orderBy": ["userRefnum ASC"]
       }
     ],
       "json": [
-        { "name": "", "columns": ["userRefnum", "pswdResetCode", "id", "email", "nameTitle", "nameFirst", "nameMiddle", "nameLast"] }     
+         { "name": "", "columns": ["userRefnum", "pswdResetCode", "id", "email", "nameTitle", "nameFirst", "nameMiddle", "nameLast"] }     
+        ,{ "name": "Mini", "columns": ["pswdResetCode", "nameFirst", "nameLast"] }     
       ]
     },
     {

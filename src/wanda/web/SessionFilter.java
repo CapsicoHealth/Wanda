@@ -44,8 +44,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
@@ -203,18 +201,28 @@ public class SessionFilter implements javax.servlet.Filter
                   }
               }
 
+            User_Data mainUser = null;
             // Skip for SuperAdmin
             if (MasterDbUser != null && MasterDbUser.hasRoles(RoleHelper.SUPERADMIN))
               {
                 Request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(), MasterConnection);
-                Request.setAttribute(RequestUtil.Attributes.USER.toString(), MasterDbUser);
+                mainUser = MasterDbUser;
               }
             else
               {
                 Request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(),
                 isMultiTenant ? (isMasterPath ? MasterConnection : TenantConnection) : MasterConnection);
-                Request.setAttribute(RequestUtil.Attributes.USER.toString(), isMultiTenant ? (isMasterPath ? MasterDbUser : TenantDbUser) : MasterDbUser);
+                mainUser = isMultiTenant ? (isMasterPath ? MasterDbUser : TenantDbUser) : MasterDbUser;
               }
+            Request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
+            if (mainUser != null && mainUser.hasRoles(RoleHelper.GUEST) == true && isAuthPassthrough == false && isGuestPath(Request) == false)
+              {
+                LOG.info("User is a guest and is not cleared for this url.");
+                Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized access");
+                throw new ServletException("Unauthorized access");
+              }
+
+            
 
             // LOG.info("********************************************************************************************************************************************\n");
             Response.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -521,6 +529,18 @@ public class SessionFilter implements javax.servlet.Filter
         return false;
       }
 
+    private static boolean isGuestPath(HttpServletRequest Request)
+      {
+        Iterator<String> I = WebBasics.getGuestPaths();
+        while (I != null && I.hasNext() == true)
+          {
+            String u = I.next();
+            if (Request.getServletPath().indexOf(u) >= 0)
+              return true;
+          }
+        return false;
+      }
+    
     /**
      * Cache list of app paths a user has access to
      */
