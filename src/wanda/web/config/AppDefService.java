@@ -18,7 +18,6 @@ package wanda.web.config;
 
 import java.io.Writer;
 import java.time.ZonedDateTime;
-import java.util.List;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -26,14 +25,11 @@ import tilda.interfaces.JSONable;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
 
-public class AppDefDetails implements JSONable
+public class AppDefService implements JSONable
   {
     /*@formatter:off*/
-    @SerializedName("label"   ) public String       _label     = null;
-    @SerializedName("home"    ) public String       _home      = null;
-    @SerializedName("admin"   ) public String       _admin     = null;
-    @SerializedName("services") public List<AppDefService> _services  = null;
-    
+    @SerializedName("path" )  public String  _path   = null;
+    @SerializedName("access") public String _access  = null;
     /*@formatter:on*/
 
     @Override
@@ -48,12 +44,12 @@ public class AppDefDetails implements JSONable
     throws Exception
       {
         Out.write("{");
-        JSONUtil.print(Out, "label", true, this._label);
-        JSONUtil.print(Out, "home", false, this._home);
-        JSONUtil.print(Out, "admin", false, this._admin);
-        JSONUtil.print(Out, "services", "", false, _services, "  ");
+        JSONUtil.print(Out, "path"  , true , this._path);
+        JSONUtil.print(Out, "access", false, this._access);
         Out.write("}");
       }
+    
+    protected static final String[] _ACCESS_VALUES = new String[] {"A", "GST", "AA"};
 
     @Override
     public void toJSON(Writer Out, String JsonExportName, String lead, boolean FullObject, ZonedDateTime lastsync)
@@ -62,27 +58,22 @@ public class AppDefDetails implements JSONable
         throw new Exception("No JSON sync exporter " + JsonExportName + " for PasswordRule.");
       }
 
-    public boolean validate(String srcFile)
+    public boolean validate(String appLabel)
       {
         boolean OK = true;
 
-        if (TextUtil.isNullOrEmpty(_label) == true)
+        if (TextUtil.isNullOrEmpty(_path) == true)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " didn't define any 'label' property");
-            OK = false;
-          }
-
-        if (TextUtil.isNullOrEmpty(_home) == true)
-          {
-            WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " didn't define any 'home' property");
+            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " defined a service value with no path.");
             OK = false;
           }
         
-        if (_services != null)
-         for (AppDefService s : _services)
-          if (s.validate(_label) == false)
-           OK = false;
-
+        if (_access != null && TextUtil.findElement(_ACCESS_VALUES, _access, true, 0) == -1)
+          {
+            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " define a service '"+_path+"' with an access flag '"+_access+"' which is not one of the following: "+TextUtil.print(_ACCESS_VALUES)+".");
+            OK = false;
+          }
+        
         return OK;
       }
   }

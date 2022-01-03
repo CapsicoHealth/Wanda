@@ -226,8 +226,21 @@
         ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":true , "description":"App unique Id"   }
         ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
         ,{"name":"icon"    , "type":"STRING"  , "size":250,                   "description":"Icon for the application"                        }
-        ,{"name":"pages"   , "type":"STRING[]",                               "description":"Other pages for this app, besides the home page" }
-        ,{"name":"services", "type":"STRING[]",                               "description":"Services URLs consumed by this app"              }
+        ,{"name":"services", "type":"JSON[]"  ,             "nullable": true, "description":"Service definition"
+          ,"jsonSchema": {
+              "typeName": "ServiceDefinition"
+             ,"descr": "Define the services that comprise this app"
+             ,"fields": [
+                 {"name": "path"  , "type": "STRING", "description":"The path for the service" }
+                ,{"name": "access", "type": "STRING", "description":"The access level required for the servvice: 'AA' (for app admin), GST (for guest), 'A' (for authenticated) or null (for general access). Must match the implementation of the servlet for the service if applicable." }
+                ]
+             ,"validation": {
+                 "rule": ["path IS NOT NOE and (access is null or access in ('AA', 'GST', 'A'))"
+                         ]
+                ,"descr": "Path must be supplied and access must be set appropriately"
+                }
+             }
+         }
         ,{"name":"active"  , "type":"BOOLEAN" ,                               "description":"App's actioe status"                             }
        ]
      ,"primary": { "autogen": true }

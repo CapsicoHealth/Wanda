@@ -56,6 +56,7 @@ import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
+import wanda.data.App_Data;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.Tenant_Data;
@@ -63,6 +64,7 @@ import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
+import wanda.data._Tilda.TILDA__APP.ServiceDefinition;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.config.WebBasics;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -215,14 +217,13 @@ public class SessionFilter implements javax.servlet.Filter
                 mainUser = isMultiTenant ? (isMasterPath ? MasterDbUser : TenantDbUser) : MasterDbUser;
               }
             Request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
-            if (mainUser != null && mainUser.hasRoles(RoleHelper.GUEST) == true && isAuthPassthrough == false && isGuestPath(Request) == false)
+            // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path.
+            if (isAuthPassthrough == false && isMasterPath == false && mainUser != null && mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
               {
                 LOG.info("User is a guest and is not cleared for this url.");
-                Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized access");
-                throw new ServletException("Unauthorized access");
+                Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
+                throw new ServletException("Unauthorized Guest Access");
               }
-
-            
 
             // LOG.info("********************************************************************************************************************************************\n");
             Response.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -247,7 +248,7 @@ public class SessionFilter implements javax.servlet.Filter
               MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
             LOG.info("\n"
             + "   ********************************************************************************************************************************************\n"
-            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime()-T0) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
+            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime() - T0) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
             + "   ********************************************************************************************************************************************");
           }
         catch (Throwable T)
@@ -529,18 +530,25 @@ public class SessionFilter implements javax.servlet.Filter
         return false;
       }
 
-    private static boolean isGuestPath(HttpServletRequest Request)
+    private static boolean isGuestPath(User_Data user, HttpServletRequest Request)
       {
-        Iterator<String> I = WebBasics.getGuestPaths();
-        while (I != null && I.hasNext() == true)
+        if (user == null)
+          return false;
+
+        for (App_Data app : WebBasics.getApps())
           {
-            String u = I.next();
-            if (Request.getServletPath().indexOf(u) >= 0)
-              return true;
+            // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
+            // doesn't have access to. This is a larger issue of app service access control which we are still developing!
+            if (app.getServices() != null)
+              for (ServiceDefinition sd : app.getServices())
+                {
+                  if (Request.getServletPath().equals(sd._path) == true && sd._access.equals("GST") == true)
+                    return true;
+                }
           }
         return false;
       }
-    
+
     /**
      * Cache list of app paths a user has access to
      */
@@ -548,6 +556,7 @@ public class SessionFilter implements javax.servlet.Filter
 
     /**
      * Checks whether an incoming .jsp URL is to an app authorized for the user
+     * 
      * @param request
      * @param C
      * @param U
@@ -559,7 +568,7 @@ public class SessionFilter implements javax.servlet.Filter
       {
         // Doesn't apply to servlet calls at this time.
         if (request.getServletPath().endsWith(".jsp") == false)
-         return true;
+          return true;
 
         // Check the cache
         String[] appPaths = _USER_APPS_CACHE.getIfPresent(U.getRefnum());
@@ -582,8 +591,8 @@ public class SessionFilter implements javax.servlet.Filter
           }
         else
           LOG.debug("AppUserView list already cached for this user");
-        
-        // Check the incoming request to match the 
+
+        // Check the incoming request to match the
         String servletPath = request.getContextPath() + request.getServletPath();
         for (String path : appPaths)
           if (servletPath.startsWith(path) == true)

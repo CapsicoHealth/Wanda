@@ -59,23 +59,30 @@ public abstract class SimpleServlet extends javax.servlet.http.HttpServlet imple
 
     public SimpleServlet(boolean mustAuthenticate)
       {
-        this(mustAuthenticate, false);
+        this(mustAuthenticate, false, false);
       }
 
     public SimpleServlet(boolean mustAuthenticate, boolean postOnly)
       {
-        _MustAuth = mustAuthenticate;
-        _PostOnly = postOnly;
+        this(mustAuthenticate, postOnly, false);
       }
 
-    protected final boolean _MustAuth;
-    protected final boolean _PostOnly;
+    public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed)
+      {
+        _mustAuth = mustAuthenticate;
+        _postOnly = postOnly;
+        _guestAllowed = guestAllowed;
+      }
+
+    protected final boolean _mustAuth;
+    protected final boolean _postOnly;
+    protected final boolean _guestAllowed;
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
     throws ServletException, IOException
       {
-        if (_PostOnly == true)
+        if (_postOnly == true)
           throw new SimpleServletException(HttpStatus.MethodNotAllowed, "This endpoint can only be called as a POST.");
         doPost(request, response);
       }
@@ -96,10 +103,11 @@ public abstract class SimpleServlet extends javax.servlet.http.HttpServlet imple
               throw new SimpleServletException(HttpStatus.InternalServerError, "No DB connection found in the request's attributes!");
 
             U = (User_Data) request.getAttribute(RequestUtil.Attributes.USER.toString());
-            if (U == null && _MustAuth == true)
-              {
-                throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthenticated session");
-              }
+            if (U == null && _mustAuth == true)
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
+            if (U != null && _mustAuth == true && U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized guest request");
+
             justDo(req, res, C, U);
           }
         catch (SimpleServletException E)
@@ -183,7 +191,8 @@ public abstract class SimpleServlet extends javax.servlet.http.HttpServlet imple
     throws Exception
       {
         boolean superAdmin = U.hasRoles(RoleHelper.SUPERADMIN);
-        if (!superAdmin && !U.hasRoles(new String[] { "Admin" + appId}))
+        if (!superAdmin && !U.hasRoles(new String[] { "Admin" + appId
+        }))
           {
             throw new SimpleServletException(HttpStatus.Forbidden, "User does not have access to this page");
           }

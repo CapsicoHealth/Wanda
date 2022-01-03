@@ -506,6 +506,10 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         return hasRoles(RoleHelper.SUPERADMIN);
       }
+    public boolean isGuest()
+      {
+        return hasRoles(RoleHelper.GUEST);
+      }
 
     public static boolean isUserSuperAdmin(User_Data U)
       {
