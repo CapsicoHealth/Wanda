@@ -22,6 +22,7 @@ package wanda.servlets;
 import javax.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
+import tilda.utils.CollectionUtil;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.servlets.helpers.RoleHelper;
@@ -51,23 +52,29 @@ public class GuestRegistration extends SimpleServlet
 
         if (WebBasics.getGuestRegistrationAllowed() == false)
           Req.addError("email", "Guest registrations are not allowed");
-        
+
         User_Data user = User_Factory.lookupByEmail(email);
+        boolean previousUser = false;
+        // If the user exists and, is not a guest or has already registered, then this is a collision.
         if (user.read(C) == true)
-         Req.addError("email", "This email is invalid or has already been registered");
-        
+          {
+            if (user.isGuest() == false || user.getLoginCount() > 0)
+              Req.addError("email", "This email is invalid or has already been used");
+            else
+              previousUser = true;
+          }
+
         Req.throwIfErrors();
 
         String[] guestRole = RoleHelper.GUEST;
-        long[]  appRefnums = WebBasics.getGuestRegistrationAppRefnums();
+        long[] appRefnums = WebBasics.getGuestRegistrationAppRefnums();
+        long[] tenantRefnums = WebBasics.getGuestRegistrationTenantRefnums();
 
-        User_Data emailUser = User_Factory.lookupByEmail(email);
-        if (emailUser.read(C))
-          Req.addError("email", "User already exists with email '" + email + "'");
-        Req.throwIfErrors();
-        User_Data.inviteUser(C, email, fName, lName, guestRole, null, appRefnums);
+        if (previousUser == false)
+          User_Data.inviteUser(C, email, fName, lName, guestRole, tenantRefnums, appRefnums);
+        else
+          User_Data.updateDetailsAndInvite(C, user, email, fName, lName, guestRole, appRefnums, CollectionUtil.toList(tenantRefnums), new long[] { });
 
-        Req.throwIfErrors();
         Res.success();
       }
 

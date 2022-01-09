@@ -37,80 +37,80 @@ public class UserTenantSync
 
     protected static final Logger LOG = LogManager.getLogger(UserTenantSync.class.getName());
 
-    public static void sync(Connection MasterConnection,
-    User_Data MasterDbUser, long TenantUserRefnum)
+    public static void sync(Connection masterConnection, User_Data masterDbUser, long tenantUserRefnum)
     throws Exception
       {
-        Connection TenantConnection = null;
+        Connection tenantConnection = null;
         Exception currentException = null;
-        UserDetail_Data MasterDbPerson = MasterDbUser.getUserDetails(); 
+        UserDetail_Data masterDbPerson = masterDbUser.getUserDetails();
         try
           {
             // Load MasterDbPerson
-            if (MasterDbPerson == null)
+            if (masterDbPerson == null)
               {
-                MasterDbPerson = UserDetail_Factory.lookupByUserRefnum(MasterDbUser.getRefnum());
-                if(MasterDbPerson.read(MasterConnection) == false)
-                  {
-                    String ErrMessage = "Failed to load Person: "+MasterDbUser.getRefnum()+"";
-                    throw new ServletException(ErrMessage);
-                  }            
-              }
-            
-            LOG.info("********************Sync**************************");
-            TenantUser_Data TenantUser = TenantUser_Factory.lookupByPrimaryKey(TenantUserRefnum);
-            if(TenantUser.read(MasterConnection) == false)
-              {
-                String ErrMessage = "Cannot Sync User "+MasterDbUser.getRefnum()+": No TenantUser Data with refnum "+TenantUserRefnum;
-                throw new ServletException(ErrMessage);
-              }
-            Tenant_Data Tenant = Tenant_Factory.lookupByPrimaryKey(TenantUser.getTenantRefnum());
-            if(Tenant.read(MasterConnection) == false)
-              {
-                String ErrMessage = "Cannot Sync User "+MasterDbUser.getRefnum()+": No Tenant Data with refnum "+TenantUser.getTenantRefnum();
-                throw new ServletException(ErrMessage);
-              }
-            TenantConnection = ConnectionPool.get(Tenant.getConnectionId());
-            
-            User_Data TenantDbUser = User_Factory.lookupByPrimaryKey(MasterDbUser.getRefnum());
-            if(TenantDbUser.read(TenantConnection) == true)
-              {
-                MasterDbUser.copyTo(TenantDbUser);
-                TenantDbUser.write(TenantConnection);
-              }              
-            else
-              {
-                User_Data tenantDbUser = User_Data.cloneWithCreateMode(MasterDbUser);
-                tenantDbUser.write(TenantConnection);
+                masterDbPerson = UserDetail_Factory.lookupByUserRefnum(masterDbUser.getRefnum());
+                if (masterDbPerson.read(masterConnection) == false)
+                  throw new ServletException("Failed to load Person: " + masterDbUser.getRefnum() + "");
               }
 
-            UserDetail_Data TenantDbPerson = UserDetail_Factory.lookupByUserRefnum(MasterDbUser.getRefnum());
-            MasterDbPerson.copyTo(TenantDbPerson);
-            if (TenantDbPerson.write(TenantConnection) == false)
+            LOG.info("\n\n\n******************** Sync Start ***********************************************************************************\n");
+            TenantUser_Data tenantUser = TenantUser_Factory.lookupByPrimaryKey(tenantUserRefnum);
+            if (tenantUser.read(masterConnection) == false)
+              throw new ServletException("Cannot Sync User " + masterDbUser.getRefnum() + ": No TenantUser Data with refnum " + tenantUserRefnum);
+            Tenant_Data tenant = Tenant_Factory.lookupByPrimaryKey(tenantUser.getTenantRefnum());
+            if (tenant.read(masterConnection) == false)
+              throw new ServletException("Cannot Sync User " + masterDbUser.getRefnum() + ": No Tenant Data with refnum " + tenantUser.getTenantRefnum());
+
+            LOG.debug("\n\nMasterDbUser: " + masterDbUser.getRefnum()
+            + "\nMasterDbPerson: " + masterDbPerson.getUserRefnum()
+            + "\n\n");
+
+            tenantConnection = ConnectionPool.get(tenant.getConnectionId());
+            User_Data tenantDbUser = User_Factory.lookupByEmail(masterDbUser.getEmail());
+            if (tenantDbUser.read(tenantConnection) == true)
               {
-                TenantDbPerson = UserDetail_Data.cloneWithCreateMode(MasterDbPerson);
-                LOG.debug("\n\nMasterDbUser: "  +MasterDbUser.getRefnum()
-                           +"\nTenantDbUser: "  +TenantDbUser.getRefnum()
-                           +"\nMasterDbPerson: "+MasterDbPerson.getUserRefnum()                           
-                           +"\nTenantDbPerson: "+TenantDbPerson.getUserRefnum()
-                           +"\n\n");
-                TenantDbPerson.write(TenantConnection);
+                masterDbUser.copyTo(tenantDbUser);
+                if (tenantDbUser.write(tenantConnection) == false)
+                  throw new ServletException("Database error: cannot update tenant user");
               }
-            TenantConnection.commit();
+            else
+              {
+                tenantDbUser = User_Data.cloneWithCreateMode(masterDbUser);
+                if (tenantDbUser.write(tenantConnection) == false)
+                  throw new ServletException("Database error: cannot create tenant user");
+                LOG.debug("\n\nmasterDbUser: " + masterDbUser.getRefnum()
+                + "\ntenantDbUser: " + tenantDbUser.getRefnum()
+                + "\n\n");
+              }
+
+            UserDetail_Data tenantDbUserDetail = UserDetail_Factory.lookupByUserRefnum(tenantDbUser.getRefnum());
+            masterDbPerson.copyTo(tenantDbUserDetail);
+            if (tenantDbUserDetail.write(tenantConnection) == false)
+              {
+                tenantDbUserDetail = UserDetail_Data.cloneWithCreateMode(masterDbPerson);
+                LOG.debug("\n\nMasterDbUser: " + masterDbUser.getRefnum()
+                + "\nMasterDbPerson: " + masterDbPerson.getUserRefnum()
+                + "\nTenantDbUser: " + tenantDbUser.getRefnum()
+                + "\nTenantDbPerson: " + tenantDbUserDetail.getUserRefnum()
+                + "\n\n");
+                if (tenantDbUserDetail.write(tenantConnection) == false)
+                  throw new ServletException("Database error: cannot create tenant user detail");
+              }
+            tenantConnection.commit();
           }
-        catch(Exception e)
+        catch (Exception e)
           {
-            if(TenantConnection != null)
-              TenantConnection.rollback();
+            if (tenantConnection != null)
+              tenantConnection.rollback();
             currentException = e;
           }
-        finally 
+        finally
           {
-            if(TenantConnection != null)
-              TenantConnection.close();
-            LOG.info("********************Sync Done**************************");
-            if(currentException != null)
-                throw currentException;
+            if (tenantConnection != null)
+              tenantConnection.close();
+            LOG.info("\n\n\n******************** Sync Done ***********************************************************************************\n");
+            if (currentException != null)
+              throw currentException;
           }
       }
 

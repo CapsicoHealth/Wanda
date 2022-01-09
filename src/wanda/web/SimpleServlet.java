@@ -106,7 +106,7 @@ public abstract class SimpleServlet extends javax.servlet.http.HttpServlet imple
             if (U == null && _mustAuth == true)
               throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
             if (U != null && _mustAuth == true && U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized guest request");
+              throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request");
 
             justDo(req, res, C, U);
           }

@@ -297,7 +297,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           {
             throw new BadRequestException(Errors);
           }
-        if (isResetPassword)
+        if (isResetPassword == true)
           {
             U.sendInviteEmail();
           }
@@ -343,21 +343,15 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         super.copyTo(Dst);
       }
 
-    public static User_Data cloneWithCreateMode(User_Data Dst)
+    public static User_Data cloneWithCreateMode(User_Data src)
     throws Exception
       {
-        String email = Dst.getEmail();
-        String id = Dst.getId();
-        String pswd = Dst.getPswd();
-        Iterator<String> roles = Dst.getRoles();
-        HashSet<String> user_roles = new HashSet<String>();
-        while (roles.hasNext())
-          {
-            user_roles.add(roles.next());
-          }
-        User_Data NewObject = User_Factory.create(email, id, user_roles, pswd);
-        Dst.copyTo(NewObject);
-        NewObject.setRefnum(Dst.getRefnum());
+        String email = src.getEmail();
+        String id = src.getId();
+        String pswd = src.getPswd();
+        User_Data NewObject = User_Factory.create(email, id, new HashSet<String>(), pswd);
+        src.copyTo(NewObject);
+        NewObject.setRefnum(src.getRefnum());
         return NewObject;
       }
 

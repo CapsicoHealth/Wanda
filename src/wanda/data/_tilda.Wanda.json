@@ -158,25 +158,42 @@
     },
     
 
-    { "name": "Tenant",
-       "description": "Tenant Details",
-       "columns": [
-            {"name":"name"        ,  "type"  :"STRING",     "size": 50,                              "description": "Tenant Name"               }
-           ,{"name":"description" ,  "type"  :"STRING",     "size": 100,                             "description": "Description"               }
-           ,{"name":"loginMsg"    ,  "type"  :"STRING",     "size": 1000,                            "description": "Welcome Message"           }
-           ,{"name":"connectionId",  "sameas":"tilda.data.tilda.connection.id", "nullable": false,   "description": "Tenant Connection Details" }
-           ,{"name":"active"      ,  "type"  :"BOOLEAN",                                             "description": "Tenant Status"             }
-           ,{"name":"loadPath"    ,  "type"  :"STRING", "size": 255           , "nullable": true,    "description": "Relative Directory for the tenant's uploaded files." }
-        ],
-       "primary": { "autogen": true },
-       "foreign": [
-            { "name":"Connection_FK",  "srcColumns":["connectionId"], "destObject":"tilda.data.tilda.connection" }
-        ],
-        "indices": [
-            { "name": "ByConnectionId", "columns": ["connectionId"]}
-           ,{ "name": "ByName"        , "columns": ["name"]}
-        ],
-        "outputMaps": [
+    { "name": "Tenant"
+     ,"description": "Tenant Details"
+     ,"columns": [
+          {"name":"name"        ,  "type"  :"STRING",     "size": 50,                              "description": "Tenant Name"               }
+         ,{"name":"description" ,  "type"  :"STRING",     "size": 100,                             "description": "Description"               }
+         ,{"name":"loginMsg"    ,  "type"  :"STRING",     "size": 1000,                            "description": "Welcome Message"           }
+         ,{"name":"connectionId",  "sameas":"tilda.data.tilda.connection.id", "nullable": false,   "description": "Tenant Connection Details" }
+         ,{"name":"active"      ,  "type"  :"BOOLEAN",                                             "description": "Tenant Status"             }
+         ,{"name":"loadPath"    ,  "type"  :"STRING", "size": 255           , "nullable": true,    "description": "Relative Directory for the tenant's uploaded files." }
+       ]
+     ,"primary": { "autogen": true }
+     ,"foreign": [
+          { "name":"Connection_FK",  "srcColumns":["connectionId"], "destObject":"tilda.data.tilda.connection" }
+       ]
+     ,"indices": [
+          { "name": "ByConnectionId", "columns": ["connectionId"]}
+         ,{ "name": "ByName"        , "columns": ["name"]}
+       ]
+     ,"queries": [
+          { "name": "Active"
+           ,"description": "Active tenants"
+           ,"wheres": [
+               { "db": "*", "clause": "active = true" }
+             ]
+           ,"orderBy":["name asc"]
+          }
+        ,{ "name"  :"Names",
+           "description":"Get tenant list by Names.",
+           "from"  :[],
+           "wheres":[
+               { "db":"*", "clause":"TILDA.in(name, ?[])" }
+            ],
+           "orderBy":["name asc"]
+         }
+       ]
+      ,"outputMaps": [
             { "name": "", "outTypes":["JSON"], "columns": ["refnum", "name", "description", "connectionId", "active"] }
         ]
     }

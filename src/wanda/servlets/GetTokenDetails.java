@@ -20,13 +20,11 @@ import java.io.PrintWriter;
 
 import javax.servlet.annotation.WebServlet;
 
+import tilda.db.Connection;
+import tilda.utils.json.JSONUtil;
 import wanda.data.UserResetPasswordView_Data;
 import wanda.data.UserResetPasswordView_Factory;
 import wanda.data.User_Data;
-
-import tilda.db.Connection;
-import tilda.db.ListResults;
-import tilda.utils.json.JSONUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;

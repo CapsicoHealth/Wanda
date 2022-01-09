@@ -345,6 +345,7 @@ public class Login extends SimpleServlet
               }
             else
               {
+                Req.setSessionLong(SessionUtil.Attributes.USERREFNUM.toString(), list.get(0).getUserRefnum());
                 Req.setSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString(), list.get(0).getTenantUserRefnum());
                 ClearUserForEula(C, Req, U, list.get(0).getTenantUserRefnum());
                 UserTenantSync.sync(C, U, list.get(0).getTenantUserRefnum());

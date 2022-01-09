@@ -234,6 +234,10 @@ public class WebBasics
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;
       }
+    public static long[] getGuestRegistrationTenantRefnums()
+      {
+        return _Config._guestRegistration == null ? null : _Config._guestRegistration._tenantRefnums;
+      }
 
     public static List<String> getEmailVerificationTexts()
       {

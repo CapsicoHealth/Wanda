@@ -182,6 +182,11 @@ public class SessionFilter implements javax.servlet.Filter
                         throw new ResourceNotAuthorizedException("Tenant", Tenant.getRefnum() + "", "Tenant '" + Tenant.getName() + "' is inactive. Please contact your administrator");
                       }
                     TenantConnection = ConnectionPool.get(Tenant.getConnectionId());
+                    
+                    HttpSession S = SessionUtil.getSession(Request);
+                    LOG.debug("USERREFNUM: "+(Long) S.getAttribute(SessionUtil.Attributes.USERREFNUM.toString()));
+                    LOG.debug("TENANTUSERREFNUM: "+(Long) S.getAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString()));
+
                     TenantDbUser = getUser(Request, TenantConnection);
                     // SimpleServlet Subclasses use U.getPerson()
                     UserDetail_Data TenantDbPerson = getUserDetail(TenantConnection, TenantDbUser, Response);
@@ -606,6 +611,9 @@ public class SessionFilter implements javax.servlet.Filter
     private UserDetail_Data getUserDetail(Connection C, User_Data U, HttpServletResponse Response)
     throws Exception
       {
+        if (U == null)
+          LOG.debug("getUserDetail: U is null!");
+        
         UserDetail_Data UD = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
         if (UD.read(C) == false)
           {

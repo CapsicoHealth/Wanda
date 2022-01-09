@@ -21,10 +21,12 @@ import com.google.gson.annotations.SerializedName;
 public class GuestRegistration
   {
     /*@formatter:off*/
-    @SerializedName("allowed") public boolean  _allowed = false;
-    @SerializedName("appIds" ) public String[] _appIds  = null;
+    @SerializedName("allowed"  ) public boolean  _allowed   = false;
+    @SerializedName("appIds"   ) public String[] _appIds    = null;
+    @SerializedName("tenantIds") public String[] _tenantIds = null;
     /*@formatter:on*/
     
     public transient long[] _appRefnums = null;
+    public transient long[] _tenantRefnums = null;
 
   }
