@@ -82,7 +82,9 @@ public class SetPassword extends SimpleServlet
             Req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
             User_Data.markUserLoginFailure(C, user);
             FailCount = WebBasics.getLoginAttempts() - user.getFailCount(); 
-            ErrorMessage = FailCount <= 0 ? "Your account is locked! You have exeeded maximum password reset or login attempts" : "Unable to reset your password, you have "+FailCount+" attempts remaining";
+            ErrorMessage = CompareUtil.equals(Token, user.getPswdResetCode()) == false ? "The token supplied is either invalid or has expired. Please request a new reset token."
+                         : FailCount <= 0 ? "Your account is locked! You have exeeded maximum password reset or login attempts" 
+                         : "Unable to reset your password, you have "+FailCount+" attempts remaining";
             throw new ResourceNotAuthorizedException("User", Email, ErrorMessage);
           }
 

@@ -101,12 +101,13 @@ public class WebBasics
             URL url = FileUtil.getResourceUrl("WebBasics.config.json");
             LOG.info("   Found WebBasics.config.json file in " + url.toString());
 
+            C = ConnectionPool.get("MAIN");
+            
             R = new BufferedReader(new InputStreamReader(In));
             _Config = gson.fromJson(R, WebBasicsDefConfig.class);
-            if (_Config.validate() == false)
+            if (_Config.validate(C) == false)
               throw new Exception("The WebBasics configuration file is invalid.");
 
-            C = ConnectionPool.get("MAIN");
             _Apps = App_Factory.lookupWhereActive(C, 0, -1);
             _AppsConfig = Config_Factory.lookupById("MAIN");
             if (_AppsConfig.read(C) == false)
@@ -223,12 +224,25 @@ public class WebBasics
       {
         return _Config._inviteEmailTexts;
       }
+    
+    public static boolean getGuestRegistrationAllowed()
+      {
+        return _Config._guestRegistration == null ? false : _Config._guestRegistration._allowed;
+      }
+
+    public static long[] getGuestRegistrationAppRefnums()
+      {
+        return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;
+      }
+    public static long[] getGuestRegistrationTenantRefnums()
+      {
+        return _Config._guestRegistration == null ? null : _Config._guestRegistration._tenantRefnums;
+      }
 
     public static List<String> getEmailVerificationTexts()
       {
         return _Config._emailVerificationTexts;
       }
-
 
     public static int getResetCodeTTL()
       {
@@ -288,6 +302,12 @@ public class WebBasics
       {
         return _AppsConfig.getMasterPaths();
       }
+    
+    public static Iterator<String> getGuestPaths()
+      {
+        return _AppsConfig.getGuestPaths();
+      }
+    
 
     public static String getOverrideCssFile()
       {
@@ -327,4 +347,5 @@ public class WebBasics
         Map<String, String> config = _Config._extras.get(configName);
         return config == null ? null : config.get(elementName);
       }
+
   }

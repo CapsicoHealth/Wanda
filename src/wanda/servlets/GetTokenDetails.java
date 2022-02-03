@@ -20,13 +20,11 @@ import java.io.PrintWriter;
 
 import javax.servlet.annotation.WebServlet;
 
+import tilda.db.Connection;
+import tilda.utils.json.JSONUtil;
 import wanda.data.UserResetPasswordView_Data;
 import wanda.data.UserResetPasswordView_Factory;
 import wanda.data.User_Data;
-
-import tilda.db.Connection;
-import tilda.db.ListResults;
-import tilda.utils.json.JSONUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
@@ -51,11 +49,11 @@ public class GetTokenDetails extends SimpleServlet
         String token = req.getParamString("token", true);
         req.throwIfErrors();
 
-        ListResults<UserResetPasswordView_Data> users = UserResetPasswordView_Factory.lookupWherePswdResetCodeLike(C, token, 0, 1);
-        if (users.size() < 1 || !users.get(0).read(C))
+        UserResetPasswordView_Data user = UserResetPasswordView_Factory.lookupByPswdResetCode(token);
+        if (user.read(C) == false)
           throw new NotFoundException("token", "" + token);
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        JSONUtil.response(Out, "", users.get(0));
+        JSONUtil.response(Out, "Mini", user);
       }
   }

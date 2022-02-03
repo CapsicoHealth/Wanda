@@ -82,23 +82,19 @@
      ,"foreign": [
        ]
      ,"queries": [
-        {
-            "name": "PswdResetCodeLike"
-            ,"description": "User with Given Reset Password Code"
-            ,"wheres": [
-                { "db": "*", "clause": "pswdResetCode LIKE ?()" }
-            ]
-            ,"orderBy": ["email ASC"]
-        }
-       ,{
-            "name": "EmailVerificationCodeLike"
-            ,"description": "User with Given Email Verification Code"
-            ,"wheres": [
-                { "db": "*", "clause": "emailVerificationCode LIKE ?()" }
-            ]
-            ,"orderBy": ["email ASC"]
-        }
-    ]
+          { "name": "PswdResetCode"
+           ,"description": "User with Given Reset Password Code"
+           ,"wheres": [
+               { "db": "*", "clause": "pswdResetCode = ?()" }
+             ]
+          }
+         ,{ "name": "EmailVerificationCode"
+           ,"description": "User with Given Email Verification Code"
+           ,"wheres": [
+               { "db": "*", "clause": "emailVerificationCode = ?()" }
+             ]
+          }
+       ]
      ,"outputMaps": [
            { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
        ]
@@ -162,25 +158,42 @@
     },
     
 
-    { "name": "Tenant",
-       "description": "Tenant Details",
-       "columns": [
-            {"name":"name"        ,  "type"  :"STRING",     "size": 50,                              "description": "Tenant Name"               }
-           ,{"name":"description" ,  "type"  :"STRING",     "size": 100,                             "description": "Description"               }
-           ,{"name":"loginMsg"    ,  "type"  :"STRING",     "size": 1000,                            "description": "Welcome Message"           }
-           ,{"name":"connectionId",  "sameas":"tilda.data.tilda.connection.id", "nullable": false,   "description": "Tenant Connection Details" }
-           ,{"name":"active"      ,  "type"  :"BOOLEAN",                                             "description": "Tenant Status"             }
-           ,{"name":"loadPath"    ,  "type"  :"STRING", "size": 255           , "nullable": true,    "description": "Relative Directory for the tenant's uploaded files." }
-        ],
-       "primary": { "autogen": true },
-       "foreign": [
-            { "name":"Connection_FK",  "srcColumns":["connectionId"], "destObject":"tilda.data.tilda.connection" }
-        ],
-        "indices": [
-            { "name": "ByConnectionId", "columns": ["connectionId"]}
-           ,{ "name": "ByName"        , "columns": ["name"]}
-        ],
-        "outputMaps": [
+    { "name": "Tenant"
+     ,"description": "Tenant Details"
+     ,"columns": [
+          {"name":"name"        ,  "type"  :"STRING",     "size": 50,                              "description": "Tenant Name"               }
+         ,{"name":"description" ,  "type"  :"STRING",     "size": 100,                             "description": "Description"               }
+         ,{"name":"loginMsg"    ,  "type"  :"STRING",     "size": 1000,                            "description": "Welcome Message"           }
+         ,{"name":"connectionId",  "sameas":"tilda.data.tilda.connection.id", "nullable": false,   "description": "Tenant Connection Details" }
+         ,{"name":"active"      ,  "type"  :"BOOLEAN",                                             "description": "Tenant Status"             }
+         ,{"name":"loadPath"    ,  "type"  :"STRING", "size": 255           , "nullable": true,    "description": "Relative Directory for the tenant's uploaded files." }
+       ]
+     ,"primary": { "autogen": true }
+     ,"foreign": [
+          { "name":"Connection_FK",  "srcColumns":["connectionId"], "destObject":"tilda.data.tilda.connection" }
+       ]
+     ,"indices": [
+          { "name": "ByConnectionId", "columns": ["connectionId"]}
+         ,{ "name": "ByName"        , "columns": ["name"]}
+       ]
+     ,"queries": [
+          { "name": "Active"
+           ,"description": "Active tenants"
+           ,"wheres": [
+               { "db": "*", "clause": "active = true" }
+             ]
+           ,"orderBy":["name asc"]
+          }
+        ,{ "name"  :"Names",
+           "description":"Get tenant list by Names.",
+           "from"  :[],
+           "wheres":[
+               { "db":"*", "clause":"TILDA.in(name, ?[])" }
+            ],
+           "orderBy":["name asc"]
+         }
+       ]
+      ,"outputMaps": [
             { "name": "", "outTypes":["JSON"], "columns": ["refnum", "name", "description", "connectionId", "active"] }
         ]
     }
@@ -230,8 +243,21 @@
         ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":true , "description":"App unique Id"   }
         ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
         ,{"name":"icon"    , "type":"STRING"  , "size":250,                   "description":"Icon for the application"                        }
-        ,{"name":"pages"   , "type":"STRING[]",                               "description":"Other pages for this app, besides the home page" }
-        ,{"name":"services", "type":"STRING[]",                               "description":"Services URLs consumed by this app"              }
+        ,{"name":"services", "type":"JSON[]"  ,             "nullable": true, "description":"Service definition"
+          ,"jsonSchema": {
+              "typeName": "ServiceDefinition"
+             ,"descr": "Define the services that comprise this app"
+             ,"fields": [
+                 {"name": "path"  , "type": "STRING", "description":"The path for the service" }
+                ,{"name": "access", "type": "STRING", "description":"The access level required for the servvice: 'AA' (for app admin), GST (for guest), 'A' (for authenticated) or null (for general access). Must match the implementation of the servlet for the service if applicable." }
+                ]
+             ,"validation": {
+                 "rule": ["path IS NOT NOE and (access is null or access in ('AA', 'GST', 'A'))"
+                         ]
+                ,"descr": "Path must be supplied and access must be set appropriately"
+                }
+             }
+         }
         ,{"name":"active"  , "type":"BOOLEAN" ,                               "description":"App's actioe status"                             }
        ]
      ,"primary": { "autogen": true }
@@ -266,6 +292,14 @@
                { "db":"*", "clause":"deleted is null" }
             ],
            "orderBy":["seq asc", "label asc"]
+         }
+        ,{ "name"  :"Ids",
+           "description":"Get app list by IDs.",
+           "from"  :[],
+           "wheres":[
+               { "db":"*", "clause":"TILDA.in(id, ?[])" }
+            ],
+           "orderBy":["label asc"]
          }
        ]
      ,"json": [
@@ -311,6 +345,7 @@
          {"name":"id"              , "type":"STRING"  , "size":250, "nullable":false, "description":"Configuration Id"    }
         ,{"name":"masterPaths"     , "type":"STRING[]", "description":"Master paths that receive master connections (in a multi-tenant environment)" }
         ,{"name":"authPassthroughs", "type":"STRING[]", "description":"Path allowed in without authentication, i.e., anonymous"                      }
+        ,{"name":"guestPaths"      , "type":"STRING[]", "description":"Path allowed for guest users"                      }
        ]
      ,"foreign": [
        ]
@@ -468,16 +503,16 @@
     "subWhere": "User.locked is null AND User.deleted is null AND UserDetail.deleted is null AND User.loginCount = 0",
     "queries": [
       {
-        "name": "PswdResetCodeLike"
+        "name": "PswdResetCode"
         ,"description": "User with Given Reset Password Code"
         ,"wheres": [
-          { "db": "*", "clause": "pswdResetCode LIKE ?()" }
+          { "db": "*", "clause": "pswdResetCode = ?()" }
         ]
-        ,"orderBy": ["userRefnum ASC"]
       }
     ],
       "json": [
-        { "name": "", "columns": ["userRefnum", "pswdResetCode", "id", "email", "nameTitle", "nameFirst", "nameMiddle", "nameLast"] }     
+         { "name": "", "columns": ["userRefnum", "pswdResetCode", "id", "email", "nameTitle", "nameFirst", "nameMiddle", "nameLast"] }     
+        ,{ "name": "Mini", "columns": ["pswdResetCode", "nameFirst", "nameLast"] }     
       ]
     },
     {

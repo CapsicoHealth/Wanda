@@ -88,35 +88,51 @@ public class ResponseUtil
         _Out.println("{\"code\":" + HttpStatus.OK._Code + ",\"data\":{}}");
       }
 
+    public void successJson(String JsonExportName, JSONable obj, String perfMessage)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        JSONUtil.response(_Out, JsonExportName, obj, perfMessage);
+      }
     public void successJson(String JsonExportName, JSONable obj)
     throws Exception
       {
-        if (_Out == null)
-          setContentType(ContentType.JSON);
-        JSONUtil.response(_Out, JsonExportName, obj);
+        successJson(JsonExportName, obj, null);
       }
 
+    public void successJson(String JsonExportName, List<? extends JSONable> L, String perfMessage)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        JSONUtil.response(_Out, JsonExportName, L, perfMessage);
+      }
     public void successJson(String JsonExportName, List<? extends JSONable> L)
     throws Exception
       {
-        if (_Out == null)
-          setContentType(ContentType.JSON);
-        JSONUtil.response(_Out, JsonExportName, L);
+        successJson(JsonExportName, L, null);
       }
 
-    public void successJson(JSONPrinter J)
+    public void successJson(JSONPrinter J, String perfMessage)
     throws Exception
       {
         if (_Out == null)
           setContentType(ContentType.JSON);
-        J.print(_Out);
+        J.print(_Out, perfMessage);
       }
-    
+    public void successJson(JSONPrinter J)
+    throws Exception
+      {
+        successJson(J, null);
+      }
+
     /**
      * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
      * is typically yo return the json data packaged inside a textarea. This function does that. It is exactly
      * equivalent to the "plain" response method except the jsonable object is output inside a textarea and the
      * writer is expected to be set up as an HTML one.
+     * 
      * @param Out
      * @param JsonExportName
      * @param Obj
@@ -131,7 +147,7 @@ public class ResponseUtil
         success();
         _Out.write("</textarea>\n");
       }
-    
+
 
     /**
      * This is meant for a serious system issue and will return a traditional error sequence for HTTP.

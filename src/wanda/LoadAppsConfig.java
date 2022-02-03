@@ -25,6 +25,7 @@ import java.time.ZonedDateTime;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,6 +37,7 @@ import tilda.db.ConnectionPool;
 import tilda.utils.AsciiArt;
 import tilda.utils.FileUtil;
 import tilda.utils.TextUtil;
+import tilda.utils.json.JSONUtil;
 import wanda.data.AppUser_Data;
 import wanda.data.AppUser_Factory;
 import wanda.data.App_Data;
@@ -46,6 +48,7 @@ import wanda.data.Role_Data;
 import wanda.data.Role_Factory;
 import wanda.web.config.AppDef;
 import wanda.web.config.AppDefDetails;
+import wanda.web.config.AppDefService;
 import wanda.web.config.WebBasicsDefApps;
 
 public class LoadAppsConfig
@@ -58,8 +61,8 @@ public class LoadAppsConfig
         LOG.info("Wanda App Definition Configuration Loader");
         LOG.info("  - This utility will load /WebBasics.apps.json and its /WebBasics.app.Xyz.json ");
         LOG.info("   dependencies in the classpath.");
-        LOG.info("  - The information will be loaded into the "+App_Factory.SCHEMA_TABLENAME_LABEL+" and ");
-        LOG.info("   "+Config_Factory.SCHEMA_TABLENAME_LABEL+" tables");
+        LOG.info("  - The information will be loaded into the " + App_Factory.SCHEMA_TABLENAME_LABEL + " and ");
+        LOG.info("   " + Config_Factory.SCHEMA_TABLENAME_LABEL + " tables");
         LOG.info("");
         Connection C = null;
 
@@ -70,9 +73,9 @@ public class LoadAppsConfig
               {
                 String connectionId = connectionIds.next();
                 LOG.info("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                        +"!!! Loading Apps For Tenant/Database\n"
-                        +"!!!     ==> " + connectionId + ": " + ConnectionPool.getDBDetails(connectionId)+"\n"
-                        +"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                + "!!! Loading Apps For Tenant/Database\n"
+                + "!!!     ==> " + connectionId + ": " + ConnectionPool.getDBDetails(connectionId) + "\n"
+                + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 C = ConnectionPool.get(connectionId);
                 load(C);
                 C.commit();
@@ -152,6 +155,14 @@ public class LoadAppsConfig
           }
       }
 
+    public static String printRawAppDefDetailServicesArray(List<AppDefService> L)
+    throws Exception
+      {
+        StringBuilderWriter SBW = new StringBuilderWriter();
+        JSONUtil.print(SBW, "", L, "", null);
+        return SBW.getBuilder().toString();
+      }
+
     public static void process(Connection C, WebBasicsDefApps DA)
     throws Exception
       {
@@ -166,9 +177,9 @@ public class LoadAppsConfig
               A.setSeq(++i);
               A.setId(ad._id);
               A.setAdmin(ad._AppDefDetail._admin);
-              A.setServices(ad._AppDefDetail._services);
-              A.setPages(ad._AppDefDetail._pages);
+              A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
               A.setId(ad._id);
+              A.setDeletedNull();
               if (A.write(C) == false) // not existing
                 {
                   A = App_Factory.lookupByLabel(ad._AppDefDetail._label); // search by label
@@ -177,36 +188,35 @@ public class LoadAppsConfig
                   A.setAdmin(ad._AppDefDetail._admin);
                   A.setSeq(i);
                   A.setId(ad._id);
-                  A.setServices(ad._AppDefDetail._services);
-                  A.setPages(ad._AppDefDetail._pages);
+                  A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                   A.setId(ad._id);
+                  A.setDeletedNull();
                   if (A.write(C) == false)
-                    {                  
+                    {
                       A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, i);
                       A.setId(ad._id);
                       A.setAdmin(ad._AppDefDetail._admin);
-                      A.setServices(ad._AppDefDetail._services);
-                      A.setPages(ad._AppDefDetail._pages);
+                      A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                       if (A.write(C) == false)
-                       throw new Exception("Cannot insert/update App record");
+                        throw new Exception("Cannot insert/update App record");
                     }
                 }
               A.refresh(C);
               AppUser_Data AU = AppUser_Factory.lookupByUnassignedApp(A.getRefnum());
               if (AU.read(C) == false)
-               {
-                 AU = AppUser_Factory.create(A.getRefnum());
-                 if (AU.write(C) == false)
-                   throw new Exception("Cannot insert default app record for app "+A.getRefnum());
-               }
+                {
+                  AU = AppUser_Factory.create(A.getRefnum());
+                  if (AU.write(C) == false)
+                    throw new Exception("Cannot insert default app record for app " + A.getRefnum());
+                }
               // Create Administrator role for the application
               if (TextUtil.isNullOrEmpty(A.getAdmin()) == false)
                 {
-                  Role_Data R = Role_Factory.create("Admin"+A.getId(), "Admin"+A.getId(), "Administrator for application "+A.getLabel());
+                  Role_Data R = Role_Factory.create("Admin" + A.getId(), "Admin" + A.getId(), "Administrator for application " + A.getLabel());
                   if (R.write(C) == false)
                     {
-                      R = Role_Factory.lookupById("Admin"+A.getId());
-                      R.setLabel("Administrator for application "+A.getLabel()); // In case the label changed for the app
+                      R = Role_Factory.lookupById("Admin" + A.getId());
+                      R.setLabel("Administrator for application " + A.getLabel()); // In case the label changed for the app
                       R.write(C);
                     }
                 }

@@ -24,7 +24,15 @@ import java.util.Set;
 
 import com.google.gson.annotations.SerializedName;
 
+import tilda.db.Connection;
+import tilda.db.ListResults;
 import tilda.utils.TextUtil;
+import wanda.data.App_Data;
+import wanda.data.App_Factory;
+import wanda.data.TenantView_Data;
+import wanda.data.TenantView_Factory;
+import wanda.data.Tenant_Data;
+import wanda.data.Tenant_Factory;
 import wanda.web.BeaconBit;
 
 public class WebBasicsDefConfig
@@ -39,18 +47,20 @@ public class WebBasicsDefConfig
     @SerializedName("passwordRules"   )         List<PasswordRule>                  _passwordRules          = null;
     @SerializedName("resetEmailText"  )         List<String>                        _resetEmailTexts        = null;
     @SerializedName("inviteEmailText" )         List<String>                        _inviteEmailTexts       = null;
+    @SerializedName("guestRegistration")        GuestRegistration                   _guestRegistration      = null;
+    
     @SerializedName("emailVerificationText")    List<String>                        _emailVerificationTexts = null;
     @SerializedName("lookAndFeel"     )         LookAndFeel                         _laf                    = null;
     @SerializedName("eulas"           )         List<Eula>                          _eulas                  = new ArrayList<Eula>();
     @SerializedName("twofishes-url"   )         String                              _twofishesUrl           = null;
-    @SerializedName("tableauUrl"      )         String                               _tableauUrl             = null;
-    @SerializedName("tableauUser"     )         String                               _tableauUser            = null;
+    @SerializedName("tableauUrl"      )         String                              _tableauUrl             = null;
+    @SerializedName("tableauUser"     )         String                              _tableauUser            = null;
     @SerializedName("jobCheckIntervalSeconds")  int                                 _jobCheckIntervalSeconds= 20;
     @SerializedName("beacon"          )         BeaconConfig                        _beacon                 = null;
     @SerializedName("extras"          )         Map<String, Map<String, String>>    _extras                 = null;
     /*@formatter:on*/
 
-    public boolean validate()
+    public boolean validate(Connection C)
     throws Exception
       {
         boolean OK = true;
@@ -216,6 +226,53 @@ public class WebBasicsDefConfig
                   OK = false;
                 }
             }
+
+        if (_guestRegistration != null && _guestRegistration._allowed == true)
+          {
+            if (_guestRegistration._appIds == null || _guestRegistration._appIds.length == 0)
+              {
+                WebBasics.LOG.error("The guestRegistration appIds is empty or unspecified. If allowed is true, there must be at least one aplication listed.");
+                OK = false;
+              }
+            else
+              {
+                List<App_Data> AL = App_Factory.lookupWhereIds(C, _guestRegistration._appIds, 0, -1);
+                if (AL.size() != _guestRegistration._appIds.length)
+                  {
+                    WebBasics.LOG.error("The guestRegistration appIds specifies application Ids which cannot be found in the database.");
+                    OK = false;
+                  }
+                else
+                  {
+                    _guestRegistration._appRefnums = new long[AL.size()];
+                    for (int i = 0; i < AL.size(); ++i)
+                      _guestRegistration._appRefnums[i] = AL.get(i).getRefnum();
+                  }
+              }
+
+            // Gotta check if the system is in multi-tenant mode or not.
+            List<Tenant_Data> TL = Tenant_Factory.lookupWhereActive(C, 0, -1);
+            if (TL.size() > 0 && (_guestRegistration._tenantIds == null || _guestRegistration._tenantIds.length == 0))
+              {
+                WebBasics.LOG.error("The guestRegistration tenantIds is empty or unspecified. If allowed is true, there must be at least one tenant listed.");
+                OK = false;
+              }
+            else
+              {
+                TL = Tenant_Factory.lookupWhereNames(C, _guestRegistration._tenantIds, 0, -1);
+                if (TL.size() != (_guestRegistration._tenantIds == null ? 0 : _guestRegistration._tenantIds.length))
+                  {
+                    WebBasics.LOG.error("The guestRegistration tenantIds specifies tenant ids which cannot be found in the database.");
+                    OK = false;
+                  }
+                else
+                  {
+                    _guestRegistration._tenantRefnums = new long[TL.size()];
+                    for (int i = 0; i < TL.size(); ++i)
+                      _guestRegistration._tenantRefnums[i] = TL.get(i).getRefnum();
+                  }
+              }
+          }
 
         return OK;
       }

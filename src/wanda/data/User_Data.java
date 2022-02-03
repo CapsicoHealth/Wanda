@@ -127,7 +127,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
     public void sendForgotPswdEmail(Connection C)
     throws Exception
       {
-        setPswdResetCode(EncryptionUtil.getToken(6, true));
+        setPswdResetCode(EncryptionUtil.getToken(12, true));
         setPswdResetCreateNow();
         write(C);
         String[] to = { getEmail()
@@ -155,9 +155,8 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 sb.append("?action=setPswd");
                 sb.append("&token=");
                 sb.append(getPswdResetCode());
-                sb.append("'>Click to reset password</a></p>");
-                sb.append("or <p> use code: <b>" + getPswdResetCode() + "</b> to reset your password.</p>");
-                SystemMailSender.sendMail(to, cc, bcc, "Reset your password --" + WebBasics.getAppName(), sb.toString(), true, true);
+                sb.append("'>Click to reset password</a></p>.</p>");
+                SystemMailSender.sendMail(to, cc, bcc, "Reset your password -- " + WebBasics.getAppName(), sb.toString(), true, true);
               }
           }.start();
       }
@@ -298,7 +297,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           {
             throw new BadRequestException(Errors);
           }
-        if (isResetPassword)
+        if (isResetPassword == true)
           {
             U.sendInviteEmail();
           }
@@ -344,21 +343,15 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         super.copyTo(Dst);
       }
 
-    public static User_Data cloneWithCreateMode(User_Data Dst)
+    public static User_Data cloneWithCreateMode(User_Data src)
     throws Exception
       {
-        String email = Dst.getEmail();
-        String id = Dst.getId();
-        String pswd = Dst.getPswd();
-        Iterator<String> roles = Dst.getRoles();
-        HashSet<String> user_roles = new HashSet<String>();
-        while (roles.hasNext())
-          {
-            user_roles.add(roles.next());
-          }
-        User_Data NewObject = User_Factory.create(email, id, user_roles, pswd);
-        Dst.copyTo(NewObject);
-        NewObject.setRefnum(Dst.getRefnum());
+        String email = src.getEmail();
+        String id = src.getId();
+        String pswd = src.getPswd();
+        User_Data NewObject = User_Factory.create(email, id, new HashSet<String>(), pswd);
+        src.copyTo(NewObject);
+        NewObject.setRefnum(src.getRefnum());
         return NewObject;
       }
 
@@ -506,6 +499,10 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
     public boolean isSuperAdmin()
       {
         return hasRoles(RoleHelper.SUPERADMIN);
+      }
+    public boolean isGuest()
+      {
+        return hasRoles(RoleHelper.GUEST);
       }
 
     public static boolean isUserSuperAdmin(User_Data U)
