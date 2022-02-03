@@ -25,11 +25,12 @@ import tilda.interfaces.JSONable;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
 
-public class AppDefService implements JSONable
+public class AppDefPolicy implements JSONable
   {
     /*@formatter:off*/
-    @SerializedName("path" )  public String  _path   = null;
-    @SerializedName("access") public String _access  = null;
+    @SerializedName("name" ) public String _name  = null;
+    @SerializedName("label") public String _label = null;
+    @SerializedName("type" ) public String _type  = null;
     /*@formatter:on*/
 
     @Override
@@ -44,38 +45,39 @@ public class AppDefService implements JSONable
     throws Exception
       {
         Out.write("{");
-        JSONUtil.print(Out, "path"  , true , this._path);
-        JSONUtil.print(Out, "access", false, this._access);
+        JSONUtil.print(Out, "name" , true , this._name );
+        JSONUtil.print(Out, "label", false, this._label);
+        JSONUtil.print(Out, "type" , false, this._type );
         Out.write("}");
       }
     
-    /**
-     * GST: Guest access
-     * A: Administrator access
-     * AA: App Administrator access
-     */
-    protected static final String[] _ACCESS_VALUES = new String[] {"A", "GST", "AA"};
+    protected static final String[] _TYPE_VALUES = new String[] {"INTEGER", "NUMBER", "TEXT", "BOOLEAN"};
 
     @Override
     public void toJSON(Writer Out, String JsonExportName, String lead, boolean FullObject, ZonedDateTime lastsync)
     throws Exception
       {
-        throw new Exception("No JSON sync exporter " + JsonExportName + " for App definition services.");
+        throw new Exception("No JSON sync exporter " + JsonExportName + " for App definition policies.");
       }
 
     public boolean validate(String appLabel)
       {
         boolean OK = true;
 
-        if (TextUtil.isNullOrEmpty(_path) == true)
+        if (TextUtil.isNullOrEmpty(_name) == true)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " defined a service value with no path.");
+            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " defined a policy with no name.");
+            OK = false;
+          }
+        if (TextUtil.isNullOrEmpty(_label) == true)
+          {
+            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " defined a policy with no label.");
             OK = false;
           }
         
-        if (_access != null && TextUtil.findElement(_ACCESS_VALUES, _access, true, 0) == -1)
+        if (_type != null && TextUtil.findElement(_TYPE_VALUES, _type, true, 0) == -1)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " define a service '"+_path+"' with an access flag '"+_access+"' which is not one of the following: "+TextUtil.print(_ACCESS_VALUES)+".");
+            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " define a policy '"+_name+"' with a type '"+_type+"' which is not one of the following: "+TextUtil.print(_TYPE_VALUES)+".");
             OK = false;
           }
         

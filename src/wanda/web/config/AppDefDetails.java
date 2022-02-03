@@ -18,7 +18,9 @@ package wanda.web.config;
 
 import java.io.Writer;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -29,11 +31,11 @@ import tilda.utils.json.JSONUtil;
 public class AppDefDetails implements JSONable
   {
     /*@formatter:off*/
-    @SerializedName("label"   ) public String       _label     = null;
-    @SerializedName("home"    ) public String       _home      = null;
-    @SerializedName("admin"   ) public String       _admin     = null;
-    @SerializedName("services") public List<AppDefService> _services  = null;
-    
+    @SerializedName("label"   ) public String              _label    = null;
+    @SerializedName("home"    ) public String              _home     = null;
+    @SerializedName("services") public List<AppDefService> _services = null;
+    @SerializedName("admin"   ) public String              _admin    = null;
+    @SerializedName("policies") public List<AppDefPolicy>  _policies = null;
     /*@formatter:on*/
 
     @Override
@@ -59,7 +61,7 @@ public class AppDefDetails implements JSONable
     public void toJSON(Writer Out, String JsonExportName, String lead, boolean FullObject, ZonedDateTime lastsync)
     throws Exception
       {
-        throw new Exception("No JSON sync exporter " + JsonExportName + " for PasswordRule.");
+        throw new Exception("No JSON sync exporter " + JsonExportName + " for App definition details.");
       }
 
     public boolean validate(String srcFile)
@@ -78,11 +80,32 @@ public class AppDefDetails implements JSONable
             OK = false;
           }
         
+        Set<String> values = new HashSet<String>();
         if (_services != null)
          for (AppDefService s : _services)
-          if (s.validate(_label) == false)
-           OK = false;
-
+          {
+            if (s.validate(_label) == false)
+             OK = false;
+            else if (values.add(s._path) == false)
+              {
+                WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " defined the service '"+s._path+"' more than once.");
+                OK = false;
+              }
+          }
+        
+        values.clear();
+        if (_policies != null)
+          for (AppDefPolicy p : _policies)
+           {
+             if (p.validate(_label) == false)
+              OK = false;
+             else if (values.add(p._name) == false)
+               {
+                 WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " defined the policy '"+p._name+"' more than once.");
+                 OK = false;
+               }
+           }
+        
         return OK;
       }
   }
