@@ -102,7 +102,7 @@ public class WebBasics
             LOG.info("   Found WebBasics.config.json file in " + url.toString());
 
             C = ConnectionPool.get("MAIN");
-            
+
             R = new BufferedReader(new InputStreamReader(In));
             _Config = gson.fromJson(R, WebBasicsDefConfig.class);
             if (_Config.validate(C) == false)
@@ -224,7 +224,7 @@ public class WebBasics
       {
         return _Config._inviteEmailTexts;
       }
-    
+
     public static boolean getGuestRegistrationAllowed()
       {
         return _Config._guestRegistration == null ? false : _Config._guestRegistration._allowed;
@@ -234,6 +234,7 @@ public class WebBasics
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;
       }
+
     public static long[] getGuestRegistrationTenantRefnums()
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._tenantRefnums;
@@ -267,15 +268,17 @@ public class WebBasics
 
     public static String getPageTitle(boolean LoggedIn)
       {
-        return LoggedIn==true && TextUtil.isNullOrEmpty(_Config._laf._pageTitlePostLogin) == false ? _Config._laf._pageTitlePostLogin : _Config._laf._pageTitle;
+        return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._pageTitlePostLogin) == false ? _Config._laf._pageTitlePostLogin : _Config._laf._pageTitle;
       }
+
     public static String getLogoBig(boolean LoggedIn)
       {
-        return LoggedIn==true && TextUtil.isNullOrEmpty(_Config._laf._logoBigPostLogin) == false ? _Config._laf._logoBigPostLogin : _Config._laf._logoBig;
+        return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._logoBigPostLogin) == false ? _Config._laf._logoBigPostLogin : _Config._laf._logoBig;
       }
+
     public static String getLogoSmall(boolean LoggedIn)
       {
-        return LoggedIn==true && TextUtil.isNullOrEmpty(_Config._laf._logoSmallPostLogin) == false ? _Config._laf._logoSmallPostLogin : _Config._laf._logoSmall;
+        return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._logoSmallPostLogin) == false ? _Config._laf._logoSmallPostLogin : _Config._laf._logoSmall;
       }
 
     public static String getPoweredBy()
@@ -302,12 +305,12 @@ public class WebBasics
       {
         return _AppsConfig.getMasterPaths();
       }
-    
+
     public static Iterator<String> getGuestPaths()
       {
         return _AppsConfig.getGuestPaths();
       }
-    
+
 
     public static String getOverrideCssFile()
       {
@@ -339,11 +342,12 @@ public class WebBasics
       {
         return _Config._extras == null ? null : _Config._extras.get(configName);
       }
+
     public static String getExtra(String configName, String elementName)
       {
         if (_Config._extras == null)
-         return null;
-        
+          return null;
+
         Map<String, String> config = _Config._extras.get(configName);
         return config == null ? null : config.get(elementName);
       }

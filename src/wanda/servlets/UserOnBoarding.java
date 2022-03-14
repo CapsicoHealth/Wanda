@@ -24,7 +24,6 @@ import javax.servlet.ServletConfig;
 import javax.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
-import tilda.db.ListResults;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.json.JSONUtil;
 import wanda.data.UserDetail_Data;

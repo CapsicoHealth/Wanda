@@ -83,7 +83,7 @@ public class Login extends SimpleServlet
         SessionFilter.addMaskedUrlNvp("pswd");
       }
 
-    private void login(Connection C, String username, String password, LoginCallback loginCallback)
+    private static void login(Connection C, String username, String password, LoginCallback loginCallback)
     throws Exception
       {
         LOG.debug("Loging in user locally");
@@ -277,7 +277,7 @@ public class Login extends SimpleServlet
           }
       }
 
-    private boolean doEula(PrintWriter Out, RequestUtil Req, Connection C, long TenantUserRefnum, Eula E, User_Data U)
+    private static boolean doEula(PrintWriter Out, RequestUtil Req, Connection C, long TenantUserRefnum, Eula E, User_Data U)
     throws Exception
       {
         // For encrypting AppData._dbKey
@@ -304,7 +304,7 @@ public class Login extends SimpleServlet
       }
 
 
-    private void ClearUserForEula(Connection C, RequestUtil Req, User_Data U, long tenantUserRefnum)
+    private static void ClearUserForEula(Connection C, RequestUtil Req, User_Data U, long tenantUserRefnum)
     throws Exception
       {
         U.setLastEulaNow();
@@ -322,7 +322,7 @@ public class Login extends SimpleServlet
         Req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
       }
 
-    private void nextLoginStep(Connection C, User_Data U, RequestUtil Req, ResponseUtil Res, PrintWriter Out)
+    private static void nextLoginStep(Connection C, User_Data U, RequestUtil Req, ResponseUtil Res, PrintWriter Out)
     throws Exception
       {
         // For Encrypting AppData._dbKey

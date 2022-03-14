@@ -325,7 +325,7 @@ public class SessionFilter implements javax.servlet.Filter
           }
       }
 
-    private void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL, HttpServletResponse Response, Throwable T, boolean skipRollback)
+    private static void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL, HttpServletResponse Response, Throwable T, boolean skipRollback)
     throws Exception
       {
         // LOG.error(SystemValues.NEWLINEx2);
@@ -350,7 +350,7 @@ public class SessionFilter implements javax.servlet.Filter
         writeAccessLogs(MasterConnection, MasterDbUser, AL, Response);
       }
 
-    private void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL, HttpServletResponse Response)
+    private static void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL, HttpServletResponse Response)
     throws Exception
       {
         if (AL == null)
@@ -371,7 +371,7 @@ public class SessionFilter implements javax.servlet.Filter
           throw new Exception("Cannot create a AccessLog record in the database");
       }
 
-    private AccessLog_Data LogRequestHeader(HttpServletRequest Request)
+    private static AccessLog_Data LogRequestHeader(HttpServletRequest Request)
     throws Exception
       {
         AccessLog_Data AL = AccessLog_Factory.create(SessionUtil.getSession(Request).getId());
@@ -430,7 +430,7 @@ public class SessionFilter implements javax.servlet.Filter
         return Str.toString();
       }
 
-    private boolean isSkipRollback(RequestUtil Req)
+    private static boolean isSkipRollback(RequestUtil Req)
       {
         boolean skipRollback = Req.getSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name()) == SessionUtil.FORCE_COMMIT;
         if (skipRollback)
@@ -602,13 +602,13 @@ public class SessionFilter implements javax.servlet.Filter
         for (String path : appPaths)
           if (servletPath.startsWith(path) == true)
             return true;
-
+        
         // Nothing found... so bad news.
         return false;
       }
 
 
-    private UserDetail_Data getUserDetail(Connection C, User_Data U, HttpServletResponse Response)
+    private static UserDetail_Data getUserDetail(Connection C, User_Data U, HttpServletResponse Response)
     throws Exception
       {
         if (U == null)
@@ -623,7 +623,7 @@ public class SessionFilter implements javax.servlet.Filter
         return UD;
       }
 
-    private boolean isUserLocked(User_Data U)
+    private static boolean isUserLocked(User_Data U)
       {
         return U.getLocked() != null && ChronoUnit.MILLIS.between(ZonedDateTime.now(), U.getLocked()) > 0;
       }

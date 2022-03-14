@@ -31,11 +31,12 @@ import tilda.utils.json.JSONUtil;
 public class AppDefDetails implements JSONable
   {
     /*@formatter:off*/
-    @SerializedName("label"   ) public String              _label    = null;
-    @SerializedName("home"    ) public String              _home     = null;
-    @SerializedName("services") public List<AppDefService> _services = null;
-    @SerializedName("admin"   ) public String              _admin    = null;
-    @SerializedName("policies") public List<AppDefPolicy>  _policies = null;
+    @SerializedName("label"        ) public String              _label         = null;
+    @SerializedName("home"         ) public String              _home          = null;
+    @SerializedName("services"     ) public List<AppDefService> _services      = null;
+    @SerializedName("admin"        ) public String              _admin         = null;
+    @SerializedName("policies"     ) public List<AppDefPolicy>  _policies      = null;
+    @SerializedName("requiredRoles") public List<String>        _requiredRoles = null; // Still to be worked on
     /*@formatter:on*/
 
     @Override
