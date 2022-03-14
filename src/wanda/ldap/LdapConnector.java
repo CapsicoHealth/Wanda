@@ -145,7 +145,7 @@ public class LdapConnector {
 		return groups;
 	}
 
-	private LdapGroup getLdapGroup(Attributes attrs) {
+	private static LdapGroup getLdapGroup(Attributes attrs) {
 		
 		LdapGroup group = new LdapGroup(getAttributeValue("cn", attrs));
 		group.setName(getAttributeValue("name", attrs));
@@ -159,7 +159,7 @@ public class LdapConnector {
 		return group;
 	}
 	
-	private LdapUser getLdapUser(Attributes attrs) {
+	private static LdapUser getLdapUser(Attributes attrs) {
 		
 		LdapUser user = new LdapUser(getAttributeValue("userPrincipalName", attrs));
 		user.setFirstName(getAttributeValue("givenName", attrs));
@@ -190,7 +190,7 @@ public class LdapConnector {
 		
 		return user;
 	}
-	private ZonedDateTime getZoneDateTime(String ldapDateString){
+	private static ZonedDateTime getZoneDateTime(String ldapDateString){
 		//LOG.info("Ldap Date String: "+ldapDateString);
 		if(TextUtil.isNullOrEmpty(ldapDateString))
 			return null;
@@ -228,7 +228,7 @@ public class LdapConnector {
 			return "(&" + domainData.getGroup_filter() + domainData.getGroup_search_filter().replace("?", searchValue) + ")";
 	}
 
-	private String getAttributeValue(String attributeName, Attributes attributes) {
+	private static String getAttributeValue(String attributeName, Attributes attributes) {
 		Attribute attribute = attributes.get(attributeName);
 		if (attribute == null)
 			return "";
@@ -266,7 +266,7 @@ public class LdapConnector {
 		return null;
 	}
 
-	private String getSamAccountNameFromEmail(String email) {
+	private static String getSamAccountNameFromEmail(String email) {
 		return email.substring(0, email.indexOf("@"));
 	}
 

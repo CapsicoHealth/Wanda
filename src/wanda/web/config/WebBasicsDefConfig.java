@@ -25,12 +25,9 @@ import java.util.Set;
 import com.google.gson.annotations.SerializedName;
 
 import tilda.db.Connection;
-import tilda.db.ListResults;
 import tilda.utils.TextUtil;
 import wanda.data.App_Data;
 import wanda.data.App_Factory;
-import wanda.data.TenantView_Data;
-import wanda.data.TenantView_Factory;
 import wanda.data.Tenant_Data;
 import wanda.data.Tenant_Factory;
 import wanda.web.BeaconBit;
@@ -48,6 +45,7 @@ public class WebBasicsDefConfig
     @SerializedName("resetEmailText"  )         List<String>                        _resetEmailTexts        = null;
     @SerializedName("inviteEmailText" )         List<String>                        _inviteEmailTexts       = null;
     @SerializedName("guestRegistration")        GuestRegistration                   _guestRegistration      = null;
+    
     
     @SerializedName("emailVerificationText")    List<String>                        _emailVerificationTexts = null;
     @SerializedName("lookAndFeel"     )         LookAndFeel                         _laf                    = null;

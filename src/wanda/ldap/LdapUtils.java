@@ -100,7 +100,7 @@ public class LdapUtils implements LoginProvider.Interface
       }
 
 
-    private User_Data createOrUpdateUser(LdapUser user, Connection C)
+    private static User_Data createOrUpdateUser(LdapUser user, Connection C)
       {
         // LDAP user authenticated successfully
         User_Data userFromDb;
@@ -126,7 +126,7 @@ public class LdapUtils implements LoginProvider.Interface
       }
 
 
-    private User_Data updateUserInDd(User_Data userFromDb, LdapUser user, Connection C)
+    private static User_Data updateUserInDd(User_Data userFromDb, LdapUser user, Connection C)
       {
         // existing user authenticate session
         // update their information
@@ -295,7 +295,7 @@ public class LdapUtils implements LoginProvider.Interface
         return null;
       }
 
-    private LDAPRoleGroup_Data updateRoleGroupInDd(LDAPRoleGroup_Data rg, RoleGroup roleGroup, Connection C)
+    private static LDAPRoleGroup_Data updateRoleGroupInDd(LDAPRoleGroup_Data rg, RoleGroup roleGroup, Connection C)
       {
         // existing user authenticate session
         // update their information

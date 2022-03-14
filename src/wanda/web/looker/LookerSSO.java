@@ -48,7 +48,7 @@ public class LookerSSO
     final static protected String get(String url, String secret, String embed, String models, String embedURL)
     throws Exception
       {
-        String externalUserID = "\"cdwWMpVQygRJ\""; // Random stuff.
+        String externalUserID = "\"CapsicoEmbededUser\""; // Random stuff.
         String userPermissions = "[\"see_user_dashboards\",\"see_lookml_dashboards\",\"access_data\",\"see_looks\"]";
         String groupIDs = "[]";
 //        String externalGroupID = "\"\"";
@@ -62,7 +62,7 @@ public class LookerSSO
         return embedUrl;
       }
 
-    public static String createURL(String host, String embedURL, String embedDomain, String secret, String externalUserID, String userPermissions, String models, int sessionLength, String accessFilters, boolean forceLoginLogout, String groupIDs, String externalGroupID, String userAttributes)
+    final static protected String createURL(String host, String embedURL, String embedDomain, String secret, String externalUserID, String userPermissions, String models, int sessionLength, String accessFilters, boolean forceLoginLogout, String groupIDs, String externalGroupID, String userAttributes)
     throws Exception
       {
         String path = "/login/embed/" + java.net.URLEncoder.encode(embedURL, "UTF-8");

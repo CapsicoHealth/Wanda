@@ -65,7 +65,7 @@ public class WhiteListFilter implements javax.servlet.Filter
         LOG.info("");
       }
 
-    private List<Pattern> ReadListFile(String ResourceName)
+    private static List<Pattern> ReadListFile(String ResourceName)
     throws ServletException
       {
         List<Pattern> L = new ArrayList<Pattern>();
