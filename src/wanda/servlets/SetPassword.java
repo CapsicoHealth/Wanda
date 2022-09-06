@@ -82,7 +82,7 @@ public class SetPassword extends SimpleServlet
             Req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
             User_Data.markUserLoginFailure(C, user);
             FailCount = WebBasics.getLoginAttempts() - user.getFailCount(); 
-            ErrorMessage = CompareUtil.equals(Token, user.getPswdResetCode()) == false ? "The token supplied is either invalid or has expired. Please request a new reset token."
+            ErrorMessage = CompareUtil.equals(Token, user.getPswdResetCode()) == false ? "The token supplied is no longer valid. Please request a new reset token."
                          : FailCount <= 0 ? "Your account is locked! You have exeeded maximum password reset or login attempts" 
                          : "Unable to reset your password, you have "+FailCount+" attempts remaining";
             throw new ResourceNotAuthorizedException("User", Email, ErrorMessage);
@@ -90,7 +90,7 @@ public class SetPassword extends SimpleServlet
 
         if (ChronoUnit.MINUTES.between(user.getPswdResetCreate(), ZonedDateTime.now()) > WebBasics.getResetCodeTTL())
           {
-            Req.addError("token", "Expired token:" + Token);
+            Req.addError("token", "The token has expired (after "+WebBasics.getResetCodeTTL()+" mn). Please request a new reset token.");
           }
 
         String hashedPassword = EncryptionUtil.hash(Password);

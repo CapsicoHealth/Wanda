@@ -25,12 +25,12 @@
     { "name":"User"
      ,"description":"blah blah"
      ,"columns":[
-           { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255,              "description":"The account's email address" }
-          ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100,              "description":"The first line of the address"}
-          ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                              "description":"The last time the user logged in." }
-          ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50 ,             "description":"The IP Address for the last login"}
-          ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                           "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
-          ,{ "name":"loginCount"     , "type"  :"INTEGER"  , "nullable": false,                           "description":"The login counts for this user"
+           { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
+          ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100, "protect":"ABSOLUTE", "description":"The first line of the address"}
+          ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
+          ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
+          ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
+          ,{ "name":"loginCount"     , "type"  :"INTEGER"  , "nullable": false,                                    "description":"The login counts for this user"
                                      , "values": [
                                         { "name":"Create", "value":"0", "description":"Default Password Creation Time", "default":"CREATE" }
                                       ]
@@ -101,7 +101,7 @@
      ,"indices":[ 
           { "name":"Id"          , "columns":["id"]    , "db": true }
          ,{ "name":"Email"       , "columns":["email"] , "db": true }
-         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
+//         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
        ]
     },
     

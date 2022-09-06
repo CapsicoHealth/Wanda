@@ -96,7 +96,7 @@ public class InviteUserServlet extends SimpleServlet
        
         if (Refnum != SystemValues.EVIL_VALUE)
           { // valid refnum
-            User_Data refnumUser = User_Factory.lookupByPersonRefNum(Refnum);
+            User_Data refnumUser = User_Factory.lookupByPrimaryKey(Refnum);
             if (refnumUser.read(C) == false)
               {
                 if(refnumUser.hasRoles(RoleHelper.SUPERADMIN) == true)

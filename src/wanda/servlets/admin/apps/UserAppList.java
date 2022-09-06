@@ -70,7 +70,7 @@ public class UserAppList extends SimpleServlet
 
         long UserRefnum = Req.getParamLong("userRefnum", true);
         Req.throwIfErrors();
-        User_Data User = User_Factory.lookupByPersonRefNum(UserRefnum);
+        User_Data User = User_Factory.lookupByPrimaryKey(UserRefnum);
         if(User.read(C) == false)
           {
             throw new NotFoundException("User", UserRefnum);
