@@ -419,4 +419,9 @@ public class RequestUtil
       {
         return _Req.getServletContext().getServletRegistrations().values();
       }
+    
+    public Object getAttribute(String name)
+     {
+       return _Req.getAttribute(name);
+     }
   }
