@@ -481,7 +481,35 @@
          { "name":"TenantUserJob_Tenant_FK" , "srcColumns":["tenantRefnum"] , "destObject":"Tenant"               },
          { "name":"TenantUserJob_User_FK"   , "srcColumns":["userRefnum"]   , "destObject":"User"                 }
       ]
-    }    
+    }
+
+
+  ,{
+    "name": "SystemEmail",
+    "description":"System Wide notifications",
+    "columns":[
+      { "name": "userRefnum"  , "sameas": "wanda.data.WANDA.User.refnum", "nullable": false, "description": "User foreign key"     },
+      { "name": "subject"     , "type": "STRING", "size": 256, "protect": "SMART"       , "nullable": false, "description": "System Email Subject" },
+      { "name": "body"        , "type": "STRING", "size": 262144, "protect": "SMART"    , "nullable": false, "description": "System Email Body"    },
+      { "name": "tenantRefnum", "sameas": "wanda.data.WANDA.Tenant.refnum", "nullable": true , "description": "Tenant Foreign Key"   },
+      { "name": "status"      , "type": "CHAR"                                          , "nullable": false , "description": "Tenant Foreign Key"
+                              , "values": [
+                                { "name":"Pending"  , "value":"P", "description":"Default Status", "default":"CREATE" },
+                                { "name":"Delivered", "value":"D", "description":"Deliver Status"                     },
+                                { "name":"Failed"   , "value":"F", "description":"Failure Status"                     }
+                              ]
+      }
+    ],
+    "primary": { "autogen": true },
+    "foreign": [
+      { "name":"SystemEmail_UserRefnum_FK"  , "srcColumns":["userRefnum"]  , "destObject":"wanda.data.WANDA.User"   },
+      { "name":"SystemEmail_TenantRefnum_FK", "srcColumns":["tenantRefnum"], "destObject":"wanda.data.WANDA.Tenant" }
+    ],
+    "json":[
+      { "name": "simple", "columns": [ "refnum", "subject", "status" ] },
+      { "name": "", "columns": [ "refnum", "subject", "body", "status", "userRefnum", "tenantRefnum" ] }
+    ]
+  }
     
   ]
   
@@ -814,6 +842,16 @@
        ]
     }
   ]
+
+ ,"migrations":{
+      "renames":[
+       ]
+     ,"moves":[
+         { "schema":"ADMIN", "objects":["SystemEmail"]
+         }
+       ]
+   }
+
 }    
 
 
