@@ -499,16 +499,19 @@
                                 { "name":"Failed"   , "value":"F", "description":"Failure Status"                     }
                               ]
       }
-    ],
-    "primary": { "autogen": true },
-    "foreign": [
-      { "name":"SystemEmail_UserRefnum_FK"  , "srcColumns":["userRefnum"]  , "destObject":"wanda.data.WANDA.User"   },
-      { "name":"SystemEmail_TenantRefnum_FK", "srcColumns":["tenantRefnum"], "destObject":"wanda.data.WANDA.Tenant" }
-    ],
-    "json":[
-      { "name": "simple", "columns": [ "refnum", "subject", "status" ] },
-      { "name": "", "columns": [ "refnum", "subject", "body", "status", "userRefnum", "tenantRefnum" ] }
     ]
+   ,"primary": { "autogen": true }
+   ,"foreign": [
+       { "name":"SystemEmail_UserRefnum_FK"  , "srcColumns":["userRefnum"]  , "destObject":"wanda.data.WANDA.User"   }
+      ,{ "name":"SystemEmail_TenantRefnum_FK", "srcColumns":["tenantRefnum"], "destObject":"wanda.data.WANDA.Tenant" }
+     ]
+   ,"indices":[ 
+       { "name":"MostRecent"        , "orderBy":["lastUpdated"]     , "db": true }
+     ]
+   ,"json":[
+       { "name": "simple", "columns": [ "refnum", "subject", "status" ] }
+      ,{ "name": "", "columns": [ "refnum", "subject", "body", "status", "userRefnum", "tenantRefnum", "lastUpdated" ] }
+     ]
   }
     
   ]

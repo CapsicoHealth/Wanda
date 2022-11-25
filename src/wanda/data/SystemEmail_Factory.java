@@ -37,6 +37,7 @@ public class SystemEmail_Factory extends wanda.data._Tilda.TILDA__SYSTEMEMAIL_Fa
            Q.and();
            Q.equals(COLS.TENANTREFNUM, tenantRefnum);
          }
+       Q.orderBy(COLS.LASTUPDATED, false);
        return runSelect(C, Q, Start, Size);
      }
 

@@ -55,7 +55,9 @@ public class SystemEmail_Data extends wanda.data._Tilda.TILDA__SYSTEMEMAIL
        String []To_Arr = {User.getEmail()};
        String []CC = {};
        boolean status = false;
-       if(this.isTenantRefnumNull() == true)
+       // Hack here about testing for null tenant refnum.
+       // Tilda does not set the null flag when a new object is created.
+       if(isTenantRefnumNull() == true || getTenantRefnum() == 0)
          {
            ListResults<AdminUsersView_Data> Results = AdminUsersView_Factory.filter(C, User, null, null, "active", Start, Size);
            while(Results.size() > 0)
