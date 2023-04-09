@@ -77,7 +77,7 @@ public class SetPassword extends SimpleServlet
           {
             throw new NotFoundException("User", Email, "Cannot find user with email "+Email);
           }
-        if (CompareUtil.equals(Token, user.getPswdResetCode()) == false || (user.isLockedNull() == false && ChronoUnit.MILLIS.between(ZonedDateTime.now(), user.getLocked()) > 0))
+        if (CompareUtil.equals(Token, user.getPswdResetCode()) == false || (user.isNullLocked() == false && ChronoUnit.MILLIS.between(ZonedDateTime.now(), user.getLocked()) > 0))
           {
             Req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
             User_Data.markUserLoginFailure(C, user);
@@ -101,9 +101,9 @@ public class SetPassword extends SimpleServlet
         Req.throwIfErrors();
         user.setPswd(hashedPassword);
         user.setPswdCreateNow();
-        user.setPswdResetCodeNull();
-        user.setPswdResetCreateNull();
-        user.setLockedNull();
+        user.setNullPswdResetCode();
+        user.setNullPswdResetCreate();
+        user.setNullLocked();
         user.pushToPswdHistory(hashedPassword);
         user.write(C);
         Res.success();

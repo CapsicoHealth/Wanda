@@ -78,7 +78,7 @@ public class UserServlet extends SimpleServlet
         if (lock == 1)
           user.setLocked(DateTimeUtil.nowUTC().plusYears(100));
         else if (lock == 0)
-          user.setLockedNull();
+          user.setNullLocked();
 
         if (resetPswd)
           user.sendForgotPswdEmail(C);
