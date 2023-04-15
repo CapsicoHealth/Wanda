@@ -1,0 +1,15 @@
+package wanda.web.chatgpt;
+
+public class ResponseUsage
+{
+  public ResponseUsage(int prompt_tokens, int completion_tokens, int total_tokens)
+    {
+      this.prompt_tokens = prompt_tokens;
+      this.completion_tokens = completion_tokens;
+      this.total_tokens = total_tokens;
+    }
+
+  public final int prompt_tokens;
+  public final int completion_tokens;
+  public final int total_tokens;
+}
