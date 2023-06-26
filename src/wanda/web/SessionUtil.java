@@ -28,11 +28,14 @@ public class SessionUtil
     protected static final Logger LOG               = LogManager.getLogger(SessionUtil.class.getName());
 
     public static final int       FORCE_RELOAD_USER = 1;
+    /**
+     * Force a commit on a request even if an error ocurred, for example, during a login/logout.
+     */
     public static final int       FORCE_COMMIT      = 2;
 
     public static enum Attributes
       {
-        USERREFNUM, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR;
+        USERREFNUM, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR, MASKING_MODE;
       }
 
 
@@ -64,7 +67,8 @@ public class SessionUtil
         if (S != null)
           synchronized (S)
             {
-              S.invalidate();
+ //             is (S.isValid() == true)
+               S.invalidate();
               LOG.info("Invalidating existing session");
             }
       }

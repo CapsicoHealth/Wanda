@@ -25,11 +25,13 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.ConnectionPool;
+import tilda.db.QueryDetails;
 import tilda.utils.AnsiUtil;
 import tilda.utils.DurationUtil;
 import tilda.utils.SystemValues;
@@ -66,7 +68,14 @@ public class SessionFilterNonTransactional implements javax.servlet.Filter
 
         try
           {
-            LOG.info(SessionFilter.getRequestHeaderLogStr(Request, null, true));
+            
+            HttpSession S = SessionUtil.getSession(Request);
+            Boolean maskedMode = (Boolean) S.getAttribute(SessionUtil.Attributes.MASKING_MODE.name());
+            if (maskedMode == null)
+              maskedMode = false;
+            QueryDetails.setThreadMaskMode_DO_NOT_USE_IN_GENERAL_APP_CODE(maskedMode);
+            
+            LOG.info(SessionFilter.getRequestHeaderLogStr(Request, null, true, maskedMode));
             if (Request.getScheme().equals("https") == false)
               {
                 LOG.error("The server only accepts HTTPS requests.");

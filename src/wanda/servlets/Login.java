@@ -176,6 +176,9 @@ public class Login extends SimpleServlet
                 public void onLoginSuccess(User_Data U)
                 throws Exception
                   {
+                    boolean maskedMode = Req.getParamBoolean("dataMasking", false);
+                    Req.setSessionBool(SessionUtil.Attributes.MASKING_MODE.name(), maskedMode);
+
                     // Generate App Data if empty
                     if (U.getAppData().size() < 1 && U.generateAppData(C) == false)
                       {

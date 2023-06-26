@@ -49,7 +49,7 @@ public class RequestUtil
 
     public static enum Attributes
       {
-      CONNECTION, USER, TENANT, TENANTUSER, EXCEPTION;
+        CONNECTION, USER, TENANT, TENANTUSER, EXCEPTION;
       }
 
     public RequestUtil(HttpServletRequest request)
@@ -282,6 +282,13 @@ public class RequestUtil
       }
 
     public void setSessionInt(String Name, int Value)
+      {
+        HttpSession S = SessionUtil.getSession(_Req);
+        if (S != null)
+          S.setAttribute(Name, Value);
+      }
+
+    public void setSessionBool(String Name, boolean Value)
       {
         HttpSession S = SessionUtil.getSession(_Req);
         if (S != null)

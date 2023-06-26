@@ -103,6 +103,9 @@
          ,{ "name":"Email"       , "columns":["email"] , "db": true }
 //         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
        ]
+     ,"masks":[
+         { "columns":["email", "id"], "mask":"******" }
+       ]
     },
     
     
@@ -115,7 +118,7 @@
          ,{ "name":"nameFirst"    , "sameas":"nameLast",                                              "description":"The first name for a user" }
          ,{ "name":"nameMiddle"   , "sameas":"nameLast", "nullable": true,                            "description":"The middle name for a user"}
          ,{ "name":"nameShortComp", "sameas":"nameLast",                  "mode":"CALCULATED",        "description":"The short composite name for a user to be trackable, but not PHI"}
-         ,{ "name":"nameStandard" , "type":"STRING"  ,                    "mode":"CALCULATED",        "description":"A standard representation of a full name" }
+         ,{ "name":"nameStandard" , "type":"STRING"  , "size":1024,       "mode":"CALCULATED",        "description":"A standard representation of a full name" }
          ,{ "name":"dob"          , "type":"DATETIME", "nullable": true ,                             "description":"The date of birth" }
          ,{ "name":"currentAge"   , "type":"INTEGER" , "nullable": false, "mode":"CALCULATED",        "description":"The age at this current time" }
          ,{ "name":"dod"          , "type":"DATETIME",                                                "description":"The date of death" }
@@ -154,6 +157,9 @@
        ]
      ,"json":[
           { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
+       ]
+     ,"masks":[
+         { "columns":["name*", "address*", "zipPostal", "telMobile","telOffice", "telFax", "emailHome", "emailOffice"], "mask":"******" }
        ]
     },
     
@@ -389,6 +395,9 @@
       ,"indices":[ 
          { "name":"user_rn", "columns":["user_rn"], "orderBy":["created desc"], "db": true }
        ]
+     ,"masks":[
+         { "columns":["userEmail", "ipAddress", "parameters"], "mask":"******" }
+       ]
     }
     
     
@@ -512,9 +521,12 @@
        { "name": "simple", "columns": [ "refnum", "subject", "status" ] }
       ,{ "name": "", "columns": [ "refnum", "subject", "body", "status", "userRefnum", "tenantRefnum", "lastUpdated" ] }
      ]
-  }
+     ,"masks":[
+         { "columns":["subject", "body"], "mask":"******" }
+       ]
+   }
     
-  ]
+ ]
   
  ,"views":[
     {

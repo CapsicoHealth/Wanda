@@ -23,16 +23,19 @@ import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import tilda.db.QueryDetails;
 import tilda.utils.json.JSONUtil;
 import tilda.utils.pairs.StringIntPair;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SessionStatusImpl;
+import wanda.web.SessionUtil;
 
 /**
  * This is a plain servlet to make session status checking as fact and low-overhead as possible, i.e.,
@@ -60,13 +63,19 @@ public class SessionStatusServlet extends javax.servlet.http.HttpServlet impleme
         StringIntPair SIP = req.getSessionStatus().getSessionStatus(servletPath);
         boolean clear = req.getSessionStatus().isSessionStatusMarkedForClear(servletPath);
 
+        HttpSession S = SessionUtil.getSession(request);
+        Boolean maskedMode = (Boolean) S.getAttribute(SessionUtil.Attributes.MASKING_MODE.name());
+        if (maskedMode == null)
+          maskedMode = false;
+        QueryDetails.setThreadMaskMode_DO_NOT_USE_IN_GENERAL_APP_CODE(maskedMode);
+        
         LOG.debug("Session Attributes: "+req.getSessionAttributes());
         
         try
           {
             LOG.info("\n"
             + " ============================================================================================================================================================================\n"
-            + SessionFilter.getRequestHeaderLogStr(request, null, false) + "\n"
+            + SessionFilter.getRequestHeaderLogStr(request, null, false, maskedMode) + "\n"
             + "   ***  Session status for '" + servletPath + "': " + SIP._V + "% -> " + SIP._N + "\n"
             + " ============================================================================================================================================================================\n"
             );
