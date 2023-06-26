@@ -35,7 +35,7 @@ public class SessionUtil
 
     public static enum Attributes
       {
-        USERREFNUM, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR, MASKING_MODE;
+      USERREFNUM, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR, MASKING_MODE;
       }
 
 
@@ -56,7 +56,7 @@ public class SessionUtil
         else
           {
             // Too much logging here that is not very useful.
-//            LOG.info("Picking up existing session");
+            // LOG.info("Picking up existing session");
           }
         return S;
       }
@@ -67,9 +67,15 @@ public class SessionUtil
         if (S != null)
           synchronized (S)
             {
- //             is (S.isValid() == true)
-               S.invalidate();
-              LOG.info("Invalidating existing session");
+              try
+                {
+                  S.invalidate();
+                  LOG.info("Invalidating existing session");
+                }
+              catch (Exception E)
+                {
+                  LOG.info("Invalidating existing session: session was already invalidated.");
+                }
             }
       }
 
