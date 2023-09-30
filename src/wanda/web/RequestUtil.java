@@ -18,6 +18,7 @@ package wanda.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -225,6 +226,22 @@ public class RequestUtil
         return ParseUtil.parseZonedDateTime(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
       }
 
+    public LocalDate getParamLocalDate(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseLocalDate(Name, Mandatory, _Req.getParameter(Name), _Errors);
+      }
+
+    public LocalDate getParamLocalDate(String Name, LocalDate DefaultValue)
+      {
+        LocalDate LD = ParseUtil.parseLocalDate(Name, false, _Req.getParameter(Name), _Errors);
+        return LD != null ? LD : DefaultValue;
+      }
+
+    public LocalDate[] getParamsLocalDate(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseLocalDate(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
+      }
+    
     public boolean hasErrors()
       {
         return _Errors.isEmpty() == false;
