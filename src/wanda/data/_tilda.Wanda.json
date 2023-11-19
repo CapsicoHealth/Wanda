@@ -25,12 +25,12 @@
     { "name":"User"
      ,"description":"blah blah"
      ,"columns":[
-           { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255,              "description":"The account's email address" }
-          ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100,              "description":"The first line of the address"}
-          ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                              "description":"The last time the user logged in." }
-          ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50 ,             "description":"The IP Address for the last login"}
-          ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                           "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
-          ,{ "name":"loginCount"     , "type"  :"INTEGER"  , "nullable": false,                           "description":"The login counts for this user"
+           { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
+          ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100, "protect":"ABSOLUTE", "description":"The first line of the address"}
+          ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
+          ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
+          ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
+          ,{ "name":"loginCount"     , "type"  :"INTEGER"  , "nullable": false,                                    "description":"The login counts for this user"
                                      , "values": [
                                         { "name":"Create", "value":"0", "description":"Default Password Creation Time", "default":"CREATE" }
                                       ]
@@ -101,7 +101,10 @@
      ,"indices":[ 
           { "name":"Id"          , "columns":["id"]    , "db": true }
          ,{ "name":"Email"       , "columns":["email"] , "db": true }
-         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
+//         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
+       ]
+     ,"masks":[
+         { "columns":["email", "id"], "mask":"******" }
        ]
     },
     
@@ -115,7 +118,7 @@
          ,{ "name":"nameFirst"    , "sameas":"nameLast",                                              "description":"The first name for a user" }
          ,{ "name":"nameMiddle"   , "sameas":"nameLast", "nullable": true,                            "description":"The middle name for a user"}
          ,{ "name":"nameShortComp", "sameas":"nameLast",                  "mode":"CALCULATED",        "description":"The short composite name for a user to be trackable, but not PHI"}
-         ,{ "name":"nameStandard" , "type":"STRING"  ,                    "mode":"CALCULATED",        "description":"A standard representation of a full name" }
+         ,{ "name":"nameStandard" , "type":"STRING"  , "size":1024,       "mode":"CALCULATED",        "description":"A standard representation of a full name" }
          ,{ "name":"dob"          , "type":"DATETIME", "nullable": true ,                             "description":"The date of birth" }
          ,{ "name":"currentAge"   , "type":"INTEGER" , "nullable": false, "mode":"CALCULATED",        "description":"The age at this current time" }
          ,{ "name":"dod"          , "type":"DATETIME",                                                "description":"The date of death" }
@@ -154,6 +157,9 @@
        ]
      ,"json":[
           { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
+       ]
+     ,"masks":[
+         { "columns":["name*", "address*", "zipPostal", "telMobile","telOffice", "telFax", "emailHome", "emailOffice"], "mask":"******" }
        ]
     },
     
@@ -389,6 +395,9 @@
       ,"indices":[ 
          { "name":"user_rn", "columns":["user_rn"], "orderBy":["created desc"], "db": true }
        ]
+     ,"masks":[
+         { "columns":["userEmail", "ipAddress", "parameters"], "mask":"******" }
+       ]
     }
     
     
@@ -481,9 +490,43 @@
          { "name":"TenantUserJob_Tenant_FK" , "srcColumns":["tenantRefnum"] , "destObject":"Tenant"               },
          { "name":"TenantUserJob_User_FK"   , "srcColumns":["userRefnum"]   , "destObject":"User"                 }
       ]
-    }    
+    }
+
+
+  ,{
+    "name": "SystemEmail",
+    "description":"System Wide notifications",
+    "columns":[
+      { "name": "userRefnum"  , "sameas": "wanda.data.WANDA.User.refnum", "nullable": false, "description": "User foreign key"     },
+      { "name": "subject"     , "type": "STRING", "size": 256, "protect": "SMART"       , "nullable": false, "description": "System Email Subject" },
+      { "name": "body"        , "type": "STRING", "size": 262144, "protect": "SMART"    , "nullable": false, "description": "System Email Body"    },
+      { "name": "tenantRefnum", "sameas": "wanda.data.WANDA.Tenant.refnum", "nullable": true , "description": "Tenant Foreign Key"   },
+      { "name": "status"      , "type": "CHAR"                                          , "nullable": false , "description": "Tenant Foreign Key"
+                              , "values": [
+                                { "name":"Pending"  , "value":"P", "description":"Default Status", "default":"CREATE" },
+                                { "name":"Delivered", "value":"D", "description":"Deliver Status"                     },
+                                { "name":"Failed"   , "value":"F", "description":"Failure Status"                     }
+                              ]
+      }
+    ]
+   ,"primary": { "autogen": true }
+   ,"foreign": [
+       { "name":"SystemEmail_UserRefnum_FK"  , "srcColumns":["userRefnum"]  , "destObject":"wanda.data.WANDA.User"   }
+      ,{ "name":"SystemEmail_TenantRefnum_FK", "srcColumns":["tenantRefnum"], "destObject":"wanda.data.WANDA.Tenant" }
+     ]
+   ,"indices":[ 
+       { "name":"MostRecent"        , "orderBy":["lastUpdated"]     , "db": true }
+     ]
+   ,"json":[
+       { "name": "simple", "columns": [ "refnum", "subject", "status" ] }
+      ,{ "name": "", "columns": [ "refnum", "subject", "body", "status", "userRefnum", "tenantRefnum", "lastUpdated" ] }
+     ]
+     ,"masks":[
+         { "columns":["subject", "body"], "mask":"******" }
+       ]
+   }
     
-  ]
+ ]
   
  ,"views":[
     {
@@ -814,6 +857,16 @@
        ]
     }
   ]
+
+ ,"migrations":{
+      "renames":[
+       ]
+     ,"moves":[
+         { "schema":"ADMIN", "objects":["SystemEmail"]
+         }
+       ]
+   }
+
 }    
 
 

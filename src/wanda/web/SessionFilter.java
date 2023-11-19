@@ -47,6 +47,7 @@ import com.google.common.cache.CacheBuilder;
 
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
+import tilda.db.QueryDetails;
 import tilda.utils.AnsiUtil;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.DurationUtil;
@@ -111,9 +112,16 @@ public class SessionFilter implements javax.servlet.Filter
         boolean isMasterPath = isMasterPath(Request);
         boolean isAuthPassthrough = isAuthPassthrough(Request);
 
+        // Masking
+        HttpSession S = SessionUtil.getSession(Request);
+        Boolean maskedMode = (Boolean) S.getAttribute(SessionUtil.Attributes.MASKING_MODE.name());
+        if (maskedMode == null)
+          maskedMode = false;
+        QueryDetails.setThreadMaskMode_DO_NOT_USE_IN_GENERAL_APP_CODE(maskedMode);
+
         try
           {
-            AL = LogRequestHeader(Request);
+            AL = LogRequestHeader(Request, maskedMode);
             MasterConnection = ConnectionPool.get("MAIN");
             MasterDbUser = getUser(Request, MasterConnection);
 
@@ -183,7 +191,6 @@ public class SessionFilter implements javax.servlet.Filter
                       }
                     TenantConnection = ConnectionPool.get(Tenant.getConnectionId());
                     
-                    HttpSession S = SessionUtil.getSession(Request);
                     LOG.debug("USERREFNUM: "+(Long) S.getAttribute(SessionUtil.Attributes.USERREFNUM.toString()));
                     LOG.debug("TENANTUSERREFNUM: "+(Long) S.getAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString()));
 
@@ -371,18 +378,18 @@ public class SessionFilter implements javax.servlet.Filter
           throw new Exception("Cannot create a AccessLog record in the database");
       }
 
-    private static AccessLog_Data LogRequestHeader(HttpServletRequest Request)
+    private static AccessLog_Data LogRequestHeader(HttpServletRequest Request, boolean dataMasking)
     throws Exception
       {
         AccessLog_Data AL = AccessLog_Factory.create(SessionUtil.getSession(Request).getId());
         AL.setIpAddress(Request.getRemoteAddr() + ":" + Request.getRemotePort());
         AL.setUrl(Request.getRequestURL().toString());
         AL.setServlet(Request.getServletPath());
-        LOG.info(getRequestHeaderLogStr(Request, AL, true));
+        LOG.info(getRequestHeaderLogStr(Request, AL, true, dataMasking));
         return AL;
       }
 
-    public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers)
+    public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking)
     throws UnsupportedEncodingException, Exception
       {
         StringBuilder Str = new StringBuilder();
@@ -392,6 +399,8 @@ public class SessionFilter implements javax.servlet.Filter
             Str.append("   ********************************************************************************************************************************************\n");
           }
         Str.append("   ***  " + AnsiUtil.NEGATIVE + "R E Q U E S T   #" + (AL == null ? "NULL" : AL.getRefnum()) + AnsiUtil.NEGATIVE_OFF + " - " + DateTimeUtil.printDateTime(ZonedDateTime.now()) + "\n");
+        if (dataMasking == true)
+         Str.append("   ***  REQUEST SET WITH DATA MASKING ON !");
         Str.append("   ***  RequestURL     : " + Request.getRequestURL().toString() + "\n");
         Str.append("   ***  RemoteAddr     : " + Request.getRemoteAddr() + ":" + Request.getRemotePort() + "\n");
         Str.append("   ***  PathInfo/Trans : " + Request.getPathInfo() + " | " + Request.getPathTranslated() + "\n");

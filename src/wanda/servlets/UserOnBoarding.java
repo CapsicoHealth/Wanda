@@ -104,8 +104,8 @@ public class UserOnBoarding extends SimpleServlet
           }
         user.setPswd(hashedPassword);
         user.setPswdCreateNow();
-        user.setPswdResetCodeNull();
-        user.setPswdResetCreateNull();
+        user.setNullPswdResetCode();
+        user.setNullPswdResetCreate();
         user.setInvitedUser(false);
         user.setPswdHist(passwordHistory);
         user.write(C);

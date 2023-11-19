@@ -48,7 +48,7 @@ public class ForgotPassword extends SimpleServlet
 
         email = email.toLowerCase();
         User_Data u = User_Factory.lookupByEmail(email);
-        if (u.read(C) && (u.isLockedNull() || ChronoUnit.MILLIS.between(ZonedDateTime.now(), u.getLocked()) < 1))
+        if (u.read(C) && (u.isNullLocked() || ChronoUnit.MILLIS.between(ZonedDateTime.now(), u.getLocked()) < 1))
           {
             u.sendForgotPswdEmail(C);
           }

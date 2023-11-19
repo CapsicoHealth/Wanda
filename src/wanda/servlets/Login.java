@@ -176,6 +176,9 @@ public class Login extends SimpleServlet
                 public void onLoginSuccess(User_Data U)
                 throws Exception
                   {
+                    boolean maskedMode = Req.getParamBoolean("dataMasking", false);
+                    Req.setSessionBool(SessionUtil.Attributes.MASKING_MODE.name(), maskedMode);
+
                     // Generate App Data if empty
                     if (U.getAppData().size() < 1 && U.generateAppData(C) == false)
                       {
@@ -197,8 +200,8 @@ public class Login extends SimpleServlet
                     U.setLoginCount(U.getLoginCount() + 1);
                     U.setFailCount(0);
                     U.setFailCycleCount(0);
-                    U.setFailFirstNull();
-                    U.setLockedNull();
+                    U.setNullFailFirst();
+                    U.setNullLocked();
                     U.write(C);
                     Req.setSessionUser(U);
                     Req.setSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name(), SessionUtil.FORCE_RELOAD_USER);

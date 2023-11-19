@@ -52,8 +52,8 @@ public class Verifications extends SimpleServlet
             if (user.read(C) == true)
               {
                 user.setEmail(user.getEmailUnverified());
-                user.setEmailUnverifiedNull();
-                user.setEmailVerificationCodeNull();
+                user.setNullEmailUnverified();
+                user.setNullEmailVerificationCode();
                 user.write(C);
 
                 UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());

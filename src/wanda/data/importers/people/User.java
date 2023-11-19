@@ -44,6 +44,8 @@ public class User
 
         if (_User == null)
           throw new Exception("The element 'person' cannot be null or missing.");
+        
+        _User.setPswdCreateNow();
 
         if (_User.upsert(C, true) == false)
           throw new Exception("Cannot write User record");

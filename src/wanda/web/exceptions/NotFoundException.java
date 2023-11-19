@@ -47,6 +47,10 @@ public class NotFoundException extends SimpleServletException
       {
         this(ResourceType, Long.toString(ResourceRefnum));
       }
+    public NotFoundException(String ResourceType, long ResourceRefnum, String ErrorMessage)
+      {
+        this(ResourceType, Long.toString(ResourceRefnum), ErrorMessage);
+      }
 
     public final String _ResourceType;
     public final String _ResourceId;

@@ -32,6 +32,7 @@ import tilda.db.Connection;
 import tilda.utils.CollectionUtil;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.EncryptionUtil;
+import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
 import wanda.servlets.helpers.RoleHelper;
@@ -172,15 +173,15 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.setPswdResetCode(EncryptionUtil.getToken(16, true));
         U.setPswdResetCreateNow();
         U.setInvitedUser(true);
-        U.setInviteCancelledNull();
-        U.setLockedNull();
+        U.setNullInviteCancelled();
+        U.setNullLocked();
         if (U.write(C) == false)
-         Errors.add(new StringStringPair("User", "Unable to save changes"));
+          Errors.add(new StringStringPair("User", "Unable to save changes"));
 
         UserDetail_Data UD = UserDetail_Factory.create(U.getRefnum(), lastName, firstName);
         UD.setEmailHome(email);
         if (UD.write(C) == false)
-         Errors.add(new StringStringPair("UserDetail", "Unable to save changes"));
+          Errors.add(new StringStringPair("UserDetail", "Unable to save changes"));
 
         if (tenantRefnums != null)
           {
@@ -238,8 +239,8 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             U.setPswdResetCreateNow();
             U.setInvitedUser(true);
           }
-        U.setInviteCancelledNull();
-        U.setLockedNull();
+        U.setNullInviteCancelled();
+        U.setNullLocked();
 
         if (U.write(C) == false || UD.write(C) == false)
           {
@@ -441,7 +442,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                       {
                         U.setLocked(DateTimeUtil.nowUTC().plusMinutes(WebBasics.getLockFor()));
                       }
-                    U.setFailFirstNull();
+                    U.setNullFailFirst();
                   }
               }
             else
@@ -490,7 +491,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         return getLocked() != null && ChronoUnit.MILLIS.between(ZonedDateTime.now(), getLocked()) > 0;
       }
-    
+
     public static boolean isUserLocked(User_Data U)
       {
         return U.isLocked();
@@ -500,13 +501,33 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         return hasRoles(RoleHelper.SUPERADMIN);
       }
+
+    public static boolean isUserSuperAdmin(User_Data U)
+      {
+        return U.isSuperAdmin();
+      }
+
     public boolean isGuest()
       {
         return hasRoles(RoleHelper.GUEST);
       }
 
-    public static boolean isUserSuperAdmin(User_Data U)
+    protected long _alternateResourceRefnum = SystemValues.EVIL_VALUE;
+    
+    /**
+     * Some users can have other types of roles. For the purpose of ACL, a User object can be assigned an alternate "resourceRefnum".
+     * @param alternateRefnum
+     */
+    public void setAlternateRefnum(long alternateResourceRefnum)
       {
-        return U.isSuperAdmin();
+        _alternateResourceRefnum = alternateResourceRefnum;
+      }
+    /**
+     * Some users can have other types of roles. For the purpose of ACL, a User object can be assigned an alternate "resourceRefnum".
+     * @return
+     */
+    public long getAlternateRefnum()
+      {
+        return _alternateResourceRefnum;
       }
   }
