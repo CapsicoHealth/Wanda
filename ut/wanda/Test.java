@@ -50,7 +50,8 @@ public class Test
             C = ConnectionPool.get("MAIN");
             
             Set<String> Roles = new HashSet<String>();
-            User_Data U = User_Factory.create("demo@CapsicoHealth.com", "Demo", Roles, EncryptionUtil.hash("demoCap!"));
+            String salt = "19482748";
+            User_Data U = User_Factory.create("demo@CapsicoHealth.com", "Demo", Roles, EncryptionUtil.hash("demoCap!", salt), salt);
             U.setLoginTypeLocal();
             if (U.write(C) == false)
              throw new Exception("Cannot create demo user");

@@ -24,13 +24,23 @@ import wanda.web.config.WebBasics;
 
 import tilda.utils.MailUtil;
 
-public class SystemMailSender
+public class EMailSender
   {
-    protected static final Logger LOG = LogManager.getLogger(SystemMailSender.class.getName());
+    protected static final Logger LOG = LogManager.getLogger(EMailSender.class.getName());
 
-    public static boolean sendMail(String[] To, String[] Cc, String[] Bcc, String Subject, String Message, boolean Urgent, boolean Confidential)
+    public static boolean sendMailSys(String[] To, String[] Cc, String[] Bcc, String Subject, String Message, boolean Urgent, boolean Confidential)
       {
-        EmailConfigDetails emailConfig = WebBasics.getEmailSettings();
+        return sendMail(true, To, Cc, Bcc, Subject, Message, Urgent, Confidential);
+      }
+
+    public static boolean sendMailUsr(String[] To, String[] Cc, String[] Bcc, String Subject, String Message, boolean Urgent, boolean Confidential)
+      {
+        return sendMail(false, To, Cc, Bcc, Subject, Message, Urgent, Confidential);
+      }
+
+    protected static boolean sendMail(boolean system, String[] To, String[] Cc, String[] Bcc, String Subject, String Message, boolean Urgent, boolean Confidential)
+      {
+        EmailConfigDetails emailConfig = system == true ? WebBasics.getEmailSettingsSys() : WebBasics.getEmailSettingsUsr();
         if (emailConfig == null)
           {
             LOG.debug("Email component is not operational. No SMTP config set");

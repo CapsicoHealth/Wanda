@@ -78,7 +78,8 @@ public class InviteUserTest
       {
         Set<String> Roles = new HashSet<String>();
         Roles.add("A");
-        User_Data U = User_Factory.create("test@capsicohealth.com", "Test", Roles, EncryptionUtil.hash("xxx"));
+        String salt = "123";
+        User_Data U = User_Factory.create("test@capsicohealth.com", "Test", Roles, EncryptionUtil.hash("xxx", salt), salt);
         U.setLoginTypeLocal();
         if (U.write(C) == false)
          throw new Exception("Cannot create Test User");

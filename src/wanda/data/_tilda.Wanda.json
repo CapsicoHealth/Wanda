@@ -39,6 +39,7 @@
                                       ,"enum": { "srcColumns": [], "destObject":"Role", "multi":"SET" }
            }
           ,{ "name":"pswd"           , "type":"STRING"   , "nullable": false, "size": 100,                             "description":"The hashed password"}
+          ,{ "name":"pswdSalt"       , "type":"STRING"   , "nullable": false, "size":  12,                             "description":"The salt, if any, for the hashed password"}
           ,{ "name":"pswdCreate"     , "type":"DATETIME" , "nullable": false,                                          "description":"The date/time the password was created"
                                      , "values": [ { "name":"Create", "value":"NOW", "description":"Default Password Creation Time", "default":"CREATE"}
                                                  ]
@@ -878,6 +879,9 @@
      ,"moves":[
          { "schema":"ADMIN", "objects":["SystemEmail"]
          }
+       ]
+     ,"notNulls":[
+         { "object":"User", "columns":["pswdSalt"    ], "default":""  }
        ]
    }
 

@@ -137,9 +137,13 @@ public class WebBasics
       }
 
     // Getters
-    public static EmailConfigDetails getEmailSettings()
+    public static EmailConfigDetails getEmailSettingsUsr()
       {
-        return _Config._emailSettings;
+        return _Config._emailSettingsUsr;
+      }
+    public static EmailConfigDetails getEmailSettingsSys()
+      {
+        return _Config._emailSettingsSys;
       }
 
     public static BeaconConfig getBeaconConfig()

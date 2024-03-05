@@ -78,7 +78,7 @@ public class UserOnBoardingTest
       {
         Set<String> Roles = new HashSet<String>();
         Roles.add("A");
-        User_Data U = User_Factory.create("xxx@xxx.com", "Test", Roles, "xxx");
+        User_Data U = User_Factory.create("xxx@xxx.com", "Test", Roles, "xxx", "123");
         U.setLoginTypeLocal();
         U.setPswdResetCode("xxx");
         U.setPswdResetCreate(ZonedDateTime.now());

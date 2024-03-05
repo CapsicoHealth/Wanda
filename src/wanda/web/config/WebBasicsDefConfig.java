@@ -35,19 +35,20 @@ import wanda.web.BeaconBit;
 public class WebBasicsDefConfig
   {
     /*@formatter:off*/
-    @SerializedName("appName"         )         String                              _appName                = null;
-    @SerializedName("hostName"        )         String                              _hostName               = null;
-    @SerializedName("appPath"         )         String                              _appPath                = null;
-    @SerializedName("homePagePath"    )         String                              _homePagePath           = null;
-    @SerializedName("email"           )         EmailConfigDetails                  _emailSettings          = null;
+    @SerializedName("email"           )         EmailConfigDetails                  _emailSettingsUsr       = null;
+    @SerializedName("emailSys"        )         EmailConfigDetails                  _emailSettingsSys       = null;
     @SerializedName("sessionConfig"   )         SessionConfig                       _sessionConfig          = null;
     @SerializedName("passwordRules"   )         List<PasswordRule>                  _passwordRules          = null;
+
+    @SerializedName("hostName"        )         String                              _hostName               = null;
+    @SerializedName("appName"         )         String                              _appName                = null;
+    @SerializedName("appPath"         )         String                              _appPath                = null;
+    @SerializedName("homePagePath"    )         String                              _homePagePath           = null;
     @SerializedName("resetEmailText"  )         List<String>                        _resetEmailTexts        = null;
     @SerializedName("inviteEmailText" )         List<String>                        _inviteEmailTexts       = null;
     @SerializedName("guestRegistration")        GuestRegistration                   _guestRegistration      = null;
-    
-    
     @SerializedName("emailVerificationText")    List<String>                        _emailVerificationTexts = null;
+
     @SerializedName("lookAndFeel"     )         LookAndFeel                         _laf                    = null;
     @SerializedName("eulas"           )         List<Eula>                          _eulas                  = new ArrayList<Eula>();
     @SerializedName("twofishes-url"   )         String                              _twofishesUrl           = null;
@@ -148,21 +149,38 @@ public class WebBasicsDefConfig
             OK = false;
           }
 
-        if (_emailSettings != null)
+        if (_emailSettingsUsr != null)
           {
-            if (TextUtil.isNullOrEmpty(_emailSettings._smtp) == true)
+            if (TextUtil.isNullOrEmpty(_emailSettingsUsr._smtp) == true)
               {
                 WebBasics.LOG.error("Invalid Email Configuration in the WebBasics configuration file: the 'smtp' attribute is missing or empty.");
                 OK = false;
               }
-            if (TextUtil.isNullOrEmpty(_emailSettings._userId) == true)
+            if (TextUtil.isNullOrEmpty(_emailSettingsUsr._userId) == true)
               {
                 WebBasics.LOG.error("Invalid Email Configuration in the WebBasics configuration file: the 'userId' attribute is missing or empty.");
                 OK = false;
               }
-            if (TextUtil.isNullOrEmpty(_emailSettings._pswd) == true)
+            if (TextUtil.isNullOrEmpty(_emailSettingsUsr._pswd) == true)
               {
                 WebBasics.LOG.warn("The Email Configuration in the WebBasics configuration file has a missing or empty 'pswd' attribute, which may be OK.");
+              }
+          }
+        if (_emailSettingsSys != null)
+          {
+            if (TextUtil.isNullOrEmpty(_emailSettingsSys._smtp) == true)
+              {
+                WebBasics.LOG.error("Invalid System Email Configuration in the WebBasics configuration file: the 'smtp' attribute is missing or empty.");
+                OK = false;
+              }
+            if (TextUtil.isNullOrEmpty(_emailSettingsSys._userId) == true)
+              {
+                WebBasics.LOG.error("Invalid System Email Configuration in the WebBasics configuration file: the 'userId' attribute is missing or empty.");
+                OK = false;
+              }
+            if (TextUtil.isNullOrEmpty(_emailSettingsSys._pswd) == true)
+              {
+                WebBasics.LOG.warn("The System Email Configuration in the WebBasics configuration file has a missing or empty 'pswd' attribute, which may be OK.");
               }
           }
 
