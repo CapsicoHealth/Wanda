@@ -59,7 +59,7 @@ public class Account extends SimpleServlet
         String currentPassword = req.getParamString("currentPassword", true);
         req.throwIfErrors();
         long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
-        if (EncryptionUtil.hash(currentPassword).equals(U.getPswd()) == false)
+        if (EncryptionUtil.hash(currentPassword, U.getPswdSalt()).equals(U.getPswd()) == false)
           {
             req.addError("currentPassword", "please enter correct current password");
           }
@@ -88,12 +88,14 @@ public class Account extends SimpleServlet
               }
             req.throwIfErrors();
 
-            hashedPassword = EncryptionUtil.hash(password);
+            String salt = U.getOrCreatePswdSalt();
+            hashedPassword = EncryptionUtil.hash(password, salt);
             if (U.hasPswdHist(hashedPassword))
               {
                 throw new Exception("Password Already used");
               }
             U.setPswd(hashedPassword);
+            U.setPswdSalt(salt);
             U.setPswdCreateNow();
             U.pushToPswdHistory(hashedPassword);
           } // TODO ADD FOR CONTACT / PERSON

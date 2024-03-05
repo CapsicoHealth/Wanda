@@ -36,7 +36,7 @@ import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
 import wanda.servlets.helpers.RoleHelper;
-import wanda.web.SystemMailSender;
+import wanda.web.EMailSender;
 import wanda.web.config.WebBasics;
 import wanda.web.exceptions.BadRequestException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -66,6 +66,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         super.setEmail(i == null ? null : i.toLowerCase());
       }
+
 
     @Override
     protected boolean beforeWrite(Connection C)
@@ -157,7 +158,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 sb.append("&token=");
                 sb.append(getPswdResetCode());
                 sb.append("'>Click to reset password</a></p>.</p>");
-                SystemMailSender.sendMail(to, cc, bcc, "Reset your password -- " + WebBasics.getAppName(), sb.toString(), true, true);
+                EMailSender.sendMailUsr(to, cc, bcc, "Reset your password -- " + WebBasics.getAppName(), sb.toString(), true, true);
               }
           }.start();
       }
@@ -168,8 +169,9 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
 
         String password = EncryptionUtil.getToken(16, true);
+        String salt = EncryptionUtil.getToken(8);
         HashSet<String> _roles = new HashSet<String>(Arrays.asList(roles));
-        User_Data U = User_Factory.create(email, email, _roles, password);
+        User_Data U = User_Factory.create(email, email, _roles, password, salt);
         U.setPswdResetCode(EncryptionUtil.getToken(16, true));
         U.setPswdResetCreateNow();
         U.setInvitedUser(true);
@@ -332,7 +334,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 sb.append("&token=");
                 sb.append(getPswdResetCode());
                 sb.append("'>Click here to set your password</a></p>");
-                SystemMailSender.sendMail(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
+                EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
               }
           }.start();
       }
@@ -350,7 +352,8 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         String email = src.getEmail();
         String id = src.getId();
         String pswd = src.getPswd();
-        User_Data NewObject = User_Factory.create(email, id, new HashSet<String>(), pswd);
+        String salt = src.getPswdSalt();
+        User_Data NewObject = User_Factory.create(email, id, new HashSet<String>(), pswd, salt);
         src.copyTo(NewObject);
         NewObject.setRefnum(src.getRefnum());
         return NewObject;
@@ -405,7 +408,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 sb.append("&token=");
                 sb.append(getEmailVerificationCode());
                 sb.append("'>Click Here to complete verification</a></p>");
-                SystemMailSender.sendMail(to, cc, bcc, "Email Verification: " + WebBasics.getAppName(), sb.toString(), true, true);
+                EMailSender.sendMailUsr(to, cc, bcc, "Email Verification: " + WebBasics.getAppName(), sb.toString(), true, true);
               }
           }.start();
       }
@@ -458,7 +461,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         String dbNameStr = EncryptionUtil.getToken(10, true);
         String dbKeyStr = EncryptionUtil.getToken(20, true);
-        byte[] shaBytes = EncryptionUtil.hash256(dbKeyStr);
+        byte[] shaBytes = EncryptionUtil.hash256(dbKeyStr, "");
         String shaHexStr = EncryptionUtil.bytesToHex(shaBytes);
 
         User_Data.AppData appData = new User_Data.AppData();
@@ -513,21 +516,29 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       }
 
     protected long _alternateResourceRefnum = SystemValues.EVIL_VALUE;
-    
+
     /**
      * Some users can have other types of roles. For the purpose of ACL, a User object can be assigned an alternate "resourceRefnum".
+     * 
      * @param alternateRefnum
      */
     public void setAlternateRefnum(long alternateResourceRefnum)
       {
         _alternateResourceRefnum = alternateResourceRefnum;
       }
+
     /**
      * Some users can have other types of roles. For the purpose of ACL, a User object can be assigned an alternate "resourceRefnum".
+     * 
      * @return
      */
     public long getAlternateRefnum()
       {
         return _alternateResourceRefnum;
       }
+
+    public String getOrCreatePswdSalt()
+    {
+      return TextUtil.isNullOrEmpty(getPswdSalt()) == false ? getPswdSalt() : EncryptionUtil.getToken(8);
+    }
   }

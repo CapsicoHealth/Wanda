@@ -96,7 +96,7 @@ public class Login extends SimpleServlet
             loginCallback.onLoginFailure(u);
           }
 
-        if (EncryptionUtil.hash(password).equals(u.getPswd()) == false)
+        if (EncryptionUtil.hash(password, u.getPswdSalt()).equals(u.getPswd()) == false)
           {
             LOG.error("Invalid password for User '" + username + "' in the local DB");
             loginCallback.onLoginFailure(u);
@@ -106,6 +106,15 @@ public class Login extends SimpleServlet
           {
             u.sendForgotPswdEmail(C);
             throw new AccessForbiddenException("User", "Password invalid as per Password Rules");
+          }
+
+        // use the login process to migrate to using the salt if it hasn't been set before.
+        if (TextUtil.isNullOrEmpty(u.getPswdSalt()) == true)
+          {
+            String salt = u.getOrCreatePswdSalt();
+            String pswd = EncryptionUtil.hash(password, salt);
+            u.setPswdSalt(salt);
+            u.setPswd(pswd);
           }
 
         loginCallback.onLoginSuccess(u);
