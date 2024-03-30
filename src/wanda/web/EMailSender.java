@@ -23,16 +23,39 @@ import wanda.web.config.EmailConfigDetails;
 import wanda.web.config.WebBasics;
 
 import tilda.utils.MailUtil;
+import tilda.utils.TextUtil;
 
 public class EMailSender
   {
     protected static final Logger LOG = LogManager.getLogger(EMailSender.class.getName());
 
+    /**
+     * Sends an email using the System email configuration as per WebBasics.conf.json.
+     * @param To The list of addresses to send to. If null or empty, the "defaultAdmins" configuration value is used.
+     * @param Cc
+     * @param Bcc
+     * @param Subject
+     * @param Message
+     * @param Urgent
+     * @param Confidential
+     * @return
+     */
     public static boolean sendMailSys(String[] To, String[] Cc, String[] Bcc, String Subject, String Message, boolean Urgent, boolean Confidential)
       {
         return sendMail(true, To, Cc, Bcc, Subject, Message, Urgent, Confidential);
       }
 
+    /**
+     * Sends an email using the User email configuration as per WebBasics.conf.json.
+     * @param To The list of addresses to send to. If null or empty, the "defaultAdmins" configuration value is used.
+     * @param Cc
+     * @param Bcc
+     * @param Subject
+     * @param Message
+     * @param Urgent
+     * @param Confidential
+     * @return
+     */
     public static boolean sendMailUsr(String[] To, String[] Cc, String[] Bcc, String Subject, String Message, boolean Urgent, boolean Confidential)
       {
         return sendMail(false, To, Cc, Bcc, Subject, Message, Urgent, Confidential);
@@ -49,6 +72,6 @@ public class EMailSender
         String SmtpInfo = emailConfig._smtp;
         String Password = emailConfig._pswd;
         String From = emailConfig._userId;
-        return MailUtil.send(SmtpInfo, From, Password, To, Cc, Bcc, Subject, Message, Urgent, Confidential);
+        return MailUtil.send(SmtpInfo, From, Password, TextUtil.isNullOrEmpty(To) == false ? To : emailConfig._defaultAdmins, Cc, Bcc, Subject, Message, Urgent, Confidential);
       }
   }

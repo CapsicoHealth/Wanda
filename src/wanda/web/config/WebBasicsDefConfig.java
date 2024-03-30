@@ -153,19 +153,22 @@ public class WebBasicsDefConfig
           {
             if (TextUtil.isNullOrEmpty(_emailSettingsUsr._smtp) == true)
               {
-                WebBasics.LOG.error("Invalid Email Configuration in the WebBasics configuration file: the 'smtp' attribute is missing or empty.");
+                WebBasics.LOG.error("Invalid User Email Configuration in the WebBasics configuration file: the 'smtp' attribute is missing or empty.");
                 OK = false;
               }
             if (TextUtil.isNullOrEmpty(_emailSettingsUsr._userId) == true)
               {
-                WebBasics.LOG.error("Invalid Email Configuration in the WebBasics configuration file: the 'userId' attribute is missing or empty.");
+                WebBasics.LOG.error("Invalid User Email Configuration in the WebBasics configuration file: the 'userId' attribute is missing or empty.");
                 OK = false;
               }
             if (TextUtil.isNullOrEmpty(_emailSettingsUsr._pswd) == true)
               {
-                WebBasics.LOG.warn("The Email Configuration in the WebBasics configuration file has a missing or empty 'pswd' attribute, which may be OK.");
+                WebBasics.LOG.warn("The User Email Configuration in the WebBasics configuration file has a missing or empty 'pswd' attribute, which may be OK.");
               }
           }
+        else
+          WebBasics.LOG.warn("The User Email Configuration in the WebBasics configuration file is missing or not set. No end-user email services will be available, which will affect registration invitations, password reset capabilities and other features..");
+          
         if (_emailSettingsSys != null)
           {
             if (TextUtil.isNullOrEmpty(_emailSettingsSys._smtp) == true)
@@ -182,6 +185,16 @@ public class WebBasicsDefConfig
               {
                 WebBasics.LOG.warn("The System Email Configuration in the WebBasics configuration file has a missing or empty 'pswd' attribute, which may be OK.");
               }
+            if (TextUtil.isNullOrEmpty(_emailSettingsSys._defaultAdmins) == true)
+              {
+                WebBasics.LOG.error("Invalid System Email Configuration in the WebBasics configuration file: the 'defaultAdmins' attribute is missing or empty.");
+                OK = false;
+              }
+          }
+        else
+          {
+            WebBasics.LOG.error("The System Email Configuration 'emailSys' in the WebBasics configuration file is missing or not set. This must be set.");
+            OK = false;
           }
 
         if (_laf == null)
