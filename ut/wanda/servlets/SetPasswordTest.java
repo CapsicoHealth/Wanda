@@ -79,7 +79,7 @@ public class SetPasswordTest
       {
         Set<String> Roles = new HashSet<String>();
         Roles.add("SA");
-        User_Data U = User_Factory.create("xxx@xxx.com", "Test", Roles, EncryptionUtil.hash("xxx"));
+        User_Data U = User_Factory.create("xxx@xxx.com", "Test", Roles, EncryptionUtil.hash("xxx", "123"), "123");
         U.setLoginTypeLocal();
         U.setPswdCreateNow();
         U.setPswdResetCode("xxx");

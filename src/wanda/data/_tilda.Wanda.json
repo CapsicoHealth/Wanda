@@ -39,6 +39,7 @@
                                       ,"enum": { "srcColumns": [], "destObject":"Role", "multi":"SET" }
            }
           ,{ "name":"pswd"           , "type":"STRING"   , "nullable": false, "size": 100,                             "description":"The hashed password"}
+          ,{ "name":"pswdSalt"       , "type":"STRING"   , "nullable": false, "size":  12, "allowEmpty":true,          "description":"The salt, if any, for the hashed password"}
           ,{ "name":"pswdCreate"     , "type":"DATETIME" , "nullable": false,                                          "description":"The date/time the password was created"
                                      , "values": [ { "name":"Create", "value":"NOW", "description":"Default Password Creation Time", "default":"CREATE"}
                                                  ]
@@ -525,6 +526,20 @@
          { "columns":["subject", "body"], "mask":"******" }
        ]
    }
+   
+   ,{ "name":"GeoData"
+     ,"mode":"CODE_ONLY"
+     ,"occ":false
+     ,"description":"A virtual table to represent GeoData out of custom queries, to help target client-side map components"
+     ,"columns":[
+         { "name":"code" , "type":"STRING(256)", "nullable":false, "description":"A geo code, such as a state, county or zip code" }
+        ,{ "name":"value", "type":"FLOAT"                        , "description":"A value, e.g., population count, birth rate or other measures, associated with this geo code."}        
+       ]
+     ,"primary": { "autogen": false, "columns":["code"] }
+     ,"outputMaps": [
+         { "name": ""    , "outTypes":["JSON"], "columns": ["*"] }
+       ]
+     }   
     
  ]
   
@@ -864,6 +879,9 @@
      ,"moves":[
          { "schema":"ADMIN", "objects":["SystemEmail"]
          }
+       ]
+     ,"notNulls":[
+         { "object":"User", "columns":["pswdSalt"    ], "default":""  }
        ]
    }
 

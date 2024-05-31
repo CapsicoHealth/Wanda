@@ -65,7 +65,7 @@ public class LdapUtils implements LoginProvider.Interface
                 return null;
               }
 
-            if (EncryptionUtil.hash(password).equals(u.getPswd()) == false)
+            if (EncryptionUtil.hash(password, u.getPswdSalt()).equals(u.getPswd()) == false)
               {
                 LOG.error("Invalid password for User '" + username + "' in the local DB");
                 return null;
@@ -180,7 +180,9 @@ public class LdapUtils implements LoginProvider.Interface
           {
             Set<String> roles = new HashSet<String>();
             roles.add("CarCo");
-            User_Data U = User_Factory.create(user.getUsername(), user.getUsername(), roles, EncryptionUtil.hash("" + RandomUtil.pick(0, 100000000)));
+            String salt = EncryptionUtil.getToken(8);
+            String pswd = EncryptionUtil.getToken(12);
+            User_Data U = User_Factory.create(user.getUsername(), user.getUsername(), roles, EncryptionUtil.hash(pswd, salt), salt);
             U.setLoginTypeLdap();
 
             if (U.write(c) == false)

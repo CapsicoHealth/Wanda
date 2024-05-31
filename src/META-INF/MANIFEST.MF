@@ -1,4 +1,3 @@
 Manifest-Version: 1.0
 Tilda: wanda/data/_tilda.Wanda.json; 
-Class-Path: 
 

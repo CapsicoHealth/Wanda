@@ -106,7 +106,7 @@ public class WebBasics
             R = new BufferedReader(new InputStreamReader(In));
             _Config = gson.fromJson(R, WebBasicsDefConfig.class);
             if (_Config.validate(C) == false)
-              throw new Exception("The WebBasics configuration file is invalid.");
+              throw new Exception("Invalid WebBasics configuration file '"+url.toString()+"'.");
 
             _Apps = App_Factory.lookupWhereActive(C, 0, -1);
             _AppsConfig = Config_Factory.lookupById("MAIN");
@@ -137,9 +137,13 @@ public class WebBasics
       }
 
     // Getters
-    public static EmailConfigDetails getEmailSettings()
+    public static EmailConfigDetails getEmailSettingsUsr()
       {
-        return _Config._emailSettings;
+        return _Config._emailSettingsUsr;
+      }
+    public static EmailConfigDetails getEmailSettingsSys()
+      {
+        return _Config._emailSettingsSys;
       }
 
     public static BeaconConfig getBeaconConfig()

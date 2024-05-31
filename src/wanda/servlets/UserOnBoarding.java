@@ -90,7 +90,8 @@ public class UserOnBoarding extends SimpleServlet
          * add +password to user.pswdHist
          * 
          */
-        String hashedPassword = EncryptionUtil.hash(password);
+        String salt = user.getOrCreatePswdSalt();
+        String hashedPassword = EncryptionUtil.hash(password, salt);
         if (user.hasPswdHist(hashedPassword))
           {
             throw new Exception("Password Already used");
@@ -103,6 +104,7 @@ public class UserOnBoarding extends SimpleServlet
             contact.write(C);
           }
         user.setPswd(hashedPassword);
+        user.setPswdSalt(salt);
         user.setPswdCreateNow();
         user.setNullPswdResetCode();
         user.setNullPswdResetCreate();
@@ -116,7 +118,5 @@ public class UserOnBoarding extends SimpleServlet
         JSONUtil.end(Out, '}');
 
       }
-
-
 
   }

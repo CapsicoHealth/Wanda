@@ -30,6 +30,7 @@ import wanda.web.config.WebBasics;
 import tilda.db.Connection;
 import tilda.utils.CompareUtil;
 import tilda.utils.EncryptionUtil;
+import tilda.utils.TextUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -93,13 +94,15 @@ public class SetPassword extends SimpleServlet
             Req.addError("token", "The token has expired (after "+WebBasics.getResetCodeTTL()+" mn). Please request a new reset token.");
           }
 
-        String hashedPassword = EncryptionUtil.hash(Password);
+        String salt = user.getOrCreatePswdSalt();
+        String hashedPassword = EncryptionUtil.hash(Password, salt);
         if (user.hasPswdHist(hashedPassword))
           {
             Req.addError("password", "Password Already used");
           }
         Req.throwIfErrors();
         user.setPswd(hashedPassword);
+        user.setPswdSalt(salt);
         user.setPswdCreateNow();
         user.setNullPswdResetCode();
         user.setNullPswdResetCreate();

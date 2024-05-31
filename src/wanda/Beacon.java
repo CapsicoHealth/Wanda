@@ -30,7 +30,7 @@ import tilda.db.ConnectionPool;
 import tilda.utils.AsciiArt;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.TextUtil;
-import wanda.web.SystemMailSender;
+import wanda.web.EMailSender;
 import wanda.web.config.BeaconBitConfig;
 import wanda.web.config.BeaconConfig;
 import wanda.web.config.WebBasics;
@@ -160,7 +160,7 @@ public class Beacon
         Out.println("</PRE>");
         Out.println("<BR>");
         
-        SystemMailSender.sendMail(B._emails, null, null, "Beacon - "+WebBasics.getAppName()+" - "+ip , Str.toString(), false, true);
+        EMailSender.sendMailSys(B._emails, null, null, "Beacon - "+WebBasics.getAppName()+" - "+ip , Str.toString(), false, true);
         
     }
 

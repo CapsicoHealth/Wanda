@@ -21,9 +21,10 @@ import com.google.gson.annotations.SerializedName;
 public class EmailConfigDetails
   {
     /*@formatter:off*/
-    @SerializedName("smtp"    ) public String _smtp    = null;
-    @SerializedName("userId"  ) public String _userId  = null;
-    @SerializedName("pswd"    ) public String _pswd    = null;
-    @SerializedName("maxCount") public int    _maxCount   = 500;
+    @SerializedName("smtp"         ) public String   _smtp          = null;
+    @SerializedName("userId"       ) public String   _userId        = null;
+    @SerializedName("pswd"         ) public String   _pswd          = null;
+    @SerializedName("maxCount"     ) public int      _maxCount      = 500;
+    @SerializedName("defaultAdmins") public String[] _defaultAdmins = null;
     /*@formatter:on*/
   }
