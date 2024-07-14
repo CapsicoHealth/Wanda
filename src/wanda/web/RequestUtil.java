@@ -28,6 +28,7 @@ import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
@@ -35,12 +36,11 @@ import javax.servlet.http.Part;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.data.User_Data;
-
 import tilda.utils.ParseUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
+import wanda.data.User_Data;
 import wanda.web.exceptions.BadRequestException;
 
 
@@ -50,7 +50,7 @@ public class RequestUtil
 
     public static enum Attributes
       {
-        CONNECTION, USER, TENANT, TENANTUSER, EXCEPTION;
+      CONNECTION, USER, TENANT, TENANTUSER, EXCEPTION;
       }
 
     public RequestUtil(HttpServletRequest request)
@@ -165,6 +165,11 @@ public class RequestUtil
         return ParseUtil.parseLong(Name, Mandatory, _Req.getParameter(Name), _Errors);
       }
 
+    public long getParamLong(String Name, long Default)
+      {
+        return ParseUtil.parseLong(_Req.getParameter(Name), Default);
+      }
+
     public long[] getParamsLong(String Name, boolean Mandatory)
       {
         return ParseUtil.parseLong(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
@@ -175,6 +180,11 @@ public class RequestUtil
         return ParseUtil.parseFloat(Name, Mandatory, _Req.getParameter(Name), _Errors);
       }
 
+    public float getParamFloat(String Name, float Default)
+      {
+        return ParseUtil.parseFloat(_Req.getParameter(Name), Default);
+      }
+
     public float[] getParamsFloat(String Name, boolean Mandatory)
       {
         return ParseUtil.parseFloat(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
@@ -183,6 +193,11 @@ public class RequestUtil
     public double getParamDouble(String Name, boolean Mandatory)
       {
         return ParseUtil.parseDouble(Name, Mandatory, _Req.getParameter(Name), _Errors);
+      }
+
+    public double getParamDouble(String Name, double Default)
+      {
+        return ParseUtil.parseDouble(_Req.getParameter(Name), Default);
       }
 
     public double[] getParamsDouble(String Name, boolean Mandatory)
@@ -241,7 +256,7 @@ public class RequestUtil
       {
         return ParseUtil.parseLocalDate(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
       }
-    
+
     public boolean hasErrors()
       {
         return _Errors.isEmpty() == false;
@@ -443,9 +458,19 @@ public class RequestUtil
       {
         return _Req.getServletContext().getServletRegistrations().values();
       }
-    
+
     public Object getAttribute(String name)
-     {
-       return _Req.getAttribute(name);
-     }
+      {
+        return _Req.getAttribute(name);
+      }
+
+    public String getCookie(String cookieName)
+      {
+        Cookie[] cookies = _Req.getCookies();
+        if (cookies != null)
+          for (Cookie c : cookies)
+            if (c.getName().equals(cookieName) == true)
+              return c.getValue();
+        return null;
+      }
   }
