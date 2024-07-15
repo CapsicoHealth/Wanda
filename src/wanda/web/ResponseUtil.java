@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.util.List;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
@@ -202,4 +203,9 @@ public class ResponseUtil
         FileUtils.copyFile(f, _Res.getOutputStream());
       }
 
+    public void setCookie(Cookie c)
+      {
+        _Res.addCookie(c);
+      }
+    
   }

@@ -464,13 +464,13 @@ public class RequestUtil
         return _Req.getAttribute(name);
       }
 
-    public String getCookie(String cookieName)
+    public Cookie getCookie(String cookieName)
       {
         Cookie[] cookies = _Req.getCookies();
         if (cookies != null)
           for (Cookie c : cookies)
             if (c.getName().equals(cookieName) == true)
-              return c.getValue();
+              return c;
         return null;
       }
   }
