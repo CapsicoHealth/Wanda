@@ -212,6 +212,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           {
             throw new BadRequestException(Errors);
           }
+        LOG.debug("Sending a new invitation email to '" + U.getEmail() + "'.");
         U.sendInviteEmail();
       }
 
@@ -302,7 +303,12 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
         if (isResetPassword == true)
           {
+            LOG.debug("Sending another invitation email to '" + U.getEmail() + "'.");
             U.sendInviteEmail();
+          }
+        else
+          {
+            LOG.debug("NOT SENDING another invitation email to '" + U.getEmail() + "' because U.getLoginCount() = " + U.getLoginCount() + ".");
           }
       }
 
@@ -316,25 +322,34 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             public void run()
               {
                 super.run();
-                StringBuilder sb = new StringBuilder();
-                List<String> copyTexts = WebBasics.getInviteUserTexts();
-                if (copyTexts != null)
+                try
                   {
-                    Iterator<String> i = copyTexts.listIterator();
-                    while (i.hasNext())
+                    StringBuilder sb = new StringBuilder();
+                    List<String> copyTexts = WebBasics.getInviteUserTexts();
+                    if (copyTexts != null)
                       {
-                        sb.append(i.next());
+                        Iterator<String> i = copyTexts.listIterator();
+                        while (i.hasNext())
+                          {
+                            sb.append(i.next());
+                          }
                       }
+                    sb.append("<p><a href='");
+                    sb.append(WebBasics.getHostName());
+                    sb.append(WebBasics.getAppPath());
+                    sb.append(WebBasics.getHomePagePath());
+                    sb.append("?action=signUp");
+                    sb.append("&token=");
+                    sb.append(getPswdResetCode());
+                    sb.append("'>Click here to set your password</a></p>");
+                    LOG.debug("Sending email invitation to " + getEmail() + " via thread.");
+                    EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
+                    LOG.debug("Sent email invitation to " + getEmail() + " via thread.");
                   }
-                sb.append("<p><a href='");
-                sb.append(WebBasics.getHostName());
-                sb.append(WebBasics.getAppPath());
-                sb.append(WebBasics.getHomePagePath());
-                sb.append("?action=signUp");
-                sb.append("&token=");
-                sb.append(getPswdResetCode());
-                sb.append("'>Click here to set your password</a></p>");
-                EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
+                catch (Throwable T)
+                  {
+                    LOG.error("Failed sending email to '" + getEmail() + "'.\n", T);
+                  }
               }
           }.start();
       }
@@ -538,7 +553,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       }
 
     public String getOrCreatePswdSalt()
-    {
-      return TextUtil.isNullOrEmpty(getPswdSalt()) == false ? getPswdSalt() : EncryptionUtil.getToken(8);
-    }
+      {
+        return TextUtil.isNullOrEmpty(getPswdSalt()) == false ? getPswdSalt() : EncryptionUtil.getToken(8);
+      }
   }

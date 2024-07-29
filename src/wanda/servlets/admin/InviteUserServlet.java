@@ -106,7 +106,7 @@ public class InviteUserServlet extends SimpleServlet
                 Req.addError("refnum", "User not found");
               }
             Req.throwIfErrors();
-
+            LOG.debug("Updating existing user access");
             User_Data.updateDetailsAndInvite(C, refnumUser, email, firstName, lastName, roles, appRefnums, tenantRefnumList, oldTenantRefnums);
           }
         else
@@ -115,6 +115,7 @@ public class InviteUserServlet extends SimpleServlet
             if (emailUser.read(C))
               Req.addError("email", "User already exists with email '" + email + "'");
             Req.throwIfErrors();
+            LOG.debug("Inviting new user");
             User_Data.inviteUser(C, email, firstName, lastName, roles, tenantRefnums, appRefnums);
           }
         
