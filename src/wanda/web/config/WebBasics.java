@@ -191,6 +191,11 @@ public class WebBasics
         return _Config._appName;
       }
 
+    public static String getAppUUID()
+      {
+        return _Config._appUUID;
+      }
+
     public static String getAppPath()
       {
         return _Config._appPath;

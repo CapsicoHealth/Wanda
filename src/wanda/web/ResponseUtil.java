@@ -127,6 +127,13 @@ public class ResponseUtil
       {
         successJson(J, null);
       }
+    public void successJsonRaw(JSONPrinter J)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        J.printRaw(_Out);
+      }
 
     /**
      * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
