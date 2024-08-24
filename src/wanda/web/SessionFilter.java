@@ -53,6 +53,7 @@ import tilda.utils.DateTimeUtil;
 import tilda.utils.DurationUtil;
 import tilda.utils.HttpStatus;
 import tilda.utils.SystemValues;
+import wanda.LoadAppsConfig;
 import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
 import wanda.data.AppUserView_Data;
@@ -76,14 +77,35 @@ public class SessionFilter implements javax.servlet.Filter
     protected static final Logger LOG = LogManager.getLogger(SessionFilter.class.getName());
 
     @Override
-    public void init(FilterConfig arg0)
+    public void init(FilterConfig arg)
     throws ServletException
       {
-        LOG.info("\n");
-        LOG.info("*************************************************************************************************************************************");
-        WebBasics.autoInit();
+        LOG.info("\n\n\n"
+                +"*************************************************************************************************************************************\n"
+                +"***  Starting web app initialization for '"+arg.getServletContext().getServletContextName()+"'\n"
+                +"***  Loading Tilda and Connections configurations"
+                );
         ConnectionPool.autoInit();
-        LOG.info("*************************************************************************************************************************************\n\n");
+
+        LOG.info("\n\n\n"
+                +"*************************************************************************************************************************************\n"
+                +"***  Loading Wanda app Config"
+                );
+        // may fail in a sub-context where app config files are not available, i.e., an admin context vs a main-app context.
+        LoadAppsConfig._COMMAND_LINE_RUN = false;
+        LoadAppsConfig.main(null);
+
+        LOG.info("\n\n\n"
+                +"*************************************************************************************************************************************\n"
+                +"***  Initializing Wanda environment"
+                );
+        WebBasics.autoInit();
+        LOG.info("\n\n\n"
+                +"*************************************************************************************************************************************\n"
+                +"***  Completed web app initialization for '"+arg.getServletContext().getServletContextName()+"'\n"
+                +"*************************************************************************************************************************************\n"
+                +"\n\n\n\n\n\n"
+                );
       }
 
     @Override
@@ -190,9 +212,9 @@ public class SessionFilter implements javax.servlet.Filter
                         throw new ResourceNotAuthorizedException("Tenant", Tenant.getRefnum() + "", "Tenant '" + Tenant.getName() + "' is inactive. Please contact your administrator");
                       }
                     TenantConnection = ConnectionPool.get(Tenant.getConnectionId());
-                    
-                    LOG.debug("USERREFNUM: "+(Long) S.getAttribute(SessionUtil.Attributes.USERREFNUM.toString()));
-                    LOG.debug("TENANTUSERREFNUM: "+(Long) S.getAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString()));
+
+                    LOG.debug("USERREFNUM: " + (Long) S.getAttribute(SessionUtil.Attributes.USERREFNUM.toString()));
+                    LOG.debug("TENANTUSERREFNUM: " + (Long) S.getAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString()));
 
                     TenantDbUser = getUser(Request, TenantConnection);
                     // SimpleServlet Subclasses use U.getPerson()
@@ -232,7 +254,7 @@ public class SessionFilter implements javax.servlet.Filter
             // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path.
             if (isAuthPassthrough == false && isMasterPath == false && mainUser != null && mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
               {
-                LOG.info("User is a guest and is not cleared for this url.");
+                LOG.info("User is a guest and is not cleared for this url or the url is not listed as guest-allowed in the application definition information.");
                 Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
                 throw new ServletException("Unauthorized Guest Access");
               }
@@ -400,7 +422,7 @@ public class SessionFilter implements javax.servlet.Filter
           }
         Str.append("   ***  " + AnsiUtil.NEGATIVE + "R E Q U E S T   #" + (AL == null ? "NULL" : AL.getRefnum()) + AnsiUtil.NEGATIVE_OFF + " - " + DateTimeUtil.printDateTime(ZonedDateTime.now()) + "\n");
         if (dataMasking == true)
-         Str.append("   ***  REQUEST SET WITH DATA MASKING ON !");
+          Str.append("   ***  REQUEST SET WITH DATA MASKING ON !");
         Str.append("   ***  RequestURL     : " + Request.getRequestURL().toString() + "\n");
         Str.append("   ***  RemoteAddr     : " + Request.getRemoteAddr() + ":" + Request.getRemotePort() + "\n");
         Str.append("   ***  PathInfo/Trans : " + Request.getPathInfo() + " | " + Request.getPathTranslated() + "\n");
@@ -549,6 +571,7 @@ public class SessionFilter implements javax.servlet.Filter
         if (user == null)
           return false;
 
+        String servletPath = Request.getServletPath();
         for (App_Data app : WebBasics.getApps())
           {
             // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
@@ -556,7 +579,7 @@ public class SessionFilter implements javax.servlet.Filter
             if (app.getServices() != null)
               for (ServiceDefinition sd : app.getServices())
                 {
-                  if (Request.getServletPath().equals(sd._path) == true && sd._access.equals("GST") == true)
+                  if (servletPath.equals(sd._path) == true && "GST".equals(sd._access) == true)
                     return true;
                 }
           }
@@ -611,7 +634,7 @@ public class SessionFilter implements javax.servlet.Filter
         for (String path : appPaths)
           if (servletPath.startsWith(path) == true)
             return true;
-        
+
         // Nothing found... so bad news.
         return false;
       }
@@ -622,7 +645,7 @@ public class SessionFilter implements javax.servlet.Filter
       {
         if (U == null)
           LOG.debug("getUserDetail: U is null!");
-        
+
         UserDetail_Data UD = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
         if (UD.read(C) == false)
           {

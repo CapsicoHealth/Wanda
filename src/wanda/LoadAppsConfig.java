@@ -53,17 +53,22 @@ import wanda.web.config.WebBasicsDefApps;
 
 public class LoadAppsConfig
   {
-    static final Logger LOG = LogManager.getLogger(LoadAppsConfig.class.getName());
+    static final Logger   LOG               = LogManager.getLogger(LoadAppsConfig.class.getName());
+
+    static public boolean _COMMAND_LINE_RUN = true;
 
     public static void main(String[] Args)
       {
-        LOG.info("");
-        LOG.info("Wanda App Definition Configuration Loader");
-        LOG.info("  - This utility will load /WebBasics.apps.json and its /WebBasics.app.Xyz.json ");
-        LOG.info("   dependencies in the classpath.");
-        LOG.info("  - The information will be loaded into the " + App_Factory.SCHEMA_TABLENAME_LABEL + " and ");
-        LOG.info("   " + Config_Factory.SCHEMA_TABLENAME_LABEL + " tables");
-        LOG.info("");
+        if (_COMMAND_LINE_RUN == true)
+          {
+            LOG.info("");
+            LOG.info("Wanda App Definition Configuration Loader");
+            LOG.info("  - This utility will load /WebBasics.apps.json and its /WebBasics.app.Xyz.json ");
+            LOG.info("   dependencies in the classpath.");
+            LOG.info("  - The information will be loaded into the " + App_Factory.SCHEMA_TABLENAME_LABEL + " and ");
+            LOG.info("   " + Config_Factory.SCHEMA_TABLENAME_LABEL + " tables");
+            LOG.info("");
+          }
         Connection C = null;
 
         try
@@ -72,10 +77,10 @@ public class LoadAppsConfig
             while (connectionIds.hasNext())
               {
                 String connectionId = connectionIds.next();
-                LOG.info("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                + "!!! Loading Apps For Tenant/Database\n"
-                + "!!!     ==> " + connectionId + ": " + ConnectionPool.getDBDetails(connectionId) + "\n"
-                + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                LOG.info("\n\n"
+                + "--------------------------------------------------------------------------------------------------------------------------------------\n"
+                + "--- Loading Apps For Tenant/Database " + connectionId + ": " + ConnectionPool.getDBDetails(connectionId) + "\n"
+                );
                 C = ConnectionPool.get(connectionId);
                 load(C);
                 C.commit();
@@ -84,6 +89,8 @@ public class LoadAppsConfig
           }
         catch (Exception E)
           {
+            if (_COMMAND_LINE_RUN == false)
+              return;
             LOG.error("An exception occurred\n", E);
             LOG.error("\n"
             + "          ======================================================================================\n"
