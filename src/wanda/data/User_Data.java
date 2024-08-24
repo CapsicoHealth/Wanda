@@ -28,6 +28,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.re2j.Pattern;
+
 import tilda.db.Connection;
 import tilda.utils.CollectionUtil;
 import tilda.utils.DateTimeUtil;
@@ -556,4 +558,83 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         return TextUtil.isNullOrEmpty(getPswdSalt()) == false ? getPswdSalt() : EncryptionUtil.getToken(8);
       }
+
+    private static final Pattern _GUEST_NAMESPACE_PREFIX_PATTERN = Pattern.compile("^\\[\\d+\\]\s.*");
+    protected String guestNamespacePrefix = null;
+
+    /**
+     * Return a namespace prefix for Guest users as "[1234] " where 1234 is the unique refnum of a user. If
+     * the user is not a guest, returns null<BR>
+     * When saving named entities (e.g., a dictionaries, models, cohorts...), it is important that guest users
+     * have their own namespacing. For example:
+     * <UL>
+     * <LI>Full User A creates a cohort called "ABC"</LI>
+     * <LI>Guest user B creates a cohort called "ABC"</LI>
+     * <LI>Guest user C creates a cohort called "ABC"</LI>
+     * </UL>
+     * Many named entities would have a unique index that includes names, so this scenarios would force everyone
+     * to pick unique names, which can get problematic in some environments, for example, a classroom where multiple
+     * students use the system and we want them to be isolated from one another.<BR>
+     * This method creates a standardized <B>prefix</B> that can be used by relevant code to add an implicit namespace
+     * in their named entities that is unique to each user. In effect,
+     * <UL>
+     * <LI>Full User A creates a cohort called "ABC"</LI>
+     * <LI>Guest user B creates a cohort called "[1234] ABC", where 1234 is the unique refnum of user B</LI>
+     * <LI>Guest user C creates a cohort called "[5678] ABC", where 5678 is the unique refnum of user B</LI>
+     * </UL>
+     * 
+     * @return
+     */
+    public String getGuestNamespacePrefix()
+      {
+        if (isGuest() == false)
+          return null;
+        if (guestNamespacePrefix == null)
+          guestNamespacePrefix = "[" + getRefnum() + "] ";
+        return guestNamespacePrefix;
+      }
+    
+    public String getGuestNamePrefixed(String name)
+    throws Exception
+      {
+        boolean alreadySet = isGuestNamespacePrefixed(name);
+        String prefix = getGuestNamespacePrefix();
+        boolean guest = isGuest();
+        // User is guest and the name-prefix isn't already set, so return the prefixed name
+        if (guest == true && alreadySet == false)
+         return prefix+name;
+        // User is not a guest and the name-prefix is set, so return the clean name (without the prefix)
+        if (guest == false && alreadySet == true)
+         return name.substring(prefix.length());
+        // return the name as-is.
+        return name;
+      }
+
+    public String unsetGuestName(String name)
+    throws Exception
+      {
+        String prefix = getGuestNamespacePrefix();
+        boolean alreadySet = isGuestNamespacePrefixed(name);
+        return alreadySet == true ? name.substring(prefix.length()) : name;
+      }
+    
+
+    /**
+     * In migration or transition scenarios (e.g., a user was guest and becomes a full user), it might be necessary
+     * to detect if an entity is names with a guest user prefix such as "[1234] " where 1234 is the unique refnum 
+     * of a user.
+     * @param name
+     * @return
+     */
+    public boolean isGuestNamespacePrefixed(String name)
+      {
+        if (guestNamespacePrefix == null)
+          guestNamespacePrefix = "[" + getRefnum() + "] ";
+        return name.startsWith(guestNamespacePrefix);
+      }
+    
+    public static boolean isNameGuestNamespacePrefixed(String name)
+     {
+       return _GUEST_NAMESPACE_PREFIX_PATTERN.matches(name);
+     }
   }
