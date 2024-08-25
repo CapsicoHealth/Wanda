@@ -256,7 +256,7 @@ public class SessionFilter implements javax.servlet.Filter
               {
                 LOG.info("User is a guest and is not cleared for this url or the url is not listed as guest-allowed in the application definition information.");
                 Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
-                throw new ServletException("Unauthorized Guest Access");
+                throw new ServletException("Unauthorized guest access as per app service configuration");
               }
 
             // LOG.info("********************************************************************************************************************************************\n");

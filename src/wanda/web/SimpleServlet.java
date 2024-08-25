@@ -86,7 +86,7 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
         if (U == null && _mustAuth == true)
           throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
         if (U != null && _mustAuth == true && U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
-          throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request");
+          throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per servlet configuration");
 
         justDo(request, response, C, U);
       }
