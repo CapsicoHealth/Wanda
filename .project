@@ -3,7 +3,6 @@
 	<name>Wanda</name>
 	<comment></comment>
 	<projects>
-		<project>Tilda</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

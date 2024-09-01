@@ -559,7 +559,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         return TextUtil.isNullOrEmpty(getPswdSalt()) == false ? getPswdSalt() : EncryptionUtil.getToken(8);
       }
 
-    private static final Pattern _GUEST_NAMESPACE_PREFIX_PATTERN = Pattern.compile("^\\[\\d+\\]\s.*");
+    private static final Pattern _GUEST_NAMESPACE_PREFIX_PATTERN = Pattern.compile("^\\[\\d+\\]\\s.*");
     protected String guestNamespacePrefix = null;
 
     /**

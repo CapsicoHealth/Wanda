@@ -146,15 +146,15 @@ public class ResponseUtil
      * @param Obj
      * @throws Exception
      */
-    public void successDojoMultipartConfig()
-    throws Exception
-      {
-        if (_Out == null)
-          setContentType(ContentType.HTML);
-        _Out.write("<textarea>\n");
-        success();
-        _Out.write("</textarea>\n");
-      }
+//    public void successDojoMultipartConfig()
+//    throws Exception
+//      {
+//        if (_Out == null)
+//          setContentType(ContentType.HTML);
+//        _Out.write("<textarea>\n");
+//        success();
+//        _Out.write("</textarea>\n");
+//      }
 
 
     /**
