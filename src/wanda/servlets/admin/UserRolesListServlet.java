@@ -17,6 +17,9 @@
 package wanda.servlets.admin;
 
 import java.io.PrintWriter;
+
+import javax.servlet.annotation.WebServlet;
+
 import wanda.data.Role_Data;
 import wanda.data.Role_Factory;
 import wanda.data.User_Data;
@@ -30,7 +33,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-//@WebServlet("/svc/admin/user/roles")
+@WebServlet("/svc/admin/user/roles")
 public class UserRolesListServlet extends SimpleServlet
   {
 
