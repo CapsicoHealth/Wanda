@@ -29,7 +29,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import tilda.interfaces.CSVable;
 import tilda.interfaces.JSONable;
+import tilda.utils.CSVUtil;
 import tilda.utils.HttpStatus;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONPrinter;
@@ -134,6 +136,16 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         J.printRaw(_Out);
       }
+    
+    
+    public void successCsv(String csvExportName, List<? extends CSVable> L)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.CSV);
+        CSVUtil.response(_Out, csvExportName, L);
+      }
+    
 
     /**
      * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
