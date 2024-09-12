@@ -29,6 +29,7 @@ import tilda.db.Connection;
 import tilda.db.ListResults;
 import tilda.db.SelectQuery;
 import tilda.utils.DateTimeUtil;
+import tilda.utils.TextUtil;
 
 /**
  * This is the application class <B>Data_ADMINUSERSVIEW</B> mapped to the table <B>PEOPLE.ADMINUSERSVIEW</B>.
@@ -86,7 +87,7 @@ public class AdminUsersView_Factory extends wanda.data._Tilda.TILDA__ADMINUSERSV
      * @return
      * @throws Exception
      */
-    public static ListResults<AdminUsersView_Data> filter(Connection C, User_Data U, String searchQuery, String[] roles, String status, int Start, int Size)
+    public static ListResults<AdminUsersView_Data> filter(Connection C, User_Data U, String searchQuery, String[] roles, String status, String promoCode, int Start, int Size)
     throws Exception
       {
         SelectQuery Q = newWhereQuery(C);
@@ -112,6 +113,15 @@ public class AdminUsersView_Factory extends wanda.data._Tilda.TILDA__ADMINUSERSV
           {
             Q.and().any(COLS.ROLES, roles);
           }
+        
+        if (TextUtil.isNullOrEmpty(promoCode) == false)
+          {
+            if (promoCode.equals("___UNASSIGNED___") == true)
+             Q.and().isNull(COLS.PROMOCODE);
+            else
+             Q.and().equals(COLS.PROMOCODE, promoCode);
+          }
+        
         // status = access_disabled, invited, invitation_cancelled, active, locked
         if ("access_disabled".equalsIgnoreCase(status) || "locked".equalsIgnoreCase(status))
           {
