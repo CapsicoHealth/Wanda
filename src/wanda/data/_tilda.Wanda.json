@@ -22,11 +22,39 @@
    ]
 
  ,"objects":[
-    { "name":"User"
+     { "name":"Promo"
+      ,"description":"Promo codes used for invitations or guest sign-ups"
+      ,"columns":[
+          { "name":"code"  , "type":"STRING" , "nullable": false, "size": 100         , "description":"The label for this Promo"}
+         ,{ "name":"descr" , "type":"STRING" , "nullable": false, "size": 2048        , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start" , "type":"DATE"   , "nullable": false, "defaultValue":"NOW", "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"   , "type":"DATE"   , "nullable": true                       , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active", "type":"BOOLEAN", "nullable": false, "defaultValue":"1"  , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+        ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Code", "columns":["code"], "db": true }
+        ]
+      ,"queries": [
+          { "name": "Active"
+           ,"description": "Active promo codes"
+           ,"wheres": [
+               { "db": "*", "clause": "active=true AND current_date >= start AND (end is null or current_date <= end)" }
+             ]
+           ,"orderBy":["code"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+
+   ,{ "name":"User"
      ,"description":"blah blah"
      ,"columns":[
            { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
           ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100, "protect":"ABSOLUTE", "description":"The first line of the address"}
+          ,{ "name":"promoCode"      , "sameAs":"Promo.code", "nullable": true,                                    "description":"The promo code that the user may have used to register"}
           ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
           ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
           ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
@@ -67,7 +95,7 @@
           ,{ "name":"inviteCancelled"      , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify cancelled invites" }
           ,{ "name":"invitedUser"          , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify if user is invited" }
           ,{ "name":"emailUnverified"      , "type"  :"STRING"  ,                    "size": 255,                             "description":"Unverified Email Address" }
-          ,{ "name":"emailVerificationCode", "type"  :"STRING"  ,                    "size":  20,                             "description":"The hashed password"}
+          ,{ "name":"emailVerificationCode", "type"  :"STRING"  ,                    "size":  20,                             "description":"A one-time use randomly generated code to verify invitations or password resets."}
           ,{ "name":"appData"              , "type"  :"JSON[]"  ,                    "nullable": true,                        "description":"Spoonful App Details"
             ,"jsonSchema": {
                "typeName": "AppData"
@@ -572,80 +600,81 @@
          { "name": "", "columns": ["userRefnum", "pswdResetCode", "id", "email", "nameTitle", "nameFirst", "nameMiddle", "nameLast"] }     
         ,{ "name": "Mini", "columns": ["pswdResetCode", "nameFirst", "nameLast"] }     
       ]
-    },
-    {
-      "name": "AdminUsersView",
-      "description": "View that has basic user details",
-      "columns": [
-          { "sameas": "User.refnum"          , "name":"personRefnum"          },
-          { "sameas": "User.email"           , "name":"personId"              },
-          { "sameas": "User.invitedUser"                                      },
-          { "sameas": "User.locked"                                           },
-          { "sameas": "User.roles"                                            },
-          { "sameas": "User.inviteCancelled"                                  },
-          { "sameas": "User.loginCount"                                       },
-          { "sameas": "User.lastLogin"                                        },
-          { "sameas": "UserDetail.nameTitle"                                  },
-          { "sameas": "UserDetail.nameLast"                                   },
-          { "sameas": "UserDetail.nameFirst"                                  },
-          { "sameas": "UserDetail.nameMiddle"                                 },
-          { "sameas": "UserDetail.telMobile"                                  }
-      ]
+    }
+   ,{ "name": "AdminUsersView"
+     ,"description": "View that has basic user details"
+     ,"columns": [
+         { "sameas": "User.refnum"          , "name":"personRefnum"          }
+        ,{ "sameas": "User.email"           , "name":"personId"              }
+        ,{ "sameas": "User.invitedUser"                                      }
+        ,{ "sameas": "User.locked"                                           }
+        ,{ "sameas": "User.roles"                                            }
+        ,{ "sameas": "User.promoCode"                                        }
+        ,{ "sameas": "User.inviteCancelled"                                  }
+        ,{ "sameas": "User.loginCount"                                       }
+        ,{ "sameas": "User.lastLogin"                                        }
+        ,{ "sameas": "UserDetail.nameTitle"                                  }
+        ,{ "sameas": "UserDetail.nameLast"                                   }
+        ,{ "sameas": "UserDetail.nameFirst"                                  }
+        ,{ "sameas": "UserDetail.nameMiddle"                                 }
+        ,{ "sameas": "UserDetail.telMobile"                                  }
+       ]
      ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
-        {
-          "name": "AllButExceptRefnum"
+         { "name": "AllButExceptRefnum"
           ,"description": "TBD"
           ,"wheres": [
-            { "db": "*", "clause": "personRefnum <> ?()" }
-          ]
+              { "db": "*", "clause": "personRefnum <> ?()" }
+            ]
           ,"orderBy": ["personRefnum ASC"]
-        }
-      ]
-      ,"json": [
-        { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"] }     
-      ]
+         }
+       ]
+     ,"outputMaps": [
+         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"], "outTypes":["JSON"] }
+        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+       ]       
     },
     
     {
       "name": "AdminUsersAndTenantsView",
       "description": "View that has basic user details",
       "columns": [
-          { "sameas": "User.refnum"            , "name":"personRefnum"             },
-          { "sameas": "User.email"             , "name":"personId"                 },
-          { "sameas": "User.invitedUser"                                           },
-          { "sameas": "User.locked"                                                },
-          { "sameas": "User.roles"                                                 },
-          { "sameas": "User.inviteCancelled"                                       },
-          { "sameas": "User.loginCount"                                            },
-          { "sameas": "User.lastLogin"                                             },
-          { "sameas": "TenantUser.refnum"      , "name": "tenantUserRefnum"        },
-          { "sameas": "TenantUser.tenantRefnum", "name": "tenantRefnum"            },
-          { "sameas": "TenantUser.active"      , "name": "tenantUserActive"        },
-          { "sameas": "Tenant.name"            , "name": "tenantName"              },
-          { "sameas": "UserDetail.nameTitle"                                       },
-          { "sameas": "UserDetail.nameLast"                                        },
-          { "sameas": "UserDetail.nameFirst"                                       },
-          { "sameas": "UserDetail.nameMiddle"                                      },
-          { "sameas": "UserDetail.telMobile"                                       }
+          { "sameas": "User.refnum"            , "name":"personRefnum"             }
+         ,{ "sameas": "User.email"             , "name":"personId"                 }
+         ,{ "sameas": "User.invitedUser"                                           }
+         ,{ "sameas": "User.locked"                                                }
+         ,{ "sameas": "User.roles"                                                 }
+         ,{ "sameas": "User.promoCode"                                             }
+         ,{ "sameas": "User.inviteCancelled"                                       }
+         ,{ "sameas": "User.loginCount"                                            }
+         ,{ "sameas": "User.lastLogin"                                             }
+         ,{ "sameas": "TenantUser.refnum"      , "name": "tenantUserRefnum"        }
+         ,{ "sameas": "TenantUser.tenantRefnum", "name": "tenantRefnum"            }
+         ,{ "sameas": "TenantUser.active"      , "name": "tenantUserActive"        }
+         ,{ "sameas": "Tenant.name"            , "name": "tenantName"              }
+         ,{ "sameas": "UserDetail.nameTitle"                                       }
+         ,{ "sameas": "UserDetail.nameLast"                                        }
+         ,{ "sameas": "UserDetail.nameFirst"                                       }
+         ,{ "sameas": "UserDetail.nameMiddle"                                      }
+         ,{ "sameas": "UserDetail.telMobile"                                       }
       ]
      ,"joins": [
         { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
       ]
      ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
-        {
-          "name": "AllButExceptRefnum"
+         { "name": "AllButExceptRefnum"
           ,"description": "TBD"
           ,"wheres": [
-            { "db": "*", "clause": "personRefnum <> ?()" }
-          ]
+               { "db": "*", "clause": "personRefnum <> ?()" }
+            ]
           ,"orderBy": ["personRefnum ASC"]
-        }
+         }
        ]
-      ,"json": [
-        { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"] }     
-       ]
+     ,"outputMaps": [
+         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"], "outTypes":["JSON"] }
+        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+       ]       
     },
     {
       "name": "TenantView",
