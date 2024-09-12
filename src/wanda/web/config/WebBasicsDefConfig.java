@@ -91,11 +91,11 @@ public class WebBasicsDefConfig
             WebBasics.LOG.error("The WebBasics configuration file didn't define any 'homePagePath' property");
             OK = false;
           }
-        if (_twofishesUrl == null)
-          {
-            WebBasics.LOG.error("The WebBasics configuration file didn't define any 'twofishes-url' property");
-            // OK = false;
-          }
+//       if (_twofishesUrl == null)
+//          {
+//            WebBasics.LOG.error("The WebBasics configuration file didn't define any 'twofishes-url' property");
+//            // OK = false;
+//          }
 
         if (_sessionConfig == null)
           {
