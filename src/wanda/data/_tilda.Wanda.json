@@ -753,30 +753,41 @@
    ,{ "name":"AppUserView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
-          { "sameas":"App.refnum"        , "name":"appRefnum" }
-         ,{ "sameas":"App.seq"           , "name":"appSeq"    }
-         ,{ "sameas":"App.label"         , "name":"appLabel"  }
-         ,{ "sameas":"App.home"          , "name":"appHome"   }
-         ,{ "sameas":"App.id"            , "name":"appId"     }
-         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
-         ,{ "sameas":"App.path"          , "name":"appPath"   }
-         ,{ "sameas":"App.active"        , "name":"appActive" }
-         ,{ "sameas":"User.refnum"       , "name":"userRefnum"}
-         ,{ "sameas":"User.id"           , "name":"userId"    }
-         ,{ "sameas":"User.email"        , "name":"userEmail" }
-         ,{ "sameas":"AppUser.userRefnum", "name":"enabled", "expression":"case when ? is not null then 1 else 0 end", "type":"SHORT" }
+          { "sameas":"App.refnum"          , "name":"appRefnum"     }
+         ,{ "sameas":"App.seq"             , "name":"appSeq"        }
+         ,{ "sameas":"App.label"           , "name":"appLabel"      }
+         ,{ "sameas":"App.home"            , "name":"appHome"       }
+         ,{ "sameas":"App.id"              , "name":"appId"         }
+         ,{ "sameas":"App.admin"           , "name":"appAdmin"      }
+         ,{ "sameas":"App.path"            , "name":"appPath"       }
+         ,{ "sameas":"App.active"          , "name":"appActive"     }
+         ,{ "sameas":"User.refnum"         , "name":"userRefnum"    }
+         ,{ "sameas":"User.id"             , "name":"userId"        }
+         ,{ "sameas":"User.email"          , "name":"userEmail"     }
+         ,{ "sameas":"User.promoCode"      , "name":"userPromoCode" }
+         ,{ "sameas":"UserDetail.nameLast" , "name":"userNameLast"  }
+         ,{ "sameas":"UserDetail.nameFirst", "name":"userNameFirst" }
+         ,{ "sameas":"AppUser.userRefnum"  , "name":"enabled", "expression":"? is not null", "type":"BOOLEAN" }
        ]
      ,"joins":[
           { "object": "User"   , "joinType": "INNER", "on": [ { "db":"*", "clause":"1=1" } ] }
          ,{ "object": "AppUser", "joinType": "LEFT" , "on": [ { "db":"*", "clause":"AppUser.\"appRefnum\" = App.refnum and AppUser.\"userRefnum\" = WANDA.User.refnum" } ] }
        ]
-     ,"subWhere": "App.deleted is null"
+     ,"subWhere": "App.deleted is null and User.deleted is null and User.refnum <> -666"
      ,"queries": [
-          { "name"  :"AppByUser",
-            "description":"Get users for app.",
+          { "name"  :"AppByUserAll",
+            "description":"Get all users irrespective of app access.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=1" }
+                { "db":"*", "clause":"appRefnum=?()" }
+             ],
+            "orderBy": ["userId"]
+          }
+         ,{ "name"  :"AppByUserEnabled",
+            "description":"Get only enabled users for app.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"appRefnum=?() and enabled=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -784,7 +795,7 @@
             "description":"Get users for app.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=1 and appActive=true" }
+                { "db":"*", "clause":"appRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -792,7 +803,7 @@
             "description":"Get apps for a user.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"userRefnum=?() and enabled=1 and appActive=true" }
+                { "db":"*", "clause":"userRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["appSeq"]
           }
@@ -805,11 +816,14 @@
             "orderBy": ["appSeq"]
           }
        ]
-     ,"json":[
-          { "name": ""          , "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive", "userRefnum", "userId", "enabled" ] }
-       ]
+     ,"outputMaps":[
+          { "name": ""      , "outTypes":["JSON"], "columns": ["*"] }
+         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appLabel", "appId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
+       ]       
     }
 
+    
+    
    ,{ "name":"AccessLogDailyView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
