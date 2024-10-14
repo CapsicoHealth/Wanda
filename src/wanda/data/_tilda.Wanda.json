@@ -25,24 +25,18 @@
      { "name":"Promo"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"code"  , "type":"STRING" , "nullable": false, "size": 100         , "description":"The label for this Promo"}
-         ,{ "name":"descr" , "type":"STRING" , "nullable": false, "size": 2048        , "protection":"ABSOLUTE", "description":"The description for this Promo"}
-         ,{ "name":"start" , "type":"DATE"   , "nullable": false, "defaultValue":"NOW", "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"end"   , "type":"DATE"   , "nullable": true                       , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"active", "type":"BOOLEAN", "nullable": false, "defaultValue":"1"  , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+          { "name":"code"  , "type":"STRING" , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
+         ,{ "name":"descr" , "type":"STRING" , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start" , "type":"DATE"   , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"   , "type":"DATE"   , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active", "type":"BOOLEAN", "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+         ,{ "name":"system", "type":"BOOLEAN", "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
           { "name":"Code", "columns":["code"], "db": true }
         ]
       ,"queries": [
-          { "name": "Active"
-           ,"description": "Active promo codes"
-           ,"wheres": [
-               { "db": "*", "clause": "active=true AND current_date >= start AND (end is null or current_date <= end)" }
-             ]
-           ,"orderBy":["code"]
-          }
         ]
       ,"outputMaps": [
           { "name":"", "outTypes":["JSON"], "columns": ["*"] }
@@ -824,6 +818,36 @@
 
     
     
+    ,{ "name":"AccessLogMonthlyView",
+       "description":"View that has Tenant + TenantUser",
+       "columns":[
+           { "sameAs":"AccessLog.created"    , "name":"month"                 , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
+          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
+          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+        ]
+      ,"queries": [
+           { "name"  :"Month",
+             "description":"Get the logs info by month from >= start and < end.",
+             "from"  : [], 
+             "wheres": [
+                 { "db":"*", "clause":"month >= ?(Start) and month < ?(End)" }
+              ],
+             "orderBy": ["month desc"]
+           }
+        ]
+      ,"outputMaps":[
+           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+        ]       
+     }
    ,{ "name":"AccessLogDailyView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
@@ -831,14 +855,15 @@
          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 200" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 400" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 401" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 404" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 500" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(\"responseCode\",0) NOT IN (200, 400, 401, 500)" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"\"login\"=true" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"\"login\"=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeError", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 401)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
        ]
      ,"queries": [
           { "name"  :"Day",
@@ -861,14 +886,14 @@
          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 200" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 400" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 401" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 404" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 500" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(\"responseCode\",0) NOT IN (200, 400, 401, 500)" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"\"login\"=true" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"\"login\"=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
        ]
      ,"queries": [
           { "name"  :"Hour",

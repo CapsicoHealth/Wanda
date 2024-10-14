@@ -65,6 +65,10 @@ public class RequestUtil
       {
         _Errors.add(new StringStringPair(ParamName, Error));
       }
+    public void addErrors(List<StringStringPair> errs)
+      {
+        _Errors.addAll(errs);
+      }
 
     public Enumeration<String> getParameterNames()
       {
@@ -265,6 +269,14 @@ public class RequestUtil
     public void throwIfErrors()
     throws BadRequestException
       {
+        if (hasErrors() == true)
+          throw new BadRequestException(getErrors());
+      }
+
+    public void throwIfErrors(List<StringStringPair> errs)
+    throws BadRequestException
+      {
+        addErrors(errs);
         if (hasErrors() == true)
           throw new BadRequestException(getErrors());
       }

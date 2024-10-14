@@ -45,9 +45,12 @@ public class PromoList extends SimpleServlet
       {
           throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
 
-          boolean activeOnly = req.getParamBoolean("activeOnly", false);
+          String search = req.getParamString("search", false);
+          boolean active = req.getParamBoolean("active", false);
+          boolean current = req.getParamBoolean("current", false);
+          boolean system = req.getParamBoolean("system", false);
 
-          ListResults<Promo_Data> L = activeOnly==true ? Promo_Factory.lookupWhereActive(C, 0, 250) : Promo_Factory.lookupWhereAll(C, 0, 250);
+          ListResults<Promo_Data> L = Promo_Factory.lookupWhereParams(C, search, active, current, system, 0, 250);
           Res.successJson("", L);
       }
 
