@@ -159,7 +159,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 sb.append("?action=setPswd");
                 sb.append("&token=");
                 sb.append(getPswdResetCode());
-                sb.append("'>Click to reset password</a></p>.</p>");
+                sb.append("'>Click to reset your password</a>.</p>");
                 EMailSender.sendMailUsr(to, cc, bcc, "Reset your password -- " + WebBasics.getAppName(), sb.toString(), true, true);
               }
           }.start();

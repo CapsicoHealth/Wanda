@@ -100,6 +100,7 @@ public class SessionFilter implements javax.servlet.Filter
                 +"***  Initializing Wanda environment"
                 );
         WebBasics.autoInit();
+        
         LOG.info("\n\n\n"
                 +"*************************************************************************************************************************************\n"
                 +"***  Completed web app initialization for '"+arg.getServletContext().getServletContextName()+"'\n"
