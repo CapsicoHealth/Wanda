@@ -22,11 +22,33 @@
    ]
 
  ,"objects":[
-    { "name":"User"
+     { "name":"Promo"
+      ,"description":"Promo codes used for invitations or guest sign-ups"
+      ,"columns":[
+          { "name":"code"  , "type":"STRING" , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
+         ,{ "name":"descr" , "type":"STRING" , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start" , "type":"DATE"   , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"   , "type":"DATE"   , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active", "type":"BOOLEAN", "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+         ,{ "name":"system", "type":"BOOLEAN", "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
+        ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Code", "columns":["code"], "db": true }
+        ]
+      ,"queries": [
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+
+   ,{ "name":"User"
      ,"description":"blah blah"
      ,"columns":[
            { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
           ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100, "protect":"ABSOLUTE", "description":"The first line of the address"}
+          ,{ "name":"promoCode"      , "sameAs":"Promo.code", "nullable": true,                                    "description":"The promo code that the user may have used to register"}
           ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
           ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
           ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
@@ -67,7 +89,7 @@
           ,{ "name":"inviteCancelled"      , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify cancelled invites" }
           ,{ "name":"invitedUser"          , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify if user is invited" }
           ,{ "name":"emailUnverified"      , "type"  :"STRING"  ,                    "size": 255,                             "description":"Unverified Email Address" }
-          ,{ "name":"emailVerificationCode", "type"  :"STRING"  ,                    "size":  20,                             "description":"The hashed password"}
+          ,{ "name":"emailVerificationCode", "type"  :"STRING"  ,                    "size":  20,                             "description":"A one-time use randomly generated code to verify invitations or password resets."}
           ,{ "name":"appData"              , "type"  :"JSON[]"  ,                    "nullable": true,                        "description":"Spoonful App Details"
             ,"jsonSchema": {
                "typeName": "AppData"
@@ -572,80 +594,81 @@
          { "name": "", "columns": ["userRefnum", "pswdResetCode", "id", "email", "nameTitle", "nameFirst", "nameMiddle", "nameLast"] }     
         ,{ "name": "Mini", "columns": ["pswdResetCode", "nameFirst", "nameLast"] }     
       ]
-    },
-    {
-      "name": "AdminUsersView",
-      "description": "View that has basic user details",
-      "columns": [
-          { "sameas": "User.refnum"          , "name":"personRefnum"          },
-          { "sameas": "User.email"           , "name":"personId"              },
-          { "sameas": "User.invitedUser"                                      },
-          { "sameas": "User.locked"                                           },
-          { "sameas": "User.roles"                                            },
-          { "sameas": "User.inviteCancelled"                                  },
-          { "sameas": "User.loginCount"                                       },
-          { "sameas": "User.lastLogin"                                        },
-          { "sameas": "UserDetail.nameTitle"                                  },
-          { "sameas": "UserDetail.nameLast"                                   },
-          { "sameas": "UserDetail.nameFirst"                                  },
-          { "sameas": "UserDetail.nameMiddle"                                 },
-          { "sameas": "UserDetail.telMobile"                                  }
-      ]
+    }
+   ,{ "name": "AdminUsersView"
+     ,"description": "View that has basic user details"
+     ,"columns": [
+         { "sameas": "User.refnum"          , "name":"personRefnum"          }
+        ,{ "sameas": "User.email"           , "name":"personId"              }
+        ,{ "sameas": "User.invitedUser"                                      }
+        ,{ "sameas": "User.locked"                                           }
+        ,{ "sameas": "User.roles"                                            }
+        ,{ "sameas": "User.promoCode"                                        }
+        ,{ "sameas": "User.inviteCancelled"                                  }
+        ,{ "sameas": "User.loginCount"                                       }
+        ,{ "sameas": "User.lastLogin"                                        }
+        ,{ "sameas": "UserDetail.nameTitle"                                  }
+        ,{ "sameas": "UserDetail.nameLast"                                   }
+        ,{ "sameas": "UserDetail.nameFirst"                                  }
+        ,{ "sameas": "UserDetail.nameMiddle"                                 }
+        ,{ "sameas": "UserDetail.telMobile"                                  }
+       ]
      ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
-        {
-          "name": "AllButExceptRefnum"
+         { "name": "AllButExceptRefnum"
           ,"description": "TBD"
           ,"wheres": [
-            { "db": "*", "clause": "personRefnum <> ?()" }
-          ]
+              { "db": "*", "clause": "personRefnum <> ?()" }
+            ]
           ,"orderBy": ["personRefnum ASC"]
-        }
-      ]
-      ,"json": [
-        { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"] }     
-      ]
+         }
+       ]
+     ,"outputMaps": [
+         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"], "outTypes":["JSON"] }
+        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+       ]       
     },
     
     {
       "name": "AdminUsersAndTenantsView",
       "description": "View that has basic user details",
       "columns": [
-          { "sameas": "User.refnum"            , "name":"personRefnum"             },
-          { "sameas": "User.email"             , "name":"personId"                 },
-          { "sameas": "User.invitedUser"                                           },
-          { "sameas": "User.locked"                                                },
-          { "sameas": "User.roles"                                                 },
-          { "sameas": "User.inviteCancelled"                                       },
-          { "sameas": "User.loginCount"                                            },
-          { "sameas": "User.lastLogin"                                             },
-          { "sameas": "TenantUser.refnum"      , "name": "tenantUserRefnum"        },
-          { "sameas": "TenantUser.tenantRefnum", "name": "tenantRefnum"            },
-          { "sameas": "TenantUser.active"      , "name": "tenantUserActive"        },
-          { "sameas": "Tenant.name"            , "name": "tenantName"              },
-          { "sameas": "UserDetail.nameTitle"                                       },
-          { "sameas": "UserDetail.nameLast"                                        },
-          { "sameas": "UserDetail.nameFirst"                                       },
-          { "sameas": "UserDetail.nameMiddle"                                      },
-          { "sameas": "UserDetail.telMobile"                                       }
+          { "sameas": "User.refnum"            , "name":"personRefnum"             }
+         ,{ "sameas": "User.email"             , "name":"personId"                 }
+         ,{ "sameas": "User.invitedUser"                                           }
+         ,{ "sameas": "User.locked"                                                }
+         ,{ "sameas": "User.roles"                                                 }
+         ,{ "sameas": "User.promoCode"                                             }
+         ,{ "sameas": "User.inviteCancelled"                                       }
+         ,{ "sameas": "User.loginCount"                                            }
+         ,{ "sameas": "User.lastLogin"                                             }
+         ,{ "sameas": "TenantUser.refnum"      , "name": "tenantUserRefnum"        }
+         ,{ "sameas": "TenantUser.tenantRefnum", "name": "tenantRefnum"            }
+         ,{ "sameas": "TenantUser.active"      , "name": "tenantUserActive"        }
+         ,{ "sameas": "Tenant.name"            , "name": "tenantName"              }
+         ,{ "sameas": "UserDetail.nameTitle"                                       }
+         ,{ "sameas": "UserDetail.nameLast"                                        }
+         ,{ "sameas": "UserDetail.nameFirst"                                       }
+         ,{ "sameas": "UserDetail.nameMiddle"                                      }
+         ,{ "sameas": "UserDetail.telMobile"                                       }
       ]
      ,"joins": [
         { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
       ]
      ,"subWhere": "User.deleted is null and User.refnum <> -666"
      ,"queries": [
-        {
-          "name": "AllButExceptRefnum"
+         { "name": "AllButExceptRefnum"
           ,"description": "TBD"
           ,"wheres": [
-            { "db": "*", "clause": "personRefnum <> ?()" }
-          ]
+               { "db": "*", "clause": "personRefnum <> ?()" }
+            ]
           ,"orderBy": ["personRefnum ASC"]
-        }
+         }
        ]
-      ,"json": [
-        { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"] }     
-       ]
+     ,"outputMaps": [
+         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"], "outTypes":["JSON"] }
+        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+       ]       
     },
     {
       "name": "TenantView",
@@ -724,30 +747,41 @@
    ,{ "name":"AppUserView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
-          { "sameas":"App.refnum"        , "name":"appRefnum" }
-         ,{ "sameas":"App.seq"           , "name":"appSeq"    }
-         ,{ "sameas":"App.label"         , "name":"appLabel"  }
-         ,{ "sameas":"App.home"          , "name":"appHome"   }
-         ,{ "sameas":"App.id"            , "name":"appId"     }
-         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
-         ,{ "sameas":"App.path"          , "name":"appPath"   }
-         ,{ "sameas":"App.active"        , "name":"appActive" }
-         ,{ "sameas":"User.refnum"       , "name":"userRefnum"}
-         ,{ "sameas":"User.id"           , "name":"userId"    }
-         ,{ "sameas":"User.email"        , "name":"userEmail" }
-         ,{ "sameas":"AppUser.userRefnum", "name":"enabled", "expression":"case when ? is not null then 1 else 0 end", "type":"SHORT" }
+          { "sameas":"App.refnum"          , "name":"appRefnum"     }
+         ,{ "sameas":"App.seq"             , "name":"appSeq"        }
+         ,{ "sameas":"App.label"           , "name":"appLabel"      }
+         ,{ "sameas":"App.home"            , "name":"appHome"       }
+         ,{ "sameas":"App.id"              , "name":"appId"         }
+         ,{ "sameas":"App.admin"           , "name":"appAdmin"      }
+         ,{ "sameas":"App.path"            , "name":"appPath"       }
+         ,{ "sameas":"App.active"          , "name":"appActive"     }
+         ,{ "sameas":"User.refnum"         , "name":"userRefnum"    }
+         ,{ "sameas":"User.id"             , "name":"userId"        }
+         ,{ "sameas":"User.email"          , "name":"userEmail"     }
+         ,{ "sameas":"User.promoCode"      , "name":"userPromoCode" }
+         ,{ "sameas":"UserDetail.nameLast" , "name":"userNameLast"  }
+         ,{ "sameas":"UserDetail.nameFirst", "name":"userNameFirst" }
+         ,{ "sameas":"AppUser.userRefnum"  , "name":"enabled", "expression":"? is not null", "type":"BOOLEAN" }
        ]
      ,"joins":[
           { "object": "User"   , "joinType": "INNER", "on": [ { "db":"*", "clause":"1=1" } ] }
          ,{ "object": "AppUser", "joinType": "LEFT" , "on": [ { "db":"*", "clause":"AppUser.\"appRefnum\" = App.refnum and AppUser.\"userRefnum\" = WANDA.User.refnum" } ] }
        ]
-     ,"subWhere": "App.deleted is null"
+     ,"subWhere": "App.deleted is null and User.deleted is null and User.refnum <> -666"
      ,"queries": [
-          { "name"  :"AppByUser",
-            "description":"Get users for app.",
+          { "name"  :"AppByUserAll",
+            "description":"Get all users irrespective of app access.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=1" }
+                { "db":"*", "clause":"appRefnum=?()" }
+             ],
+            "orderBy": ["userId"]
+          }
+         ,{ "name"  :"AppByUserEnabled",
+            "description":"Get only enabled users for app.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"appRefnum=?() and enabled=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -755,7 +789,7 @@
             "description":"Get users for app.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=1 and appActive=true" }
+                { "db":"*", "clause":"appRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -763,7 +797,7 @@
             "description":"Get apps for a user.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"userRefnum=?() and enabled=1 and appActive=true" }
+                { "db":"*", "clause":"userRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["appSeq"]
           }
@@ -776,11 +810,44 @@
             "orderBy": ["appSeq"]
           }
        ]
-     ,"json":[
-          { "name": ""          , "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive", "userRefnum", "userId", "enabled" ] }
-       ]
+     ,"outputMaps":[
+          { "name": ""      , "outTypes":["JSON"], "columns": ["*"] }
+         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appLabel", "appId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
+       ]       
     }
 
+    
+    
+    ,{ "name":"AccessLogMonthlyView",
+       "description":"View that has Tenant + TenantUser",
+       "columns":[
+           { "sameAs":"AccessLog.created"    , "name":"month"                 , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
+          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
+          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+        ]
+      ,"queries": [
+           { "name"  :"Month",
+             "description":"Get the logs info by month from >= start and < end.",
+             "from"  : [], 
+             "wheres": [
+                 { "db":"*", "clause":"month >= ?(Start) and month < ?(End)" }
+              ],
+             "orderBy": ["month desc"]
+           }
+        ]
+      ,"outputMaps":[
+           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+        ]       
+     }
    ,{ "name":"AccessLogDailyView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
@@ -788,14 +855,15 @@
          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 200" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 400" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 401" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 404" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 500" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(\"responseCode\",0) NOT IN (200, 400, 401, 500)" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"\"login\"=true" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"\"login\"=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeError", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 401)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
        ]
      ,"queries": [
           { "name"  :"Day",
@@ -818,14 +886,14 @@
          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 200" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 400" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 401" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 404" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"\"responseCode\" = 500" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(\"responseCode\",0) NOT IN (200, 400, 401, 500)" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"\"login\"=true" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"\"login\"=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
        ]
      ,"queries": [
           { "name"  :"Hour",

@@ -16,30 +16,25 @@
 
 package wanda.servlets.admin;
 
-import java.io.PrintWriter;
-
 import javax.servlet.annotation.WebServlet;
-
-import wanda.data.Role_Data;
-import wanda.data.Role_Factory;
-import wanda.data.User_Data;
-import wanda.servlets.helpers.RoleHelper;
 
 import tilda.db.Connection;
 import tilda.db.ListResults;
-import tilda.interfaces.JSONable;
-import tilda.utils.json.JSONUtil;
+import wanda.data.Promo_Data;
+import wanda.data.Promo_Factory;
+import wanda.data.User_Data;
+import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/admin/user/roles")
-public class UserRolesListServlet extends SimpleServlet
+@WebServlet("/svc/admin/promo/list")
+public class PromoList extends SimpleServlet
   {
 
     private static final long serialVersionUID = -1745307937763620646L;
 
-    public UserRolesListServlet()
+    public PromoList()
     {
       super(true);
     }
@@ -49,9 +44,14 @@ public class UserRolesListServlet extends SimpleServlet
     throws Exception
       {
           throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
-          ListResults<Role_Data> L = Role_Factory.lookupWhereAll(C, 0, 1000);
-          PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-          JSONUtil.response(Out, "", (JSONable) L);
+
+          String search = req.getParamString("search", false);
+          boolean active = req.getParamBoolean("active", false);
+          boolean current = req.getParamBoolean("current", false);
+          boolean system = req.getParamBoolean("system", false);
+
+          ListResults<Promo_Data> L = Promo_Factory.lookupWhereParams(C, search, active, current, system, 0, 250);
+          Res.successJson("", L);
       }
 
   }

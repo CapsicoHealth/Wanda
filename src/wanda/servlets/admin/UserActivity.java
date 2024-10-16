@@ -16,42 +16,47 @@
 
 package wanda.servlets.admin;
 
-import java.io.PrintWriter;
+import java.time.LocalDate;
 
 import javax.servlet.annotation.WebServlet;
 
-import wanda.data.Role_Data;
-import wanda.data.Role_Factory;
-import wanda.data.User_Data;
-import wanda.servlets.helpers.RoleHelper;
-
 import tilda.db.Connection;
 import tilda.db.ListResults;
-import tilda.interfaces.JSONable;
-import tilda.utils.json.JSONUtil;
+import tilda.utils.DateTimeUtil;
+import wanda.data.AccessLogDailyView_Data;
+import wanda.data.AccessLogDailyView_Factory;
+import wanda.data.User_Data;
+import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/admin/user/roles")
-public class UserRolesListServlet extends SimpleServlet
+@WebServlet("/svc/admin/user/activity/list")
+public class UserActivity extends SimpleServlet
   {
 
     private static final long serialVersionUID = -1745307937763620646L;
 
-    public UserRolesListServlet()
-    {
-      super(true);
-    }
+    public UserActivity()
+      {
+        super(true);
+      }
 
     @Override
-    protected void justDo(RequestUtil req, ResponseUtil Res, Connection C, User_Data U)
+    protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
     throws Exception
       {
-          throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
-          ListResults<Role_Data> L = Role_Factory.lookupWhereAll(C, 0, 1000);
-          PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-          JSONUtil.response(Out, "", (JSONable) L);
+        throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
+
+        long daysBack = req.getParamLong("daysBack", false);
+        if (daysBack < 30 || daysBack > 400)
+         daysBack = 90;
+
+        req.throwIfErrors();
+
+        LocalDate tomorrow = DateTimeUtil.nowLocalDate().plusDays(1);
+        ListResults<AccessLogDailyView_Data> L = AccessLogDailyView_Factory.lookupWhereDay(C, tomorrow.minusDays(daysBack), tomorrow, 0, 500);
+        res.successJson("", L);
       }
 
   }

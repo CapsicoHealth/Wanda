@@ -4,3 +4,10 @@
 /wanda-docs.jar
 /wanda.jar
 .tildaWorkbench
+
+*.DS_Store
+**/capsico.*.log
+**/log4j2.xml
+**/tilda.config.json
+**/WebBasics.config.json
+

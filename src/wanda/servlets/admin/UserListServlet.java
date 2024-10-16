@@ -16,10 +16,12 @@
 
 package wanda.servlets.admin;
 
-import java.io.PrintWriter;
-
 import javax.servlet.annotation.WebServlet;
 
+import tilda.db.Connection;
+import tilda.db.ConnectionPool;
+import tilda.db.ListResults;
+import tilda.utils.SystemValues;
 import wanda.data.AdminUsersAndTenantsView_Data;
 import wanda.data.AdminUsersAndTenantsView_Factory;
 import wanda.data.AdminUsersView_Data;
@@ -28,12 +30,6 @@ import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.User_Data;
 import wanda.servlets.helpers.RoleHelper;
-
-import tilda.db.Connection;
-import tilda.db.ConnectionPool;
-import tilda.db.ListResults;
-import tilda.utils.SystemValues;
-import tilda.utils.json.JSONUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionUtil;
@@ -64,8 +60,8 @@ public class UserListServlet extends SimpleServlet
         String searchQuery = req.getParamString("query", false, "");
         String[] roles = req.getParamsString("role", false);
         String status = req.getParamString("status", false, "");
-        int Page = req.getParamInt("Page", false);
-        int Size = req.getParamInt("Size", false);
+        String promoCode = req.getParamString("promoCode", false, "");
+        boolean csv = req.getParamBoolean("csv", false);
         long TenantRefnum = SystemValues.EVIL_VALUE;
         long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
         if (ConnectionPool.isMultiTenant() && U.hasRoles(RoleHelper.SUPERADMIN) == false)
@@ -80,22 +76,22 @@ public class UserListServlet extends SimpleServlet
                 req.addError("TenantUserRefnum", "Cannot Find Tenant User with Refnum = " + TenantUserRefnum);
               }
           }
-        if (Size < 1 || Size > 250)
-          Size = 250;
-        if (Page < 1)
-          Page = 1;
         req.throwIfErrors();
         if (ConnectionPool.isMultiTenant())
           {
-            ListResults<AdminUsersAndTenantsView_Data> L = AdminUsersAndTenantsView_Factory.filter(C, U, searchQuery, roles, TenantRefnum, status, (Page - 1) * Size, Size);
-            PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-            JSONUtil.response(Out, "", L);
+            ListResults<AdminUsersAndTenantsView_Data> L = AdminUsersAndTenantsView_Factory.filter(C, U, searchQuery, roles, TenantRefnum, status, promoCode, 0, 500);
+            if (csv == true)
+             Res.successCsv("Simple", L);
+            else
+             Res.successJson("", L);
           }
         else
           {
-            ListResults<AdminUsersView_Data> L = AdminUsersView_Factory.filter(C, U, searchQuery, roles, status, (Page - 1) * Size, Size);
-            PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-            JSONUtil.response(Out, "", L);
+            ListResults<AdminUsersView_Data> L = AdminUsersView_Factory.filter(C, U, searchQuery, roles, status, promoCode, 0, 500);
+            if (csv == true)
+              Res.successCsv("Simple", L);
+             else
+              Res.successJson("", L);
           }
       }
   }

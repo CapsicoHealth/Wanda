@@ -106,12 +106,15 @@ public class WebBasics
             R = new BufferedReader(new InputStreamReader(In));
             _Config = gson.fromJson(R, WebBasicsDefConfig.class);
             if (_Config.validate(C) == false)
-              throw new Exception("Invalid WebBasics configuration file '"+url.toString()+"'.");
+              throw new Exception("Invalid WebBasics configuration file '" + url.toString() + "'.");
 
             _Apps = App_Factory.lookupWhereActive(C, 0, -1);
             _AppsConfig = Config_Factory.lookupById("MAIN");
             if (_AppsConfig.read(C) == false)
-              throw new Exception("The WebBasics app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
+              {
+                LOG.warn("The WebBasics app configuration is empty. This may be normal if this is the first time the server is started.");
+//                throw new Exception("The WebBasics app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
+              }
             StringBuilder Str = new StringBuilder();
             Str.append("\n   ************************************************************************************************************************\n");
             Str.append("   ** Wanda Configuration\n");
@@ -141,6 +144,7 @@ public class WebBasics
       {
         return _Config._emailSettingsUsr;
       }
+
     public static EmailConfigDetails getEmailSettingsSys()
       {
         return _Config._emailSettingsSys;
@@ -189,6 +193,11 @@ public class WebBasics
     public static String getAppName()
       {
         return _Config._appName;
+      }
+
+    public static String getAppUUID()
+      {
+        return _Config._appUUID;
       }
 
     public static String getAppPath()
@@ -321,6 +330,15 @@ public class WebBasics
         return _Config._laf._overrideCssFile;
       }
 
+    public static String getHomeStyles()
+      {
+        return _Config._laf._homeStyles;
+      }
+    public static String getErrorStyles()
+      {
+        return _Config._laf._errorStyles;
+      }
+    
     public static String getTwofishesUrl()
       {
         return _Config._twofishesUrl;

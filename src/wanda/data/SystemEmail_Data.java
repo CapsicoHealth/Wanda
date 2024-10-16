@@ -59,7 +59,7 @@ public class SystemEmail_Data extends wanda.data._Tilda.TILDA__SYSTEMEMAIL
        // Tilda does not set the null flag when a new object is created.
        if(isNullTenantRefnum() == true || getTenantRefnum() == 0)
          {
-           ListResults<AdminUsersView_Data> Results = AdminUsersView_Factory.filter(C, User, null, null, "active", Start, Size);
+           ListResults<AdminUsersView_Data> Results = AdminUsersView_Factory.filter(C, User, null, null, "active", null, Start, Size);
            while(Results.size() > 0)
              {
                for(AdminUsersView_Data U : Results)
@@ -76,12 +76,12 @@ public class SystemEmail_Data extends wanda.data._Tilda.TILDA__SYSTEMEMAIL
                if(status == false)
                  break;
                Start = Size + 1;
-               Results = AdminUsersView_Factory.filter(C, User, null, null, "active", Start, Size);
+               Results = AdminUsersView_Factory.filter(C, User, null, null, "active", null, Start, Size);
              }
          }
        else
          {
-           ListResults<AdminUsersAndTenantsView_Data> Results = AdminUsersAndTenantsView_Factory.filter(C, User, null, null, getTenantRefnum(), "active", Start, Size);
+           ListResults<AdminUsersAndTenantsView_Data> Results = AdminUsersAndTenantsView_Factory.filter(C, User, null, null, getTenantRefnum(), "active", null, Start, Size);
            while(Results.size() > 0)
              {
                for(AdminUsersAndTenantsView_Data U : Results)
@@ -98,7 +98,7 @@ public class SystemEmail_Data extends wanda.data._Tilda.TILDA__SYSTEMEMAIL
                if(status == false)
                  break;
                Start = Size + 1;
-               Results = AdminUsersAndTenantsView_Factory.filter(C, User, null, null, getTenantRefnum(), "active", Start, Size);
+               Results = AdminUsersAndTenantsView_Factory.filter(C, User, null, null, getTenantRefnum(), "active", null, Start, Size);
              }
          }
          if(status)

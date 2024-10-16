@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -42,6 +43,7 @@ public class WebBasicsDefConfig
 
     @SerializedName("hostName"        )         String                              _hostName               = null;
     @SerializedName("appName"         )         String                              _appName                = null;
+    @SerializedName("appUUID"         )         String                              _appUUID                = null;
     @SerializedName("appPath"         )         String                              _appPath                = null;
     @SerializedName("homePagePath"    )         String                              _homePagePath           = null;
     @SerializedName("resetEmailText"  )         List<String>                        _resetEmailTexts        = null;
@@ -69,6 +71,11 @@ public class WebBasicsDefConfig
             WebBasics.LOG.error("The WebBasics configuration file didn't define any 'appName' property");
             OK = false;
           }
+        if (_appUUID == null)
+          {
+            WebBasics.LOG.error("The WebBasics configuration file didn't define any 'appUUID' property. ");
+            OK = false;
+          }
         if (_hostName == null)
           {
             WebBasics.LOG.error("The WebBasics configuration file didn't define any 'hostName' property");
@@ -84,11 +91,11 @@ public class WebBasicsDefConfig
             WebBasics.LOG.error("The WebBasics configuration file didn't define any 'homePagePath' property");
             OK = false;
           }
-        if (_twofishesUrl == null)
-          {
-            WebBasics.LOG.error("The WebBasics configuration file didn't define any 'twofishes-url' property");
-            // OK = false;
-          }
+//       if (_twofishesUrl == null)
+//          {
+//            WebBasics.LOG.error("The WebBasics configuration file didn't define any 'twofishes-url' property");
+//            // OK = false;
+//          }
 
         if (_sessionConfig == null)
           {
@@ -258,15 +265,17 @@ public class WebBasicsDefConfig
 
         if (_guestRegistration != null && _guestRegistration._allowed == true)
           {
-            if (_guestRegistration._appIds == null || _guestRegistration._appIds.length == 0)
+            if (_guestRegistration._apps == null || _guestRegistration._apps.length == 0)
               {
                 WebBasics.LOG.error("The guestRegistration appIds is empty or unspecified. If allowed is true, there must be at least one aplication listed.");
                 OK = false;
               }
             else
               {
-                List<App_Data> AL = App_Factory.lookupWhereIds(C, _guestRegistration._appIds, 0, -1);
-                if (AL.size() != _guestRegistration._appIds.length)
+                String[] appIds = Stream.of(_guestRegistration._apps).map(e -> e._id).toArray(String[]::new);
+                
+                List<App_Data> AL = App_Factory.lookupWhereIds(C, appIds, 0, -1);
+                if (AL.size() != appIds.length)
                   {
                     WebBasics.LOG.error("The guestRegistration appIds specifies application Ids which cannot be found in the database.");
                     OK = false;

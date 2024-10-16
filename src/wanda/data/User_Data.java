@@ -28,6 +28,8 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.re2j.Pattern;
+
 import tilda.db.Connection;
 import tilda.utils.CollectionUtil;
 import tilda.utils.DateTimeUtil;
@@ -157,7 +159,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 sb.append("?action=setPswd");
                 sb.append("&token=");
                 sb.append(getPswdResetCode());
-                sb.append("'>Click to reset password</a></p>.</p>");
+                sb.append("'>Click to reset your password</a>.</p>");
                 EMailSender.sendMailUsr(to, cc, bcc, "Reset your password -- " + WebBasics.getAppName(), sb.toString(), true, true);
               }
           }.start();
@@ -212,6 +214,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           {
             throw new BadRequestException(Errors);
           }
+        LOG.debug("Sending a new invitation email to '" + U.getEmail() + "'.");
         U.sendInviteEmail();
       }
 
@@ -302,7 +305,12 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
         if (isResetPassword == true)
           {
+            LOG.debug("Sending another invitation email to '" + U.getEmail() + "'.");
             U.sendInviteEmail();
+          }
+        else
+          {
+            LOG.debug("NOT SENDING another invitation email to '" + U.getEmail() + "' because U.getLoginCount() = " + U.getLoginCount() + ".");
           }
       }
 
@@ -316,25 +324,34 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             public void run()
               {
                 super.run();
-                StringBuilder sb = new StringBuilder();
-                List<String> copyTexts = WebBasics.getInviteUserTexts();
-                if (copyTexts != null)
+                try
                   {
-                    Iterator<String> i = copyTexts.listIterator();
-                    while (i.hasNext())
+                    StringBuilder sb = new StringBuilder();
+                    List<String> copyTexts = WebBasics.getInviteUserTexts();
+                    if (copyTexts != null)
                       {
-                        sb.append(i.next());
+                        Iterator<String> i = copyTexts.listIterator();
+                        while (i.hasNext())
+                          {
+                            sb.append(i.next());
+                          }
                       }
+                    sb.append("<p><a href='");
+                    sb.append(WebBasics.getHostName());
+                    sb.append(WebBasics.getAppPath());
+                    sb.append(WebBasics.getHomePagePath());
+                    sb.append("?action=signUp");
+                    sb.append("&token=");
+                    sb.append(getPswdResetCode());
+                    sb.append("'>Click here to set your password</a></p>");
+                    LOG.debug("Sending email invitation to " + getEmail() + " via thread.");
+                    EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
+                    LOG.debug("Sent email invitation to " + getEmail() + " via thread.");
                   }
-                sb.append("<p><a href='");
-                sb.append(WebBasics.getHostName());
-                sb.append(WebBasics.getAppPath());
-                sb.append(WebBasics.getHomePagePath());
-                sb.append("?action=signUp");
-                sb.append("&token=");
-                sb.append(getPswdResetCode());
-                sb.append("'>Click here to set your password</a></p>");
-                EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
+                catch (Throwable T)
+                  {
+                    LOG.error("Failed sending email to '" + getEmail() + "'.\n", T);
+                  }
               }
           }.start();
       }
@@ -538,7 +555,86 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       }
 
     public String getOrCreatePswdSalt()
-    {
-      return TextUtil.isNullOrEmpty(getPswdSalt()) == false ? getPswdSalt() : EncryptionUtil.getToken(8);
-    }
+      {
+        return TextUtil.isNullOrEmpty(getPswdSalt()) == false ? getPswdSalt() : EncryptionUtil.getToken(8);
+      }
+
+    private static final Pattern _GUEST_NAMESPACE_PREFIX_PATTERN = Pattern.compile("^\\[\\d+\\]\\s.*");
+    protected String guestNamespacePrefix = null;
+
+    /**
+     * Return a namespace prefix for Guest users as "[1234] " where 1234 is the unique refnum of a user. If
+     * the user is not a guest, returns null<BR>
+     * When saving named entities (e.g., a dictionaries, models, cohorts...), it is important that guest users
+     * have their own namespacing. For example:
+     * <UL>
+     * <LI>Full User A creates a cohort called "ABC"</LI>
+     * <LI>Guest user B creates a cohort called "ABC"</LI>
+     * <LI>Guest user C creates a cohort called "ABC"</LI>
+     * </UL>
+     * Many named entities would have a unique index that includes names, so this scenarios would force everyone
+     * to pick unique names, which can get problematic in some environments, for example, a classroom where multiple
+     * students use the system and we want them to be isolated from one another.<BR>
+     * This method creates a standardized <B>prefix</B> that can be used by relevant code to add an implicit namespace
+     * in their named entities that is unique to each user. In effect,
+     * <UL>
+     * <LI>Full User A creates a cohort called "ABC"</LI>
+     * <LI>Guest user B creates a cohort called "[1234] ABC", where 1234 is the unique refnum of user B</LI>
+     * <LI>Guest user C creates a cohort called "[5678] ABC", where 5678 is the unique refnum of user B</LI>
+     * </UL>
+     * 
+     * @return
+     */
+    public String getGuestNamespacePrefix()
+      {
+        if (isGuest() == false)
+          return null;
+        if (guestNamespacePrefix == null)
+          guestNamespacePrefix = "[" + getRefnum() + "] ";
+        return guestNamespacePrefix;
+      }
+    
+    public String getGuestNamePrefixed(String name)
+    throws Exception
+      {
+        boolean alreadySet = isGuestNamespacePrefixed(name);
+        String prefix = getGuestNamespacePrefix();
+        boolean guest = isGuest();
+        // User is guest and the name-prefix isn't already set, so return the prefixed name
+        if (guest == true && alreadySet == false)
+         return prefix+name;
+        // User is not a guest and the name-prefix is set, so return the clean name (without the prefix)
+        if (guest == false && alreadySet == true)
+         return name.substring(prefix.length());
+        // return the name as-is.
+        return name;
+      }
+
+    public String unsetGuestName(String name)
+    throws Exception
+      {
+        String prefix = getGuestNamespacePrefix();
+        boolean alreadySet = isGuestNamespacePrefixed(name);
+        return alreadySet == true ? name.substring(prefix.length()) : name;
+      }
+    
+
+    /**
+     * In migration or transition scenarios (e.g., a user was guest and becomes a full user), it might be necessary
+     * to detect if an entity is names with a guest user prefix such as "[1234] " where 1234 is the unique refnum 
+     * of a user.
+     * @param name
+     * @return
+     */
+    public boolean isGuestNamespacePrefixed(String name)
+      {
+        if (guestNamespacePrefix == null)
+          guestNamespacePrefix = "[" + getRefnum() + "] ";
+        return name.startsWith(guestNamespacePrefix);
+      }
+    
+    public static boolean isNameGuestNamespacePrefixed(String name)
+     {
+       return _GUEST_NAMESPACE_PREFIX_PATTERN.matches(name);
+     }
   }

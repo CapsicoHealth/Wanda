@@ -20,39 +20,62 @@
 
 package wanda.data;
 
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.*;
 
 /**
-This is the application class <B>Data_AppUser</B> mapped to the table <B>PEOPLE.AppUser</B>.
-@see wanda.data._Tilda.TILDA__APPUSER
-*/
+ * This is the application class <B>Data_AppUser</B> mapped to the table <B>PEOPLE.AppUser</B>.
+ * 
+ * @see wanda.data._Tilda.TILDA__APPUSER
+ */
 public class AppUser_Factory extends wanda.data._Tilda.TILDA__APPUSER_Factory
- {
-   protected static final Logger LOG = LogManager.getLogger(AppUser_Factory.class.getName());
+  {
+    protected static final Logger LOG = LogManager.getLogger(AppUser_Factory.class.getName());
 
-   protected AppUser_Factory() { }
+    protected AppUser_Factory()
+      {
+      }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//   Implement your customizations, if any, below.
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Implement your customizations, if any, below.
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-   public static void init(Connection C) throws Exception
-    {
-      // Add logic to initialize your object, for example, caching some values, or validating some things.
-    }
+    public static void init(Connection C)
+    throws Exception
+      {
+        // Add logic to initialize your object, for example, caching some values, or validating some things.
+      }
 
     public static int deleteUserApps(Connection C, long userRefnum)
     throws Exception
-    {
-      DeleteQuery Q = newDeleteQuery(C);
-      Q.where().equals(COLS.USERREFNUM, userRefnum);
-      
-      return Q.execute();
-    }
+      {
+        DeleteQuery Q = newDeleteQuery(C);
+        Q.where().equals(COLS.USERREFNUM, userRefnum);
+        return Q.execute();
+      }
 
- }
+    public static void addUserAccess(Connection C, long appRefnum, long[] userRefnums) throws Exception
+      {
+        for (long userRefnum : userRefnums)
+          {
+            AppUser_Data ap = AppUser_Factory.create(appRefnum);
+            ap.setUserRefnum(userRefnum);
+            ap.write(C);
+          }
+      }
+
+    public static int removeUserAccess(Connection C, long appRefnum, long[] userRefnums)
+    throws Exception
+      {
+        DeleteQuery Q = newDeleteQuery(C);
+        Q.where().equals(COLS.APPREFNUM, appRefnum)
+        .and().in(COLS.USERREFNUM, userRefnums);
+        return Q.execute();
+      }
+  }

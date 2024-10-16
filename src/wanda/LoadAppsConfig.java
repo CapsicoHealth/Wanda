@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.io.output.StringBuilderWriter;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,6 +37,7 @@ import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.utils.AsciiArt;
 import tilda.utils.FileUtil;
+import tilda.utils.LogUtil;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
 import wanda.data.AppUser_Data;
@@ -53,17 +55,22 @@ import wanda.web.config.WebBasicsDefApps;
 
 public class LoadAppsConfig
   {
-    static final Logger LOG = LogManager.getLogger(LoadAppsConfig.class.getName());
+    static final Logger   LOG               = LogManager.getLogger(LoadAppsConfig.class.getName());
+
+    static public boolean _COMMAND_LINE_RUN = true;
 
     public static void main(String[] Args)
       {
-        LOG.info("");
-        LOG.info("Wanda App Definition Configuration Loader");
-        LOG.info("  - This utility will load /WebBasics.apps.json and its /WebBasics.app.Xyz.json ");
-        LOG.info("   dependencies in the classpath.");
-        LOG.info("  - The information will be loaded into the " + App_Factory.SCHEMA_TABLENAME_LABEL + " and ");
-        LOG.info("   " + Config_Factory.SCHEMA_TABLENAME_LABEL + " tables");
-        LOG.info("");
+        if (_COMMAND_LINE_RUN == true)
+          {
+            LOG.info("");
+            LOG.info("Wanda App Definition Configuration Loader");
+            LOG.info("  - This utility will load /WebBasics.apps.json and its /WebBasics.app.Xyz.json ");
+            LOG.info("   dependencies in the classpath.");
+            LOG.info("  - The information will be loaded into the " + App_Factory.SCHEMA_TABLENAME_LABEL + " and ");
+            LOG.info("   " + Config_Factory.SCHEMA_TABLENAME_LABEL + " tables");
+            LOG.info("");
+          }
         Connection C = null;
 
         try
@@ -72,10 +79,9 @@ public class LoadAppsConfig
             while (connectionIds.hasNext())
               {
                 String connectionId = connectionIds.next();
-                LOG.info("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                + "!!! Loading Apps For Tenant/Database\n"
-                + "!!!     ==> " + connectionId + ": " + ConnectionPool.getDBDetails(connectionId) + "\n"
-                + "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                LOG.info("\n\n"
+                + "--------------------------------------------------------------------------------------------------------------------------------------\n"
+                + "--- Loading Apps For Tenant/Database " + connectionId + ": " + ConnectionPool.getDBDetails(connectionId) + "\n");
                 C = ConnectionPool.get(connectionId);
                 load(C);
                 C.commit();
@@ -84,6 +90,8 @@ public class LoadAppsConfig
           }
         catch (Exception E)
           {
+            if (_COMMAND_LINE_RUN == false)
+              return;
             LOG.error("An exception occurred\n", E);
             LOG.error("\n"
             + "          ======================================================================================\n"
@@ -169,6 +177,8 @@ public class LoadAppsConfig
         ZonedDateTime ZDT = C.getCurrentTimestamp();
 
         int i = -1;
+        LOG.debug("Updating App configurations...");
+        LogUtil.setLogLevel(Level.ERROR);
         for (AppDef ad : DA._apps)
           if (ad != null)
             {
@@ -198,7 +208,10 @@ public class LoadAppsConfig
                       A.setAdmin(ad._AppDefDetail._admin);
                       A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                       if (A.write(C) == false)
-                        throw new Exception("Cannot insert/update App record");
+                        {
+                          LogUtil.resetLogLevel();
+                          throw new Exception("Cannot insert/update App record");
+                        }
                     }
                 }
               A.refresh(C);
@@ -207,7 +220,10 @@ public class LoadAppsConfig
                 {
                   AU = AppUser_Factory.create(A.getRefnum());
                   if (AU.write(C) == false)
-                    throw new Exception("Cannot insert default app record for app " + A.getRefnum());
+                    {
+                      LogUtil.resetLogLevel();
+                      throw new Exception("Cannot insert default app record for app " + A.getRefnum());
+                    }
                 }
               // Create Administrator role for the application
               if (TextUtil.isNullOrEmpty(A.getAdmin()) == false)
@@ -221,6 +237,8 @@ public class LoadAppsConfig
                     }
                 }
             }
+        LogUtil.resetLogLevel();
+        LOG.debug("   --> Updated "+i+" App configurations.");
 
         // App not updated in this round, i.e., lastUpdated < ZDT, have likely been removed, so they should be marked as deleted.
         List<App_Data> L = App_Factory.lookupWhereLastUpdated(C, ZDT, 0, -1);

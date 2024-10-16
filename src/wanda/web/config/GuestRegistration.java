@@ -22,11 +22,12 @@ public class GuestRegistration
   {
     /*@formatter:off*/
     @SerializedName("allowed"  ) public boolean  _allowed   = false;
-    @SerializedName("appIds"   ) public String[] _appIds    = null;
+    @SerializedName("promos"   ) public boolean  _promos    = false;
+    @SerializedName("apps"     ) public GuestRegistrationApp[] _apps = null;
     @SerializedName("tenantIds") public String[] _tenantIds = null;
     /*@formatter:on*/
-    
-    public transient long[] _appRefnums = null;
-    public transient long[] _tenantRefnums = null;
+
+    public transient long[]       _appRefnums    = null;
+    public transient long[]       _tenantRefnums = null;
 
   }

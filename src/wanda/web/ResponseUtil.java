@@ -22,13 +22,16 @@ import java.io.PrintWriter;
 import java.util.List;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import tilda.interfaces.CSVable;
 import tilda.interfaces.JSONable;
+import tilda.utils.CSVUtil;
 import tilda.utils.HttpStatus;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONPrinter;
@@ -126,6 +129,23 @@ public class ResponseUtil
       {
         successJson(J, null);
       }
+    public void successJsonRaw(JSONPrinter J)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        J.printRaw(_Out);
+      }
+    
+    
+    public void successCsv(String csvExportName, List<? extends CSVable> L)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.CSV);
+        CSVUtil.response(_Out, csvExportName, L);
+      }
+    
 
     /**
      * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
@@ -138,15 +158,15 @@ public class ResponseUtil
      * @param Obj
      * @throws Exception
      */
-    public void successDojoMultipartConfig()
-    throws Exception
-      {
-        if (_Out == null)
-          setContentType(ContentType.HTML);
-        _Out.write("<textarea>\n");
-        success();
-        _Out.write("</textarea>\n");
-      }
+//    public void successDojoMultipartConfig()
+//    throws Exception
+//      {
+//        if (_Out == null)
+//          setContentType(ContentType.HTML);
+//        _Out.write("<textarea>\n");
+//        success();
+//        _Out.write("</textarea>\n");
+//      }
 
 
     /**
@@ -202,4 +222,9 @@ public class ResponseUtil
         FileUtils.copyFile(f, _Res.getOutputStream());
       }
 
+    public void setCookie(Cookie c)
+      {
+        _Res.addCookie(c);
+      }
+    
   }
