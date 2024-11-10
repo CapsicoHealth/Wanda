@@ -98,6 +98,7 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         JSONUtil.response(_Out, JsonExportName, obj, perfMessage);
       }
+
     public void successJson(String JsonExportName, JSONable obj)
     throws Exception
       {
@@ -111,6 +112,7 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         JSONUtil.response(_Out, JsonExportName, L, perfMessage);
       }
+
     public void successJson(String JsonExportName, List<? extends JSONable> L)
     throws Exception
       {
@@ -124,11 +126,13 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         J.print(_Out, perfMessage);
       }
+
     public void successJson(JSONPrinter J)
     throws Exception
       {
         successJson(J, null);
       }
+
     public void successJsonRaw(JSONPrinter J)
     throws Exception
       {
@@ -136,8 +140,8 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         J.printRaw(_Out);
       }
-    
-    
+
+
     public void successCsv(String csvExportName, List<? extends CSVable> L)
     throws Exception
       {
@@ -145,7 +149,7 @@ public class ResponseUtil
           setContentType(ContentType.CSV);
         CSVUtil.response(_Out, csvExportName, L);
       }
-    
+
 
     /**
      * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
@@ -158,15 +162,15 @@ public class ResponseUtil
      * @param Obj
      * @throws Exception
      */
-//    public void successDojoMultipartConfig()
-//    throws Exception
-//      {
-//        if (_Out == null)
-//          setContentType(ContentType.HTML);
-//        _Out.write("<textarea>\n");
-//        success();
-//        _Out.write("</textarea>\n");
-//      }
+    // public void successDojoMultipartConfig()
+    // throws Exception
+    // {
+    // if (_Out == null)
+    // setContentType(ContentType.HTML);
+    // _Out.write("<textarea>\n");
+    // success();
+    // _Out.write("</textarea>\n");
+    // }
 
 
     /**
@@ -226,5 +230,11 @@ public class ResponseUtil
       {
         _Res.addCookie(c);
       }
-    
+
+    public void sendRedirect(String url)
+    throws IOException
+      {
+        _Res.sendRedirect(url);
+      }
+
   }

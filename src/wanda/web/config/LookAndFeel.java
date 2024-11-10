@@ -21,16 +21,20 @@ import com.google.gson.annotations.SerializedName;
 public class LookAndFeel
   {
     /*@formatter:off*/
-    @SerializedName("pageTitle"         ) public String _pageTitle          = null;
-    @SerializedName("pageTitlePostLogin") public String _pageTitlePostLogin = null;
-    @SerializedName("logoBig"           ) public String _logoBig            = null;
-    @SerializedName("logoBigPostLogin"  ) public String _logoBigPostLogin   = null;
-    @SerializedName("logoSmall"         ) public String _logoSmall          = null;
-    @SerializedName("logoSmallPostLogin") public String _logoSmallPostLogin = null;
-    @SerializedName("poweredBy"         ) public String _poweredBy          = null;
-    @SerializedName("copyright"         ) public String _copyright          = null;
-    @SerializedName("homeStyles"        ) public String _homeStyles         = "";
-    @SerializedName("errorStyles"       ) public String _errorStyles        = "";
-    @SerializedName("overrideCssFile"   ) public String _overrideCssFile    = null;
+    @SerializedName("pageTitle"                  ) public String _pageTitle                   = null;
+    @SerializedName("logoBig"                    ) public String _logoBig                     = null;
+    @SerializedName("logoSmall"                  ) public String _logoSmall                   = null;
+    @SerializedName("overlayText"                ) public String _overlayText                 = "";
+
+    @SerializedName("urlRedirectPostLogin"       ) public String _urlRedirectPostLogin        = null;
+    @SerializedName("pageTitlePostLogin"         ) public String _pageTitlePostLogin          = null;
+    @SerializedName("logoBigPostLogin"           ) public String _logoBigPostLogin            = null;
+    @SerializedName("logoSmallPostLogin"         ) public String _logoSmallPostLogin          = null;
+    @SerializedName("overlayTextPostLogin"       ) public String _overlayTextPostLogin        = "";
+
+    @SerializedName("poweredBy"                  ) public String _poweredBy                   = "";
+    @SerializedName("copyright"                  ) public String _copyright                   = "";
+
+    @SerializedName("overrideCssFile"            ) public String _overrideCssFile             = null;
     /*@formatter:on*/
   }

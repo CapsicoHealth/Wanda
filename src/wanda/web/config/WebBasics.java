@@ -113,7 +113,7 @@ public class WebBasics
             if (_AppsConfig.read(C) == false)
               {
                 LOG.warn("The WebBasics app configuration is empty. This may be normal if this is the first time the server is started.");
-//                throw new Exception("The WebBasics app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
+                // throw new Exception("The WebBasics app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
               }
             StringBuilder Str = new StringBuilder();
             Str.append("\n   ************************************************************************************************************************\n");
@@ -279,6 +279,11 @@ public class WebBasics
       }
 
 
+    public static String getUrlRedirectPostLogin()
+      {
+        return _Config._laf._urlRedirectPostLogin;
+      }
+
     public static String getPageTitle(boolean LoggedIn)
       {
         return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._pageTitlePostLogin) == false ? _Config._laf._pageTitlePostLogin : _Config._laf._pageTitle;
@@ -287,6 +292,11 @@ public class WebBasics
     public static String getLogoBig(boolean LoggedIn)
       {
         return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._logoBigPostLogin) == false ? _Config._laf._logoBigPostLogin : _Config._laf._logoBig;
+      }
+
+    public static String getOverlayText(boolean LoggedIn)
+      {
+        return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._overlayTextPostLogin) == false ? _Config._laf._overlayTextPostLogin : _Config._laf._overlayText;
       }
 
     public static String getLogoSmall(boolean LoggedIn)
@@ -330,15 +340,6 @@ public class WebBasics
         return _Config._laf._overrideCssFile;
       }
 
-    public static String getHomeStyles()
-      {
-        return _Config._laf._homeStyles;
-      }
-    public static String getErrorStyles()
-      {
-        return _Config._laf._errorStyles;
-      }
-    
     public static String getTwofishesUrl()
       {
         return _Config._twofishesUrl;
@@ -358,6 +359,11 @@ public class WebBasics
                 e = E;
             }
         return e;
+      }
+
+    public static LoginSystem getLoginSystem()
+      {
+        return _Config._loginSystem;
       }
 
     public static Map<String, String> getExtra(String configName)
