@@ -43,6 +43,7 @@ import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
+import wanda.web.LoginSyncService;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -119,6 +120,25 @@ public class Login extends SimpleServlet
 
         loginCallback.onLoginSuccess(u);
       }
+    
+    protected static void doUserSyncServices(Connection C, User_Data U)
+      {
+        if (WebBasics.getLoginSystem() != null && WebBasics.getLoginSystem()._userSyncServices != null)
+          {
+            String[] userSyncServices = WebBasics.getLoginSystem()._userSyncServices;
+            for (String uss : userSyncServices)
+              try
+                {
+                  Class<LoginSyncService> c = (Class<LoginSyncService>) Class.forName(uss);
+                  c.getConstructor().newInstance().syncUser(C, U);
+                }
+              catch (Throwable T)
+                {
+                  LOG.warn("Cannot follow user sync process off of '" + uss + "'.");
+                }
+          }
+      }
+    
 
     @Override
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
@@ -185,6 +205,7 @@ public class Login extends SimpleServlet
                 public void onLoginSuccess(User_Data U)
                 throws Exception
                   {
+                    doUserSyncServices(C, U);
                     boolean maskedMode = Req.getParamBoolean("dataMasking", false);
                     Req.setSessionBool(SessionUtil.Attributes.MASKING_MODE.name(), maskedMode);
 
@@ -253,7 +274,7 @@ public class Login extends SimpleServlet
                   {
                     String ErrorMessage;
                     // Failure logging handled in session filter.
-                    if (U==null || U.getDeleted() != null || U.isLocked() == true || U.getInviteCancelled() == true)
+                    if (U == null || U.getDeleted() != null || U.isLocked() == true || U.getInviteCancelled() == true)
                       {
                         if (U == null)
                           LOG.error("Patient not found");
@@ -262,7 +283,7 @@ public class Login extends SimpleServlet
                             if (U.getDeleted() != null)
                               LOG.error("Patient is deleted");
                             if (U.isLocked() == true)
-                              LOG.error("Patient is locked until "+DateTimeUtil.printDateTimeCompact(U.getLocked(), true, true));
+                              LOG.error("Patient is locked until " + DateTimeUtil.printDateTimeCompact(U.getLocked(), true, true));
                             if (U.getInviteCancelled() == true)
                               LOG.error("Patient has been uninvited");
                           }
@@ -273,14 +294,14 @@ public class Login extends SimpleServlet
                         User_Data.markUserLoginFailure(C, U);
                         int FailCount = WebBasics.getLoginAttempts() - U.getFailCount();
                         if (U.isLocked() == true)
-                         {
-                           if (U.getFailCycleCount() >= WebBasics.getLoginFailedCycle())
-                            ErrorMessage = "Your account is locked!\nYou have exceeded  the maximum "+WebBasics.getLoginAttempts()+" reset or login attempts.\nPlease contact your Administrator.";
-                           else
-                            ErrorMessage = "You have exceeded the maximum "+WebBasics.getLoginAttempts()+" reset or login attempts.\nPlease try again in "+WebBasics.getLockFor()+" minutes.";
-                         }
+                          {
+                            if (U.getFailCycleCount() >= WebBasics.getLoginFailedCycle())
+                              ErrorMessage = "Your account is locked!\nYou have exceeded  the maximum " + WebBasics.getLoginAttempts() + " reset or login attempts.\nPlease contact your Administrator.";
+                            else
+                              ErrorMessage = "You have exceeded the maximum " + WebBasics.getLoginAttempts() + " reset or login attempts.\nPlease try again in " + WebBasics.getLockFor() + " minutes.";
+                          }
                         else
-                         ErrorMessage = "Invalid Login Id or Password.\nYou have " + FailCount + " attempt(s) remaining";
+                          ErrorMessage = "Invalid Login Id or Password.\nYou have " + FailCount + " attempt(s) remaining";
                       }
                     throw new ResourceNotAuthorizedException("User", Email, ErrorMessage);
                   }

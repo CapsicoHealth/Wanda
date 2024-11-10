@@ -52,6 +52,7 @@ public class WebBasicsDefConfig
     @SerializedName("emailVerificationText")    List<String>                        _emailVerificationTexts = null;
 
     @SerializedName("lookAndFeel"     )         LookAndFeel                         _laf                    = null;
+    @SerializedName("loginSystem"     )         LoginSystem                         _loginSystem            = null;
     @SerializedName("eulas"           )         List<Eula>                          _eulas                  = new ArrayList<Eula>();
     @SerializedName("twofishes-url"   )         String                              _twofishesUrl           = null;
     @SerializedName("tableauUrl"      )         String                              _tableauUrl             = null;
