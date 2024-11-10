@@ -16,42 +16,46 @@
 
 package wanda.servlets.admin;
 
-import java.io.PrintWriter;
-
 import javax.servlet.annotation.WebServlet;
-
-import wanda.data.Role_Data;
-import wanda.data.Role_Factory;
-import wanda.data.User_Data;
-import wanda.servlets.helpers.RoleHelper;
 
 import tilda.db.Connection;
 import tilda.db.ListResults;
-import tilda.interfaces.JSONable;
-import tilda.utils.json.JSONUtil;
+import tilda.utils.SystemValues;
+import wanda.data.RoleView_Data;
+import wanda.data.RoleView_Factory;
+import wanda.data.User_Data;
+import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/admin/user/roles")
-public class UserRolesListServlet extends SimpleServlet
+@WebServlet("/svc/admin/roles")
+public class RoleListServlet extends SimpleServlet
   {
 
     private static final long serialVersionUID = -1745307937763620646L;
 
-    public UserRolesListServlet()
-    {
-      super(true);
-    }
+    public RoleListServlet()
+      {
+        super(true);
+      }
 
     @Override
-    protected void justDo(RequestUtil req, ResponseUtil Res, Connection C, User_Data U)
+    protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
     throws Exception
       {
-          throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
-          ListResults<Role_Data> L = Role_Factory.lookupWhereAll(C, 0, 1000);
-          PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-          JSONUtil.response(Out, "", (JSONable) L);
+        throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
+
+        int admin = req.getParamInt("admin", false);
+
+        if (admin != 0 && admin != 1 && admin != SystemValues.EVIL_VALUE)
+          req.addError("excludeAdmin", "Invalid API call: 'excludeAdmin' must be either 0 or 1 if passed.");
+
+        req.throwIfErrors();
+        
+        ListResults<RoleView_Data> L = admin == SystemValues.EVIL_VALUE ? RoleView_Factory.lookupWhereAll(C, 0, 1000)
+                                                                        : RoleView_Factory.lookupWhereAdmin(C, admin==1, 0, 1000);;
+        res.successJson("", L);
       }
 
   }

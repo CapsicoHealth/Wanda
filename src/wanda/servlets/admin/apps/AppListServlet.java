@@ -93,7 +93,8 @@ public class AppListServlet extends SimpleServlet
           }
         else
           {
-            ListResults<AppView_Data> apps = AppView_Factory.lookupWhereAll(C, 0, 250);
+            ListResults<AppView_Data> apps = active == SystemValues.EVIL_VALUE ? AppView_Factory.lookupWhereAll(C, 0, 250) 
+                                                                               : AppView_Factory.lookupWhereActive(C, active==1, 0, 250);
             JSONUtil.response(Out, "", apps);
           }
       }

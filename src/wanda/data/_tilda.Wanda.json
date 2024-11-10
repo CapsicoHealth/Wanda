@@ -49,6 +49,7 @@
            { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
           ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100, "protect":"ABSOLUTE", "description":"The first line of the address"}
           ,{ "name":"promoCode"      , "sameAs":"Promo.code", "nullable": true,                                    "description":"The promo code that the user may have used to register"}
+          ,{ "name":"programs"       , "type"  :"STRING[]"  , "nullable": true,                                    "description":"The programs (e.g., training, courses, application suites...) the user has access to"}
           ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
           ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
           ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
@@ -145,28 +146,39 @@
          ,{ "name":"dob"          , "type":"DATETIME", "nullable": true ,                             "description":"The date of birth" }
          ,{ "name":"currentAge"   , "type":"INTEGER" , "nullable": false, "mode":"CALCULATED",        "description":"The age at this current time" }
          ,{ "name":"dod"          , "type":"DATETIME",                                                "description":"The date of death" }
-         ,{ "name":"gender"       , "type":"STRING"  , "nullable": true , "size":   2,                "description":"Gender" }
-         ,{ "name":"race"         , "type":"STRING"  ,                    "size":  64,                "description":"Race" }
-         ,{ "name":"ethnicity"    , "type":"STRING"  ,                    "size":  64,                "description":"Ethnicity" }
-         ,{ "name":"citizenship"  , "type":"STRING"  ,                    "size":  64,                "description":"Citizenship" }
-         ,{ "name":"religion"     , "type":"STRING"  ,                    "size":  64,                "description":"Religion" }
-         ,{ "name":"languages"    , "type":"STRING"  ,                    "size":  64,                "description":"Languages spoken" }
-         ,{ "name":"marital"      , "type":"STRING"  ,                    "size":  64,                "description":"Marital status" }
-         ,{ "name":"picture"      , "type":"BOOLEAN" ,                                                "description":"Whether a picture is available for this user" }
-         ,{ "name":"address1"     , "type"  : "STRING"  ,                  "size": 100,               "description":"The first line of the address" }
-         ,{ "name":"address2"     , "sameas":"address1",                                              "description":"The second line of the address" }
-         ,{ "name":"city"         , "type"  : "STRING"  ,                  "size":  50,               "description":"The city" }
-         ,{ "name":"zipPostal"    , "type"  : "STRING"  ,                  "size":  12,               "description":"The zip or postal code" }
-         ,{ "name":"county"       , "sameas":"city"    ,                                              "description":"The county" }
-         ,{ "name":"stateProv"    , "sameas":"city"    ,                                              "description":"The state, province, or whatever" }
-         ,{ "name":"country"      , "sameas":"city"    ,                                              "description":"The country" }
-         ,{ "name":"telHome"      , "type"  : "STRING"  ,                  "size":  20,               "description":"The home telephone number" }
-         ,{ "name":"telMobile"    , "sameas":"telHome",                                               "description":"The mobile telephone number" }
+         ,{ "name":"ageGroup"     , "type":"STRING(12)", "nullable": true ,                           "description":"Age group."
+                                  , "values": [ { "name":"Y80_ABOVE" , "value":"80-"      , "description":"80 & ABOVE" }
+                                               ,{ "name":"Y65_79"    , "value":"65-79"    , "description":"65-69Y"     }
+                                               ,{ "name":"Y50_64"    , "value":"50-64"    , "description":"50-64Y"     }
+                                               ,{ "name":"Y35_49"    , "value":"35-49"    , "description":"35-49Y"     }
+                                               ,{ "name":"Y18_34"    , "value":"18-34"    , "description":"18-34Y"     }
+                                              ]
+          }
+         ,{ "name":"gender"       , "type"  :"STRING"   , "nullable": true , "size":   2,             "description":"Gender" }
+         ,{ "name":"race"         , "type"  :"STRING"   ,                    "size":  64,             "description":"Race" }
+         ,{ "name":"ethnicity"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Ethnicity" }
+         ,{ "name":"citizenship"  , "type"  :"STRING"   ,                    "size":  64,             "description":"Citizenship" }
+         ,{ "name":"religion"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Religion" }
+         ,{ "name":"languages"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Languages spoken" }
+         ,{ "name":"marital"      , "type"  :"STRING"   ,                    "size":  64,             "description":"Marital status" }
+         ,{ "name":"company"      , "type"  :"STRING"   ,                    "size":  64,             "description":"Company" }
+         ,{ "name":"industry"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Industry" }
+         ,{ "name":"profTitle"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Professional title" }
+         ,{ "name":"picture"      , "type"  :"BOOLEAN"  ,                                             "description":"Whether a picture is available for this user" }
+         ,{ "name":"address1"     , "type"  : "STRING"  ,                    "size": 100,             "description":"The first line of the address" }
+         ,{ "name":"address2"     , "sameas":"address1" ,                                             "description":"The second line of the address" }
+         ,{ "name":"city"         , "type"  : "STRING"  ,                    "size":  50,             "description":"The city" }
+         ,{ "name":"zipPostal"    , "type"  : "STRING"  ,                    "size":  12,             "description":"The zip or postal code" }
+         ,{ "name":"county"       , "sameas":"city"     ,                                             "description":"The county" }
+         ,{ "name":"stateProv"    , "sameas":"city"     ,                                             "description":"The state, province, or whatever" }
+         ,{ "name":"country"      , "sameas":"city"     ,                                             "description":"The country" }
+         ,{ "name":"telHome"      , "type"  : "STRING"  ,                    "size":  20,             "description":"The home telephone number" }
+         ,{ "name":"telMobile"    , "sameas":"telHome"  ,                                             "description":"The mobile telephone number" }
          ,{ "name":"telMobileText", "type"  : "BOOLEAN" ,                                             "description":"Whether the user can receive texts at the mobiler number or not" }
-         ,{ "name":"telOffice"    , "sameas":"telHome",                                               "description":"The office telephone number" }
-         ,{ "name":"telOfficeExt" , "sameas":"telHome",                                               "description":"The office telephone extension" }
-         ,{ "name":"telFax"       , "sameas":"telHome",                                               "description":"The Fax number"}
-         ,{ "name":"emailHome"    , "type"  : "STRING"  ,                  "size":  50,               "description":"The home email address" }
+         ,{ "name":"telOffice"    , "sameas":"telHome"  ,                                             "description":"The office telephone number" }
+         ,{ "name":"telOfficeExt" , "sameas":"telHome"  ,                                             "description":"The office telephone extension" }
+         ,{ "name":"telFax"       , "sameas":"telHome"  ,                                             "description":"The Fax number"}
+         ,{ "name":"emailHome"    , "type"  : "STRING"  ,                    "size":  50,             "description":"The home email address" }
          ,{ "name":"emailOffice"  , "sameas":"emailHome",                                             "description":"The office email address" }
          ,{ "name":"emailLevel"   , "type"  : "INTEGER" ,                                             "description":"The level of emails allowed" }
        ]
@@ -566,8 +578,60 @@
  ]
   
  ,"views":[
-    {
-      "name": "UserResetPasswordView",
+    { "name": "UserView"
+     ,"description": "View that has complete user info"
+     ,"columns": [
+          { "sameAs":"User.refnum"              }
+         ,{ "sameAs":"User.email"               }
+         ,{ "sameAs":"User.id"                  }
+         ,{ "sameAs":"User.pswdCreate"          }
+         ,{ "sameAs":"User.lastLogin"           }
+         ,{ "sameAs":"User.locked"              }
+         ,{ "sameAs":"User.loginCount"          }
+         ,{ "sameAs":"User.roles"               }
+         ,{ "sameAs":"User.promoCode"           }
+         ,{ "sameAs":"User.programs"            }
+         ,{ "sameAs":"User.created"             }
+         ,{ "sameAs":"User.lastUpdated"         }
+         ,{ "sameAs":"User.deleted"             }
+         ,{ "sameAs":"UserDetail.nameTitle"     }
+         ,{ "sameAs":"UserDetail.nameLast"      }
+         ,{ "sameAs":"UserDetail.nameFirst"     }
+         ,{ "sameAs":"UserDetail.nameMiddle"    }
+         ,{ "sameAs":"UserDetail.nameStandard"  }
+         ,{ "sameAs":"UserDetail.ageGroup"      }
+         ,{ "sameAs":"UserDetail.gender"        }
+         ,{ "sameAs":"UserDetail.company"       }
+         ,{ "sameAs":"UserDetail.industry"      }
+         ,{ "sameAs":"UserDetail.profTitle"     }
+         ,{ "sameAs":"UserDetail.country"       }
+         ,{ "sameAs":"UserDetail.stateProv"     }
+         ,{ "sameAs":"UserDetail.zipPostal"     }
+         ,{ "sameAs":"UserDetail.telOffice"     ,"name": "tel" }
+         ,{ "sameAs":"UserDetail.picture"       }
+       ]
+     ,"subWhere": "User.deleted is null AND UserDetail.deleted is null"
+     ,"queries": [
+         { "name": "Refnum"
+          ,"description": "User by refnum"
+          ,"wheres": [
+              { "db": "*", "clause": "refnum = ?()" }
+            ]
+         }
+        ,{ "name": "Id"
+          ,"description": "User by id"
+          ,"wheres": [
+              { "db": "*", "clause": "id = ?()" }
+            ]
+         }
+       ]
+     ,"json": [
+         { "name": "", "columns": ["*"], "exclude":["refnum"] }     
+        ,{ "name": "Mini", "columns": ["refnum", "id", "email", "nameFirst", "nameLast"] }     
+       ]
+    }
+    
+   ,{ "name": "UserResetPasswordView",
       "description": "View that has basic user details with pswdResetCode",
       "columns": [
         { "sameas":"User.refnum"               , "name":"userRefnum"  },
@@ -716,6 +780,37 @@
         ]
     }
 
+    
+    ,{ "name":"RoleView",
+       "description":"View of roles that have not been deleted",
+       "columns":[
+           { "sameas":"Role.*"      }
+          ,{ "sameas":"Role.value"  , "name":"roleAdmin", "expression":"LOWER(value||' '||label) LIKE '%admin%'", "type":"BOOLEAN" }
+        ]
+      ,"json":[
+           { "name": "", "columns": ["*" ] }
+        ]
+      ,"queries": [
+           { "name"  :"All",
+             "description":"Get all Roles.",
+             "from"  : [], 
+             "wheres": [
+                 { "db":"*", "clause":"1=1" }
+              ],
+             "orderBy": ["value"]
+           }
+          ,{ "name"  :"Admin",
+             "description":"Get all Roles admin or not.",
+             "from"  : [], 
+             "wheres": [
+                { "db":"*", "clause":"roleAdmin=?()" }
+              ],
+             "orderBy": ["value"]
+           }
+        ]
+     }    
+    
+    
    ,{ "name":"AppView",
       "description":"View of apps that have not been deleted",
       "columns":[
@@ -738,6 +833,14 @@
             "from"  : [], 
             "wheres": [
                 { "db":"*", "clause":"1=1" }
+             ],
+            "orderBy": ["appSeq"]
+          }
+         ,{ "name"  :"Active",
+            "description":"Get all Apps.",
+            "from"  : [], 
+            "wheres": [
+               { "db":"*", "clause":"appActive=?()" }
              ],
             "orderBy": ["appSeq"]
           }
