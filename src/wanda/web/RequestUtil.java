@@ -430,6 +430,10 @@ public class RequestUtil
         return _Req.getRequestedSessionId();
       }
 
+    public String getHeader(String header)
+      {
+        return _Req.getHeader(header);
+      }
 
     public Collection<Part> getParts()
     throws IOException, ServletException
