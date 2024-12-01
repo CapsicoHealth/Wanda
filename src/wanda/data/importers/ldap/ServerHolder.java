@@ -48,7 +48,7 @@ public class ServerHolder
 
         count++;
         
-        if (server.upsert(C, true) == false)
+        if (server.upsert(C) == false)
           throw new Exception("Cannot create Server record");
 
         if (domain != null)
