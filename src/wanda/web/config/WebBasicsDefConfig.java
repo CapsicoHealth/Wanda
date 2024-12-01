@@ -27,8 +27,8 @@ import com.google.gson.annotations.SerializedName;
 
 import tilda.db.Connection;
 import tilda.utils.TextUtil;
-import wanda.data.App_Data;
-import wanda.data.App_Factory;
+import wanda.data.AppView_Data;
+import wanda.data.AppView_Factory;
 import wanda.data.Tenant_Data;
 import wanda.data.Tenant_Factory;
 import wanda.web.BeaconBit;
@@ -275,7 +275,7 @@ public class WebBasicsDefConfig
               {
                 String[] appIds = Stream.of(_guestRegistration._apps).map(e -> e._id).toArray(String[]::new);
                 
-                List<App_Data> AL = App_Factory.lookupWhereIds(C, appIds, 0, -1);
+                List<AppView_Data> AL = AppView_Factory.lookupWhereIds(C, WebBasics.getHostName(), appIds, 0, -1);
                 if (AL.size() != appIds.length)
                   {
                     WebBasics.LOG.error("The guestRegistration appIds specifies application Ids which cannot be found in the database.");
@@ -285,7 +285,7 @@ public class WebBasicsDefConfig
                   {
                     _guestRegistration._appRefnums = new long[AL.size()];
                     for (int i = 0; i < AL.size(); ++i)
-                      _guestRegistration._appRefnums[i] = AL.get(i).getRefnum();
+                      _guestRegistration._appRefnums[i] = AL.get(i).getAppRefnum();
                   }
               }
 

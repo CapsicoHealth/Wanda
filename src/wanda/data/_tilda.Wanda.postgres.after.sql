@@ -25,3 +25,22 @@ insert into WANDA.ROLE ( "id", "value", "label", "created", "lastUpdated")
        ,"value" = EXCLUDED."value"
     ;
 
+
+DO $$
+BEGIN
+
+insert into WANDA.AppConfig("appRefnum", "hostName", "label", "seq", "icon", "active")
+select "refnum", '', "label", "seq", "icon", "active"
+  from WANDA.App
+on conflict("appRefnum") do nothing
+;
+
+ALTER TABLE WANDA.App drop COLUMN IF EXISTS "label" ;
+ALTER TABLE WANDA.App drop COLUMN IF EXISTS "seq"   ;
+ALTER TABLE WANDA.App drop COLUMN IF EXISTS "icon"  ;
+ALTER TABLE WANDA.App drop COLUMN IF EXISTS "active";
+
+EXCEPTION WHEN OTHERS THEN
+
+END; $$
+

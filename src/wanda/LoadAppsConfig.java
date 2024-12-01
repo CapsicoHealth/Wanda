@@ -40,6 +40,8 @@ import tilda.utils.FileUtil;
 import tilda.utils.LogUtil;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
+import wanda.data.AppConfig_Data;
+import wanda.data.AppConfig_Factory;
 import wanda.data.AppUser_Data;
 import wanda.data.AppUser_Factory;
 import wanda.data.App_Data;
@@ -51,6 +53,7 @@ import wanda.data.Role_Factory;
 import wanda.web.config.AppDef;
 import wanda.web.config.AppDefDetails;
 import wanda.web.config.AppDefService;
+import wanda.web.config.WebBasics;
 import wanda.web.config.WebBasicsDefApps;
 
 public class LoadAppsConfig
@@ -90,8 +93,6 @@ public class LoadAppsConfig
           }
         catch (Exception E)
           {
-            if (_COMMAND_LINE_RUN == false)
-              return;
             LOG.error("An exception occurred\n", E);
             LOG.error("\n"
             + "          ======================================================================================\n"
@@ -99,6 +100,8 @@ public class LoadAppsConfig
             + "\n"
             + "                      Cannot load Wanda application configuration data to the database.\n"
             + "          ======================================================================================\n", E);
+            if (_COMMAND_LINE_RUN == false)
+              return;
             System.exit(-1);
           }
         finally
@@ -128,6 +131,7 @@ public class LoadAppsConfig
         Reader R = null;
         try
           {
+            LOG.info("Loading WebBasics.apps.json...");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             InputStream In = FileUtil.getResourceAsStream("WebBasics.apps.json");
             if (In == null)
@@ -178,33 +182,26 @@ public class LoadAppsConfig
 
         int i = -1;
         LOG.debug("Updating App configurations...");
-        LogUtil.setLogLevel(Level.ERROR);
+        // LogUtil.setLogLevel(Level.ERROR);
         for (AppDef ad : DA._apps)
           if (ad != null)
             {
               App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home); // search by path and home
-              A.setLabel(ad._AppDefDetail._label);
-              A.setSeq(++i);
               A.setId(ad._id);
               A.setAdmin(ad._AppDefDetail._admin);
               A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-              A.setId(ad._id);
               A.setNullDeleted();
               if (A.write(C) == false) // not existing
                 {
-                  A = App_Factory.lookupByLabel(ad._AppDefDetail._label); // search by label
+                  A = App_Factory.lookupById(ad._id); // search by id
                   A.setPath(ad._path);
                   A.setHome(ad._AppDefDetail._home);
                   A.setAdmin(ad._AppDefDetail._admin);
-                  A.setSeq(i);
-                  A.setId(ad._id);
                   A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-                  A.setId(ad._id);
                   A.setNullDeleted();
-                  if (A.write(C) == false)
+                  if (A.write(C) == false) // not existing, need to create new
                     {
-                      A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, i);
-                      A.setId(ad._id);
+                      A = App_Factory.create(ad._id, ad._path, ad._AppDefDetail._home);
                       A.setAdmin(ad._AppDefDetail._admin);
                       A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                       if (A.write(C) == false)
@@ -215,6 +212,27 @@ public class LoadAppsConfig
                     }
                 }
               A.refresh(C);
+
+              ++i; // sequence increment.
+              // Looking up the app config for this host.
+              AppConfig_Data AC = AppConfig_Factory.lookupByAppHost(A.getRefnum(), WebBasics.getHostName());
+              if (AC.read(C) == false) // cannot find.
+                {
+                  // Need migration support: Looking up the app config for the default "" hostName value.
+                  AC = AppConfig_Factory.lookupByAppHost(A.getRefnum(), "");
+                  if (AC.read(C) == false)
+                    AC = AppConfig_Factory.create(A.getRefnum(), WebBasics.getHostName(), ad._AppDefDetail._label, i);
+                }
+              AC.setHostName(WebBasics.getHostName());
+              AC.setLabel(ad._AppDefDetail._label);
+              AC.setSeq(i);
+              AC.setNullDeleted();
+              if (AC.write(C) == false)
+                {
+                  LogUtil.resetLogLevel();
+                  throw new Exception("Cannot insert/update AppConfig record");
+                }
+
               AppUser_Data AU = AppUser_Factory.lookupByUnassignedApp(A.getRefnum());
               if (AU.read(C) == false)
                 {
@@ -228,21 +246,21 @@ public class LoadAppsConfig
               // Create Administrator role for the application
               if (TextUtil.isNullOrEmpty(A.getAdmin()) == false)
                 {
-                  Role_Data R = Role_Factory.create("Admin" + A.getId(), "Admin" + A.getId(), "Administrator for application " + A.getLabel());
+                  Role_Data R = Role_Factory.create("Admin" + A.getId(), "Admin" + A.getId(), "Administrator for application " + AC.getLabel());
                   if (R.write(C) == false)
                     {
                       R = Role_Factory.lookupById("Admin" + A.getId());
-                      R.setLabel("Administrator for application " + A.getLabel()); // In case the label changed for the app
+                      R.setLabel("Administrator for application " + AC.getLabel()); // In case the label changed for the app
                       R.write(C);
                     }
                 }
             }
         LogUtil.resetLogLevel();
-        LOG.debug("   --> Updated "+i+" App configurations.");
+        LOG.debug("   --> Updated " + i + " App configurations.");
 
         // App not updated in this round, i.e., lastUpdated < ZDT, have likely been removed, so they should be marked as deleted.
-        List<App_Data> L = App_Factory.lookupWhereLastUpdated(C, ZDT, 0, -1);
-        for (App_Data A : L)
+        List<AppConfig_Data> L = AppConfig_Factory.lookupWhereLastUpdated(C, WebBasics.getHostName(), ZDT, 0, -1);
+        for (AppConfig_Data A : L)
           {
             A.setDeletedNow();
             if (A.write(C) == false)
@@ -252,7 +270,7 @@ public class LoadAppsConfig
         Config_Data Conf = Config_Factory.create("MAIN");
         Conf.setAuthPassthroughs(DA._authPassthroughs);
         Conf.setMasterPaths(DA._masterPaths);
-        if (Conf.upsert(C, true) == false)
+        if (Conf.upsert(C) == false)
           throw new Exception("Cannot insert/update Config record");
       }
   }

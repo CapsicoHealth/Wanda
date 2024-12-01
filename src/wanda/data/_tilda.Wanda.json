@@ -25,12 +25,15 @@
      { "name":"Promo"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"code"  , "type":"STRING" , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
-         ,{ "name":"descr" , "type":"STRING" , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
-         ,{ "name":"start" , "type":"DATE"   , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"end"   , "type":"DATE"   , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"active", "type":"BOOLEAN", "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
-         ,{ "name":"system", "type":"BOOLEAN", "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
+          { "name":"code"    , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
+         ,{ "name":"descr"   , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start"   , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"     , "type":"DATE"    , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"  , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+         ,{ "name":"system"  , "type":"BOOLEAN" , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
+         ,{ "name":"roles"   , "type":"STRING[]", "nullable": true                    , "description":"The default roles for users registering with this promo." }
+         ,{ "name":"apps"    , "type":"LONG[]"  , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
+         ,{ "name":"contents", "type":"STRING[]", "nullable": true                    , "description":"The default content codes for users registering with this promo." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -275,16 +278,13 @@
 
 
    ,{ "name": "App"
-     ,"description": "App Details"
+     ,"description": "App Details, on a per-host basis"
      ,"columns": [
-         {"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
+        ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":false, "description":"App unique Id"   }
+        ,{"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
         ,{"name":"home"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App home page"   }
         ,{"name":"admin"   , "type":"STRING"  , "size":250, "nullable":true , "description":"App admin page"  }
-        ,{"name":"label"   , "type":"STRING"  , "size":250, "nullable":false, "description":"Label for the application header"                }
-        ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":true , "description":"App unique Id"   }
-        ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
-        ,{"name":"icon"    , "type":"STRING"  , "size":250,                   "description":"Icon for the application"                        }
-        ,{"name":"services", "type":"JSON[]"  ,             "nullable": true, "description":"Service definition"
+        ,{"name":"services", "type":"JSON[]"  ,             "nullable":true , "description":"Service definition"
           ,"jsonSchema": {
               "typeName": "ServiceDefinition"
              ,"descr": "Define the services that comprise this app"
@@ -299,54 +299,100 @@
                 }
              }
          }
-        ,{"name":"active"  , "type":"BOOLEAN" ,                               "description":"App's actioe status"                             }
        ]
      ,"primary": { "autogen": true }
-     ,"foreign": [
-       ]
      ,"indices": [
-         { "name":"PathHome", "columns":["path", "home"]}
-        ,{ "name":"Label"   , "columns":["label"]}
-        ,{ "name":"Id"      , "columns":["id"]}
+         { "name":"Id"      , "columns":["id"]}
+        ,{ "name":"PathHome", "columns":["path", "home"]}
        ]
      ,"queries": [
-         { "name"  :"LastUpdated",
-           "description":"Gets the apps last updated prior than the supplied timestamp and not deleted.",
-           "from"  :[], 
-           "wheres":[
+         { "name"  :"LastUpdated"
+          ,"description":"Gets the apps last updated prior than the supplied timestamp and not deleted."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"lastUpdated < ?() and deleted is null" }
-            ],
-           "orderBy":["lastUpdated desc"]
+            ]
+          ,"orderBy":["lastUpdated desc"]
          }
-        ,{ "name"  :"Active",
-           "description":"Gets the apps with an active flag and not deleted.",
-           "from"  :[], 
-           "wheres":[
+        ,{ "name"  :"Active"
+          ,"description":"Gets the apps with an active flag and not deleted."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"deleted is null and active=true" }
-            ],
-           "orderBy":["seq asc", "label asc"]
+            ]
+          ,"orderBy":["id asc"]
          }
-        ,{ "name"  :"All",
-           "description":"Gets the apps not deleted.",
-           "from"  :[],
-           "wheres":[
+        ,{ "name"  :"All"
+          ,"description":"Gets the apps not deleted."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"deleted is null" }
-            ],
-           "orderBy":["seq asc", "label asc"]
+            ]
+          ,"orderBy":["id asc"]
          }
-        ,{ "name"  :"Ids",
-           "description":"Get app list by IDs.",
-           "from"  :[],
-           "wheres":[
+        ,{ "name"  :"Ids"
+          ,"description":"Get app list by IDs."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"TILDA.in(id, ?[])" }
-            ],
-           "orderBy":["label asc"]
+            ]
+          ,"orderBy":["id asc"]
          }
        ]
      ,"json": [
-         { "name":"", "columns":["refnum", "path", "home", "label", "seq", "icon", "active"] }
+         { "name":"", "columns":["refnum", "id", "path", "home", "admin"] }
        ]
     }
+
+    
+    ,{ "name": "AppConfig"
+      ,"description": "App Details, on a per-host basis"
+      ,"columns": [
+          {"name":"appRefnum", "sameas":"App.refnum", "nullable":false, "description":"App Foreign Key"                             }
+         ,{"name":"hostName" , "type":"STRING(250)" , "nullable":false, "description":"Web host name, e.g., https://xyz.myco.com.", "allowEmpty":true  }
+         ,{"name":"label"    , "type":"STRING(250)" , "nullable":false, "description":"Label for the application header"            }
+         ,{"name":"seq"      , "type":"INTEGER"     , "nullable":false, "description":"Sequence for the app in a list"              }
+         ,{"name":"icon"     , "type":"STRING(250)" ,                   "description":"Icon for the application"                    }
+         ,{"name":"active"   , "type":"BOOLEAN"     ,                   "description":"App's actioe status"                         }
+        ]
+      ,"foreign": [
+          { "name":"App" , "srcColumns":["appRefnum" ], "destObject":"App"  }
+        ]
+      ,"indices": [
+          { "name":"AppHost", "columns":["appRefnum", "hostName"]}
+         ,{ "name":"Label"  , "columns":["label", "hostName"]}
+        ]
+      ,"queries": [
+          { "name"  :"LastUpdated"
+           ,"description":"Gets the apps last updated prior than the supplied timestamp and not deleted."
+           ,"from"  :[]
+           ,"wheres":[
+                { "db":"*", "clause":"hostName=?() and lastUpdated < ?() and deleted is null" }
+             ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name"  :"App"
+           ,"description":"Gets the host names for the supplied app, that are not deleted."
+           ,"from"  :[]
+           ,"wheres":[
+                { "db":"*", "clause":"appRefnum=?() and deleted is null" }
+             ]
+           ,"orderBy":["hostName"]
+          }
+         ,{ "name"  :"HostName"
+           ,"description":"Gets all apps for the host name supplied, that are not deleted."
+           ,"from"  :[] 
+           ,"wheres":[
+               { "db":"*", "clause":"hostName=?() and deleted is null" }
+             ]
+           ,"orderBy":["label"]
+          }
+        ]
+      ,"json": [
+          { "name":"", "columns":["appRefnum", "hostName", "label", "seq", "icon", "active"] }
+        ]
+     }
+
 
    ,{ "name":"AppUser"
      ,"description":"App And User mapping table"
@@ -814,25 +860,27 @@
    ,{ "name":"AppView",
       "description":"View of apps that have not been deleted",
       "columns":[
-          { "sameas":"App.refnum"        , "name":"appRefnum" }
-         ,{ "sameas":"App.seq"           , "name":"appSeq"    }
-         ,{ "sameas":"App.label"         , "name":"appLabel"  }
-         ,{ "sameas":"App.home"          , "name":"appHome"   }
-         ,{ "sameas":"App.id"            , "name":"appId"     }
-         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
-         ,{ "sameas":"App.path"          , "name":"appPath"   }
-         ,{ "sameas":"App.active"        , "name":"appActive" }
+          { "sameas":"App.refnum"        , "name":"appRefnum"   }
+         ,{ "sameas":"App.home"          , "name":"appHome"     }
+         ,{ "sameas":"App.id"            , "name":"appId"       }
+         ,{ "sameas":"App.admin"         , "name":"appAdmin"    }
+         ,{ "sameas":"App.path"          , "name":"appPath"     }
+         ,{ "sameas":"App.services"      , "name":"appServices" }
+         ,{ "sameas":"AppConfig.hostName", "name":"appHostName" }
+         ,{ "sameas":"AppConfig.seq"     , "name":"appSeq"      }
+         ,{ "sameas":"AppConfig.label"   , "name":"appLabel"    }
+         ,{ "sameas":"AppConfig.active"  , "name":"appActive"   }
        ]
-     ,"subWhere": "App.deleted is null"
+     ,"subWhere": "App.deleted is null and AppConfig.deleted is null"
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive" ] }
+          { "name": "", "columns": ["appRefnum", "appHostName", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive" ] }
        ]
      ,"queries": [
           { "name"  :"All",
             "description":"Get all Apps.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"1=1" }
+                { "db":"*", "clause":"appHostName=?()" }
              ],
             "orderBy": ["appSeq"]
           }
@@ -840,24 +888,34 @@
             "description":"Get all Apps.",
             "from"  : [], 
             "wheres": [
-               { "db":"*", "clause":"appActive=?()" }
+               { "db":"*", "clause":"appHostName=?() and appActive=?()" }
              ],
             "orderBy": ["appSeq"]
           }
+         ,{ "name"  :"Ids"
+           ,"description":"Get app list by IDs for the host name supplied, that are not deleted."
+           ,"from"  :[]
+           ,"wheres":[
+               { "db":"*", "clause":"appHostName=?() and TILDA.in(appId, ?[])" }
+             ]
+           ,"orderBy":["appId asc"]
+          }
+
        ]
     }
 
    ,{ "name":"AppUserView",
-      "description":"View that has Tenant + TenantUser",
+      "description":"View that has all apps and all users",
       "columns":[
           { "sameas":"App.refnum"          , "name":"appRefnum"     }
-         ,{ "sameas":"App.seq"             , "name":"appSeq"        }
-         ,{ "sameas":"App.label"           , "name":"appLabel"      }
          ,{ "sameas":"App.home"            , "name":"appHome"       }
          ,{ "sameas":"App.id"              , "name":"appId"         }
          ,{ "sameas":"App.admin"           , "name":"appAdmin"      }
          ,{ "sameas":"App.path"            , "name":"appPath"       }
-         ,{ "sameas":"App.active"          , "name":"appActive"     }
+         ,{ "sameas":"AppConfig.hostName"  , "name":"appHostName"   }
+         ,{ "sameas":"AppConfig.seq"       , "name":"appSeq"        }
+         ,{ "sameas":"AppConfig.label"     , "name":"appLabel"      }
+         ,{ "sameas":"AppConfig.active"    , "name":"appActive"     }
          ,{ "sameas":"User.refnum"         , "name":"userRefnum"    }
          ,{ "sameas":"User.id"             , "name":"userId"        }
          ,{ "sameas":"User.email"          , "name":"userEmail"     }
@@ -876,7 +934,7 @@
             "description":"Get all users irrespective of app access.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?()" }
+                { "db":"*", "clause":"appHostName=?() and appRefnum=?()" }
              ],
             "orderBy": ["userId"]
           }
@@ -884,7 +942,7 @@
             "description":"Get only enabled users for app.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=true" }
+                { "db":"*", "clause":"appHostName=?() and appRefnum=?() and enabled=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -892,7 +950,7 @@
             "description":"Get users for app.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=true and appActive=true" }
+                { "db":"*", "clause":"appHostName=?() and appRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -900,7 +958,7 @@
             "description":"Get apps for a user.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"userRefnum=?() and enabled=true and appActive=true" }
+                { "db":"*", "clause":"appHostName=?() and userRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["appSeq"]
           }
@@ -908,14 +966,14 @@
             "description":"Get all apps, including inactive or unthorized ones, with a user.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"userRefnum=?()" }
+                { "db":"*", "clause":"appHostName=?() and userRefnum=?()" }
              ],
             "orderBy": ["appSeq"]
           }
        ]
      ,"outputMaps":[
           { "name": ""      , "outTypes":["JSON"], "columns": ["*"] }
-         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appLabel", "appId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
+         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
        ]       
     }
 
@@ -1052,7 +1110,7 @@
          }
        ]
      ,"notNulls":[
-         { "object":"User", "columns":["pswdSalt"    ], "default":""  }
+         { "object":"User", "columns":["pswdSalt"], "default":""  }
        ]
    }
 

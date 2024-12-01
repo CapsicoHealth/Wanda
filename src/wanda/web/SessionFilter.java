@@ -58,7 +58,7 @@ import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
-import wanda.data.App_Data;
+import wanda.data.AppView_Data;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.Tenant_Data;
@@ -573,12 +573,12 @@ public class SessionFilter implements javax.servlet.Filter
           return false;
 
         String servletPath = Request.getServletPath();
-        for (App_Data app : WebBasics.getApps())
+        for (AppView_Data app : WebBasics.getApps())
           {
             // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
             // doesn't have access to. This is a larger issue of app service access control which we are still developing!
-            if (app.getServices() != null)
-              for (ServiceDefinition sd : app.getServices())
+            if (app.getAppServices() != null)
+              for (ServiceDefinition sd : app.getAppServices())
                 {
                   if (servletPath.equals(sd._path) == true && "GST".equals(sd._access) == true)
                     return true;

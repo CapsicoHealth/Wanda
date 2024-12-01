@@ -38,8 +38,8 @@ import tilda.db.ConnectionPool;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.FileUtil;
 import tilda.utils.TextUtil;
-import wanda.data.App_Data;
-import wanda.data.App_Factory;
+import wanda.data.AppView_Data;
+import wanda.data.AppView_Factory;
 import wanda.data.Config_Data;
 import wanda.data.Config_Factory;
 
@@ -49,7 +49,7 @@ public class WebBasics
     static final Logger               LOG         = LogManager.getLogger(WebBasics.class.getName());
 
     private static WebBasicsDefConfig _Config;
-    private static List<App_Data>     _Apps       = new ArrayList<App_Data>();
+    private static List<AppView_Data> _Apps       = new ArrayList<AppView_Data>();
     private static Config_Data        _AppsConfig = null;
 
     private WebBasics()
@@ -108,7 +108,7 @@ public class WebBasics
             if (_Config.validate(C) == false)
               throw new Exception("Invalid WebBasics configuration file '" + url.toString() + "'.");
 
-            _Apps = App_Factory.lookupWhereActive(C, 0, -1);
+            _Apps = AppView_Factory.lookupWhereAll(C, WebBasics.getHostName(), 0, -1);
             _AppsConfig = Config_Factory.lookupById("MAIN");
             if (_AppsConfig.read(C) == false)
               {
@@ -122,8 +122,8 @@ public class WebBasics
             Str.append("   ** AuthPassthroughs: " + TextUtil.print(_AppsConfig.getAuthPassthroughs()) + "\n");
             Str.append("   ** MasterPaths     : " + TextUtil.print(_AppsConfig.getMasterPaths()) + "\n");
             Str.append("   ** Apps            :\n");
-            for (App_Data A : _Apps)
-              Str.append("   **      " + A.getLabel() + " (" + A.getHome() + ")" + (A.getActive() == false ? "  --INACTIVE--" : "") + "\n");
+            for (AppView_Data A : _Apps)
+              Str.append("   **      " + A.getAppLabel() + " (" + A.getAppHome() + ")" + (A.getAppActive() == false ? "  --INACTIVE--" : "") + "\n");
             Str.append("   ************************************************************************************************************************\n");
             LOG.info(Str.toString());
           }
@@ -314,7 +314,7 @@ public class WebBasics
         return _Config._laf._copyright.replace("%%CURRENT_YEAR%%", "" + DateTimeUtil.nowUTC().getYear());
       }
 
-    public static List<App_Data> getApps()
+    public static List<AppView_Data> getApps()
       {
         return _Apps;
       }

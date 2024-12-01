@@ -20,16 +20,14 @@
 
 package wanda.data;
 
-import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.Connection;
 import tilda.db.ListResults;
 import tilda.db.SelectQuery;
-import tilda.db.UpdateQuery;
 import tilda.utils.TextUtil;
+import wanda.web.config.WebBasics;
 
 /**
  * This is the application class <B>Data_AppUserView</B> mapped to the table <B>PEOPLE.AppUserView</B>.
@@ -74,8 +72,8 @@ public class AppUserView_Factory extends wanda.data._Tilda.TILDA__APPUSERVIEW_Fa
     public static ListResults<AppUserView_Data> getUserApps(Connection C, User_Data currentUser, long userRefnum, int start, int size)
     throws Exception
       {
-        ListResults<AppUserView_Data> L = currentUser.isSuperAdmin() == true ? lookupWhereUserByAllApp(C, userRefnum, 0, -1)
-        : lookupWhereUserByActiveApp(C, userRefnum, 0, -1);
+        ListResults<AppUserView_Data> L = currentUser.isSuperAdmin() == true ? lookupWhereUserByAllApp(C, WebBasics.getHostName(), userRefnum, 0, -1)
+        : lookupWhereUserByActiveApp(C, WebBasics.getHostName(), userRefnum, 0, -1);
         return L;
       }
 
