@@ -47,7 +47,7 @@ public class User
         
         _User.setPswdCreateNow();
 
-        if (_User.upsert(C, true) == false)
+        if (_User.upsert(C) == false)
           throw new Exception("Cannot write User record");
         _User.refresh(C); // to get the refnum if the row was updated from the DB.
         ++Count;
@@ -55,7 +55,7 @@ public class User
         if (_Detail != null)
           {
             _Detail.initUserRefnum(_User.getRefnum());
-            if (_Detail.upsert(C, true) == false)
+            if (_Detail.upsert(C) == false)
               throw new Exception("Cannot upsert UserDetail record");
             ++Count;
           }
