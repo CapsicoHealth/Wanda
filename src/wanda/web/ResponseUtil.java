@@ -74,6 +74,7 @@ public class ResponseUtil
         if (_Out != null)
           throw new Error("You cannot call setContentType twice.");
         _Res.setContentType(CT.getContentType());
+        _Res.setCharacterEncoding("UTF-8");
         _Out = _Res.getWriter();
         return _Out;
       }
