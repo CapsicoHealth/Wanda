@@ -39,7 +39,7 @@ public class RootImporter implements Importer
         for (Promo_Data obj : _Promos)
           {
             ++Count;
-            if (obj.upsert(C, true) == false)
+            if (obj.upsert(C) == false)
               throw new Exception("Cannot upsert Promo record");
           }
 
