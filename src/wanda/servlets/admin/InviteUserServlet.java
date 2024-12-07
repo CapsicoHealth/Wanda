@@ -70,7 +70,10 @@ public class InviteUserServlet extends SimpleServlet
         long[] appRefnums = Req.getParamsLong("app", false);
         if(appRefnums == null)
             appRefnums = new long[]{};
-        
+
+        String promoCode  = Req.getParamString("promoCode", false);
+        String[] contentIds = Req.getParamsString("contentIds", false);
+
         Req.throwIfErrors();
         if (U.hasRoles(RoleHelper.SUPERADMIN) == false)
           {
@@ -107,7 +110,7 @@ public class InviteUserServlet extends SimpleServlet
               }
             Req.throwIfErrors();
             LOG.debug("Updating existing user access");
-            User_Data.updateDetailsAndInvite(C, refnumUser, email, firstName, lastName, roles, appRefnums, tenantRefnumList, oldTenantRefnums);
+            User_Data.updateDetailsAndInvite(C, refnumUser, promoCode, email, firstName, lastName, roles, appRefnums, tenantRefnumList, oldTenantRefnums, contentIds);
           }
         else
           {
@@ -116,7 +119,7 @@ public class InviteUserServlet extends SimpleServlet
               Req.addError("email", "User already exists with email '" + email + "'");
             Req.throwIfErrors();
             LOG.debug("Inviting new user");
-            User_Data.inviteUser(C, email, firstName, lastName, roles, tenantRefnums, appRefnums);
+            User_Data.inviteUser(C, promoCode, email, firstName, lastName, roles, tenantRefnums, appRefnums, contentIds);
           }
         
         Req.throwIfErrors();

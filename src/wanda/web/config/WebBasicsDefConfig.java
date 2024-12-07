@@ -32,6 +32,7 @@ import wanda.data.AppView_Factory;
 import wanda.data.Tenant_Data;
 import wanda.data.Tenant_Factory;
 import wanda.web.BeaconBit;
+import wanda.web.config.GuestRegistration.GuestType;
 
 public class WebBasicsDefConfig
   {
@@ -264,22 +265,33 @@ public class WebBasicsDefConfig
                 }
             }
 
-        if (_guestRegistration != null && _guestRegistration._allowed == true)
+        if (_guestRegistration != null && _guestRegistration._type != GuestType.NONE)
           {
-            if (_guestRegistration._apps == null || _guestRegistration._apps.length == 0)
+            if (_guestRegistration._defaultApps == null || _guestRegistration._defaultApps.length == 0)
               {
                 WebBasics.LOG.error("The guestRegistration appIds is empty or unspecified. If allowed is true, there must be at least one aplication listed.");
                 OK = false;
               }
             else
               {
-                String[] appIds = Stream.of(_guestRegistration._apps).map(e -> e._id).toArray(String[]::new);
+                String[] appIds = Stream.of(_guestRegistration._defaultApps).map(e -> e._id).toArray(String[]::new);
                 
                 List<AppView_Data> AL = AppView_Factory.lookupWhereIds(C, WebBasics.getHostName(), appIds, 0, -1);
                 if (AL.size() != appIds.length)
                   {
-                    WebBasics.LOG.error("The guestRegistration appIds specifies application Ids which cannot be found in the database.");
-                    OK = false;
+                    WebBasics.LOG.warn("Some guestRegistration appIds cannot be found in the database.");
+                    for (String appId : appIds)
+                      {
+                        boolean found = false;
+                         for (AppView_Data av : AL)
+                           if (av.getAppId().equals(appId) == true)
+                             {
+                               found = true;
+                               break;
+                             }
+                         if (found == false)
+                           WebBasics.LOG.warn("      - "+appId);
+                      }
                   }
                 else
                   {

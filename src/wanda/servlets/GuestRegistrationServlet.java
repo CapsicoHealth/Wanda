@@ -23,21 +23,25 @@ import javax.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
 import tilda.utils.CollectionUtil;
+import tilda.utils.TextUtil;
+import wanda.data.Promo_Data;
+import wanda.data.Promo_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.config.GuestRegistration;
 import wanda.web.config.WebBasics;
 
 @WebServlet("/svc/user/guest/registration")
-public class GuestRegistration extends SimpleServlet
+public class GuestRegistrationServlet extends SimpleServlet
   {
 
     private static final long serialVersionUID = -4044066138357179403L;
 
-    public GuestRegistration()
+    public GuestRegistrationServlet()
       {
         super(false);
       }
@@ -49,9 +53,23 @@ public class GuestRegistration extends SimpleServlet
         String email = Req.getParamString("email", true);
         String fName = Req.getParamString("fName", true);
         String lName = Req.getParamString("lName", true);
+        String promoCode = Req.getParamString("promoCode", false);
 
-        if (WebBasics.getGuestRegistrationAllowed() == false)
+        if (WebBasics.isGuestRegistrationAllowed() == false)
           Req.addError("email", "Guest registrations are not allowed");
+
+        Promo_Data p = null;
+        if (WebBasics.getGuestRegistrationType() == GuestRegistration.GuestType.PROMO)
+          {
+            if (TextUtil.isNullOrEmpty(promoCode) == true)
+              Req.addError("promoCode", "An event/promotion code is required");
+            else
+              {
+                p = Promo_Factory.lookupByCode(promoCode);
+                if (p.read(C) == false || p.isActiveAndValid() == false)
+                  Req.addError("promoCode", "This event/promotion code is invalid.");
+              }
+          }
 
         User_Data user = User_Factory.lookupByEmail(email);
         boolean previousUser = false;
@@ -66,14 +84,15 @@ public class GuestRegistration extends SimpleServlet
 
         Req.throwIfErrors();
 
-        String[] guestRole = RoleHelper.GUEST;
-        long[] appRefnums = WebBasics.getGuestRegistrationAppRefnums();
+        String[] guestRole = p == null ? RoleHelper.GUEST : p.getRolesAsArray();
+        long[] appRefnums = p == null ? WebBasics.getGuestRegistrationAppRefnums() : CollectionUtil.toPrimitiveArray(p.getAppsAsArray());
+        String[] contents = p == null ? null : p.getContentsAsArray();
         long[] tenantRefnums = WebBasics.getGuestRegistrationTenantRefnums();
 
         if (previousUser == false)
-          User_Data.inviteUser(C, email, fName, lName, guestRole, tenantRefnums, appRefnums);
+          User_Data.inviteUser(C, promoCode, email, fName, lName, guestRole, tenantRefnums, appRefnums, contents);
         else
-          User_Data.updateDetailsAndInvite(C, user, email, fName, lName, guestRole, appRefnums, CollectionUtil.toList(tenantRefnums), new long[] { });
+          User_Data.updateDetailsAndInvite(C, user, promoCode, email, fName, lName, guestRole, appRefnums, CollectionUtil.toList(tenantRefnums), new long[] {}, contents);
 
         Res.success();
       }

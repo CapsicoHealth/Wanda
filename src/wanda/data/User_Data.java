@@ -39,6 +39,7 @@ import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.EMailSender;
+import wanda.web.SessionFilter;
 import wanda.web.config.WebBasics;
 import wanda.web.exceptions.BadRequestException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -165,20 +166,24 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }.start();
       }
 
-    public static void inviteUser(Connection C, String email, String firstName, String lastName, String[] roles, long[] tenantRefnums, long[] appRefnums)
+    public static void inviteUser(Connection C, String promoCode, String email, String firstName, String lastName, String[] roles, long[] tenantRefnums, long[] appRefnums, String[] contentIds)
     throws Exception
       {
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
 
         String password = EncryptionUtil.getToken(16, true);
         String salt = EncryptionUtil.getToken(8);
-        HashSet<String> _roles = new HashSet<String>(Arrays.asList(roles));
+        HashSet<String> _roles = roles==null || roles.length == 0 ? null : new HashSet<String>(Arrays.asList(roles));
         User_Data U = User_Factory.create(email, email, _roles, password, salt);
         U.setPswdResetCode(EncryptionUtil.getToken(16, true));
         U.setPswdResetCreateNow();
         U.setInvitedUser(true);
         U.setNullInviteCancelled();
         U.setNullLocked();
+        if (TextUtil.isNullOrEmpty(promoCode) == false)
+         U.setPromoCode(promoCode);
+        if (TextUtil.isNullOrEmpty(contentIds) == false)
+         U.setContentIds(Arrays.asList(contentIds));
         if (U.write(C) == false)
           Errors.add(new StringStringPair("User", "Unable to save changes"));
 
@@ -218,9 +223,9 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.sendInviteEmail();
       }
 
-    public static void updateDetailsAndInvite(Connection C, User_Data U, String email,
+    public static void updateDetailsAndInvite(Connection C, User_Data U, String promoCode, String email,
     String firstName, String lastName, String[] roles, long[] appRefnums, List<Long> tenantRefnumList,
-    long[] oldTenantRefnums)
+    long[] oldTenantRefnums, String[] contentIds)
     throws Exception
       {
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
@@ -238,6 +243,10 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
         U.setEmail(email);
         U.setRoles(new HashSet<String>(Arrays.asList(roles)));
+        if (TextUtil.isNullOrEmpty(promoCode) == false)
+          U.setPromoCode(promoCode);
+         if (TextUtil.isNullOrEmpty(contentIds) == false)
+          U.setContentIds(Arrays.asList(contentIds));
         if (isResetPassword)
           {
             U.setPswdResetCode(EncryptionUtil.getToken(16, true));
@@ -285,6 +294,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                   }
               }
 
+            SessionFilter.evictUserFromAppCache(U.getRefnum());
             if (appRefnums != null)
               {
                 AppUser_Factory.deleteUserApps(C, U.getRefnum());
@@ -336,15 +346,11 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                             sb.append(i.next());
                           }
                       }
+                    String url = WebBasics.getHostName() + WebBasics.getAppPath() + WebBasics.getHomePagePath() + "?action=signUp&token=" + getPswdResetCode();
                     sb.append("<p><a href='");
-                    sb.append(WebBasics.getHostName());
-                    sb.append(WebBasics.getAppPath());
-                    sb.append(WebBasics.getHomePagePath());
-                    sb.append("?action=signUp");
-                    sb.append("&token=");
-                    sb.append(getPswdResetCode());
+                    sb.append(url);
                     sb.append("'>Click here to set your password</a></p>");
-                    LOG.debug("Sending email invitation to " + getEmail() + " via thread.");
+                    LOG.debug("Sending email invitation to " + getEmail() + " via thread with link "+url);
                     EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
                     LOG.debug("Sent email invitation to " + getEmail() + " via thread.");
                   }

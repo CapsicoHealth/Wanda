@@ -252,12 +252,24 @@ public class SessionFilter implements javax.servlet.Filter
                 mainUser = isMultiTenant ? (isMasterPath ? MasterDbUser : TenantDbUser) : MasterDbUser;
               }
             Request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
+
             // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path.
-            if (isAuthPassthrough == false && isMasterPath == false && mainUser != null && mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
+            if (isAuthPassthrough == false && isMasterPath == false && mainUser != null)
               {
-                LOG.info("User is a guest and is not cleared for this url or the url is not listed as guest-allowed in the application definition information.");
-                Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
-                throw new ServletException("Unauthorized guest access as per app service configuration");
+                if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
+                 {
+                   LOG.info("User is a guest and is not cleared for this url or the url is not listed as guest-allowed in the application definition information.");
+                   Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
+                   throw new ServletException("Unauthorized guest access as per app service configuration");
+                 }
+                // Must have at least one ROLE
+                String[] roles = mainUser.getRolesAsArray();
+                if (roles == null || roles.length == 0)
+                  {
+                    LOG.info("User is role-less.");
+                    Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
+                    throw new ServletException("Unauthorized access as user is role-less");
+                  }
               }
 
             // LOG.info("********************************************************************************************************************************************\n");
@@ -592,6 +604,15 @@ public class SessionFilter implements javax.servlet.Filter
      */
     static private Cache<Long, String[]> _USER_APPS_CACHE = CacheBuilder.newBuilder().maximumSize(200).expireAfterWrite(5, TimeUnit.MINUTES).build();
 
+    public static void evictUserFromAppCache(long userRefnum)
+     {
+       _USER_APPS_CACHE.invalidate(userRefnum);
+     }
+    public static void clearAppCache()
+      {
+        _USER_APPS_CACHE.invalidateAll();
+      }
+    
     /**
      * Checks whether an incoming .jsp URL is to an app authorized for the user
      * 

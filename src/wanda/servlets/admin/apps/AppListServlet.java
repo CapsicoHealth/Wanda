@@ -34,6 +34,7 @@ import wanda.data.User_Data;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionFilter;
 import wanda.web.SimpleServlet;
 import wanda.web.config.WebBasics;
 
@@ -78,7 +79,11 @@ public class AppListServlet extends SimpleServlet
             AC.setActive(active==1); // active must be 1 or 0 at this point.
             if (AC.write(C) == false)
              req.addError("refnum", "App '"+refnum+"' cannot be found.");
+            SessionFilter.evictUserFromAppCache(userRefnum);
           }
+        else
+          SessionFilter.clearAppCache();
+          
         
         PrintWriter Out = res.setContentType(ResponseUtil.ContentType.JSON);
 

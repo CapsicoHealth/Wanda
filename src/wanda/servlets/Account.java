@@ -43,7 +43,7 @@ public class Account extends SimpleServlet
 
     public Account()
       {
-        super(true, false);
+        super(true, false, true);
       }
     
     @Override

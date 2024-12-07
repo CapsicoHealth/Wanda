@@ -238,11 +238,21 @@ public class WebBasics
         return _Config._inviteEmailTexts;
       }
 
-    public static boolean getGuestRegistrationAllowed()
+    public static boolean isGuestRegistrationAllowed()
       {
-        return _Config._guestRegistration == null ? false : _Config._guestRegistration._allowed;
+        return _Config._guestRegistration == null || _Config._guestRegistration._type == null || _Config._guestRegistration._type == GuestRegistration.GuestType.NONE ? false : true;
       }
 
+    public static String getGuestRegistrationButtonLabel()
+      {
+        return isGuestRegistrationAllowed() == true ? _Config._guestRegistration._buttonLabel : null;
+      }
+    
+    public static GuestRegistration.GuestType getGuestRegistrationType()
+      {
+        return _Config._guestRegistration == null ? GuestRegistration.GuestType.NONE  : _Config._guestRegistration._type;
+      }
+    
     public static long[] getGuestRegistrationAppRefnums()
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;
