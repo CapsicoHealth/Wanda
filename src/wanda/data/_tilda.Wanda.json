@@ -31,7 +31,7 @@
          ,{ "name":"end"     , "type":"DATE"    , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
          ,{ "name":"active"  , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
          ,{ "name":"system"  , "type":"BOOLEAN" , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
-         ,{ "name":"roles"   , "type":"STRING[]", "nullable": true                    , "description":"The default roles for users registering with this promo." }
+         ,{ "name":"roles"   , "type":"STRING[]", "nullable": false                   , "description":"The default roles for users registering with this promo." }
          ,{ "name":"apps"    , "type":"LONG[]"  , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
          ,{ "name":"contents", "type":"STRING[]", "nullable": true                    , "description":"The default content codes for users registering with this promo." }
         ]
@@ -52,7 +52,7 @@
            { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
           ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100, "protect":"ABSOLUTE", "description":"The first line of the address"}
           ,{ "name":"promoCode"      , "sameAs":"Promo.code", "nullable": true,                                    "description":"The promo code that the user may have used to register"}
-          ,{ "name":"programs"       , "type"  :"STRING[]"  , "nullable": true,                                    "description":"The programs (e.g., training, courses, application suites...) the user has access to"}
+          ,{ "name":"contentIds"     , "type"  :"STRING[]"  , "nullable": true,                                    "description":"The content IDs (e.g., training, courses, application suites...) the user has access to"}
           ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
           ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
           ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
@@ -199,10 +199,47 @@
      ,"masks":[
          { "columns":["name*", "address*", "zipPostal", "telMobile","telOffice", "telFax", "emailHome", "emailOffice"], "mask":"******" }
        ]
-    },
+    }
     
 
-    { "name": "Tenant"
+   ,{ "name":"Ticket"
+     ,"description":"Tickets"
+     ,"columns":[
+         { "name":"creatorRefnum" , "sameAs":"User.refnum", "nullable": false                         , "description":"The refnum of the User who created this ticket" }
+        ,{ "name":"topic"         , "type":"STRING(12)"   , "nullable": false, "protection":"ABSOLUTE", "description":"The type of ticket"}
+        ,{ "name":"subject"       , "type":"STRING(1024)" , "nullable": false, "protection":"ABSOLUTE", "description":"The title for this ticket"}
+        ,{ "name":"details"       , "type":"STRING(16384)", "nullable": false, "protection":"ABSOLUTE", "description":"The contents for this ticket"}
+       ]
+     ,"primary": { "autogen": true }
+     ,"indices":[ 
+         { "name":"Creator", "columns":["creatorRefnum"], "orderBy":["lastUpdated desc"], "db": true }
+        ,{ "name":"All"                                 , "orderBy":["lastUpdated desc"], "db": true }
+       ]
+     ,"queries": [
+       ]
+     ,"outputMaps": [
+         { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+       ]
+    }
+    ,{ "name":"TicketAnswer"
+      ,"description":"Ticket answers"
+      ,"columns":[
+          { "name":"ticketRefnum" , "sameAs":"Ticket.refnum", "nullable": false                         , "description":"The refnum of the ticket this answer is for" }
+         ,{ "name":"creatorRefnum", "sameAs":"User.refnum"  , "nullable": false                         , "description":"The refnum of the User who created this answer" }
+         ,{ "name":"answer"       , "type":"STRING(16384)"  , "nullable": false, "protection":"ABSOLUTE", "description":"The answer"}
+        ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Ticket", "columns":["ticketRefnum"], "orderBy":["lastUpdated desc"], "db": true }
+        ]
+      ,"queries": [
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+    
+   ,{ "name": "Tenant"
      ,"description": "Tenant Details"
      ,"columns": [
           {"name":"name"        ,  "type"  :"STRING",     "size": 50,                              "description": "Tenant Name"               }
@@ -636,7 +673,7 @@
          ,{ "sameAs":"User.loginCount"          }
          ,{ "sameAs":"User.roles"               }
          ,{ "sameAs":"User.promoCode"           }
-         ,{ "sameAs":"User.programs"            }
+         ,{ "sameAs":"User.contentIds"          }
          ,{ "sameAs":"User.created"             }
          ,{ "sameAs":"User.lastUpdated"         }
          ,{ "sameAs":"User.deleted"             }
@@ -1104,13 +1141,15 @@
 
  ,"migrations":{
       "renames":[
+           { "object":"User", "column":"contentIds", "oldNames":["programs"] }
        ]
      ,"moves":[
          { "schema":"ADMIN", "objects":["SystemEmail"]
          }
        ]
      ,"notNulls":[
-         { "object":"User", "columns":["pswdSalt"], "default":""  }
+         { "object":"User" , "columns":["pswdSalt"], "default":""   }
+        ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
        ]
    }
 
