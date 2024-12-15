@@ -18,7 +18,7 @@ package wanda.servlets.admin;
 
 import java.time.LocalDate;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
 import tilda.db.ListResults;

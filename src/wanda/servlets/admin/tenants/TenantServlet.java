@@ -16,7 +16,7 @@
 
 package wanda.servlets.admin.tenants;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import wanda.data.Tenant_Data;
 import wanda.data.Tenant_Factory;

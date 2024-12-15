@@ -18,7 +18,7 @@ package wanda.servlets.admin.tenants;
 
 import java.io.PrintWriter;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import wanda.data.TenantConnectionView_Data;
 import wanda.data.TenantConnectionView_Factory;

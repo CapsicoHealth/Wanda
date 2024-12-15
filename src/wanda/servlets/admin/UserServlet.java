@@ -16,7 +16,7 @@
 
 package wanda.servlets.admin;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import wanda.data.User_Data;
 import wanda.data.User_Factory;

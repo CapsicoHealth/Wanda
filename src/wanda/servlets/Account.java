@@ -18,8 +18,8 @@ package wanda.servlets;
 
 import java.util.List;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;

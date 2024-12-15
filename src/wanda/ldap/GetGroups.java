@@ -20,8 +20,8 @@ package wanda.ldap;
 import java.io.PrintWriter;
 import java.util.List;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.annotation.WebServlet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

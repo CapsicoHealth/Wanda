@@ -21,7 +21,7 @@ package wanda.servlets.admin;
 
 import java.util.List;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import wanda.data.Role_Data;
 import wanda.data.Role_Factory;

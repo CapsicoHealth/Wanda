@@ -16,7 +16,7 @@
 
 package wanda.servlets;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tilda.db.Connection;

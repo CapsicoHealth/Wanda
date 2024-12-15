@@ -18,7 +18,7 @@ package wanda.servlets.admin;
 
 import java.util.List;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
 import wanda.data.Ticket_Data;

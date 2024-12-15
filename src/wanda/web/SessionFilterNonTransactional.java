@@ -18,14 +18,14 @@ package wanda.web;
 
 import java.io.IOException;
 
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,7 +38,7 @@ import tilda.utils.SystemValues;
 import wanda.web.config.WebBasics;
 
 
-public class SessionFilterNonTransactional implements javax.servlet.Filter
+public class SessionFilterNonTransactional implements jakarta.servlet.Filter
   {
     protected static final Logger LOG = LogManager.getLogger(SessionFilterNonTransactional.class.getName());
 
