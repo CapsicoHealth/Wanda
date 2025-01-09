@@ -200,8 +200,37 @@
          { "columns":["name*", "address*", "zipPostal", "telMobile","telOffice", "telFax", "emailHome", "emailOffice"], "mask":"******" }
        ]
     }
-    
 
+    ,{ "name":"Assessment"
+      ,"description":"User Assessments/Surveys"
+      ,"columns":[
+          { "name":"creatorRefnum" , "sameAs":"User.refnum", "nullable": false                         , "description":"The refnum of the User who created this assessment" }
+         ,{ "name":"topic"         , "type":"STRING(128)"  , "nullable": false, "protection":"ABSOLUTE", "description":"The topic of this assessment"}
+         ,{ "name":"type"          , "type":"STRING(128)"  , "nullable": false, "protection":"ABSOLUTE", "description":"The type of this assessment"}
+         ,{ "name":"data"          , "type":"JSON"         , "nullable": false                         , "description":"The contents for this assessment (from a json form submission)"}
+        ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Creator", "columns":["creatorRefnum"], "orderBy":["lastUpdated desc"], "db": true }
+         ,{ "name":"All"                                 , "orderBy":["lastUpdated desc"], "db": true }
+        ]
+      ,"queries": [
+         { "name": "TopicTypeCreator"
+          ,"description": "Active tenants"
+          ,"wheres": [
+              { "db": "*", "clause": "topic=?() AND type=?() AND creatorRefnum=?()" }
+            ]
+          ,"orderBy":["lastUpdated asc"]
+         }
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+      ,"history": {
+          "postfix":"_Hist"
+        }
+     }
+    
    ,{ "name":"Ticket"
      ,"description":"Tickets"
      ,"columns":[
@@ -967,7 +996,14 @@
        ]
      ,"subWhere": "App.deleted is null and User.deleted is null and User.refnum <> -666"
      ,"queries": [
-          { "name"  :"AppByUserAll",
+          { "name"  :"UserAppId"
+           ,"description":"Get the specific record for a given user by appId."
+           ,"from"  : []
+           ,"wheres": [
+                { "db":"*", "clause":"appHostName=?() and userRefnum=?() and appId=?()" }
+             ]
+          }
+         ,{ "name"  :"AppByUserAll",
             "description":"Get all users irrespective of app access.",
             "from"  : [], 
             "wheres": [
