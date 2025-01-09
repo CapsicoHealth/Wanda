@@ -58,6 +58,8 @@ import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
+import wanda.data.AppUser_Data;
+import wanda.data.AppUser_Factory;
 import wanda.data.AppView_Data;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
@@ -67,6 +69,7 @@ import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.data._Tilda.TILDA__APP.ServiceDefinition;
+import wanda.servlets.admin.apps.UserAppList;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.config.WebBasics;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -258,7 +261,7 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
                  {
-                   LOG.info("User is a guest and is not cleared for this url or the url is not listed as guest-allowed in the application definition information.");
+                   LOG.info("User is a guest and is not cleared for this url ("+Request.getServletPath()+") or the url is not listed as guest-allowed in the application definition information.");
                    Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
                    throw new ServletException("Unauthorized guest access as per app service configuration");
                  }
@@ -680,5 +683,12 @@ public class SessionFilter implements jakarta.servlet.Filter
     private static boolean isUserLocked(User_Data U)
       {
         return U.getLocked() != null && ChronoUnit.MILLIS.between(ZonedDateTime.now(), U.getLocked()) > 0;
+      }
+
+    public static boolean checkAppAccess(Connection C, User_Data U, String appName)
+    throws Exception
+      {
+        AppUserView_Data AU = AppUserView_Factory.lookupByUserAppId(WebBasics.getHostName(), U.getRefnum(), appName);
+        return AU.read(C) == true && AU.getAppActive() == true;
       }
   }

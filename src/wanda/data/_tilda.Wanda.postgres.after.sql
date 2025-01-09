@@ -32,7 +32,7 @@ BEGIN
 insert into WANDA.AppConfig("appRefnum", "hostName", "label", "seq", "icon", "active")
 select "refnum", '', "label", "seq", "icon", "active"
   from WANDA.App
-on conflict("appRefnum") do nothing
+on conflict("appRefnum", "hostName") do nothing
 ;
 
 ALTER TABLE WANDA.App drop COLUMN IF EXISTS "label" ;
