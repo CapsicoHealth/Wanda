@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.io.output.StringBuilderWriter;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -53,8 +52,8 @@ import wanda.data.Role_Factory;
 import wanda.web.config.AppDef;
 import wanda.web.config.AppDefDetails;
 import wanda.web.config.AppDefService;
-import wanda.web.config.WebBasics;
-import wanda.web.config.WebBasicsDefApps;
+import wanda.web.config.Wanda;
+import wanda.web.config.WandaDefApps;
 
 public class LoadAppsConfig
   {
@@ -68,7 +67,7 @@ public class LoadAppsConfig
           {
             LOG.info("");
             LOG.info("Wanda App Definition Configuration Loader");
-            LOG.info("  - This utility will load /WebBasics.apps.json and its /WebBasics.app.Xyz.json ");
+            LOG.info("  - This utility will load /wanda.apps.json and its /wanda.app.Xyz.json ");
             LOG.info("   dependencies in the classpath.");
             LOG.info("  - The information will be loaded into the " + App_Factory.SCHEMA_TABLENAME_LABEL + " and ");
             LOG.info("   " + Config_Factory.SCHEMA_TABLENAME_LABEL + " tables");
@@ -131,19 +130,19 @@ public class LoadAppsConfig
         Reader R = null;
         try
           {
-            LOG.info("Loading WebBasics.apps.json...");
+            LOG.info("Loading wanda.apps.json...");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            InputStream In = FileUtil.getResourceAsStream("WebBasics.apps.json");
+            InputStream In = FileUtil.getResourceAsStream("wanda.apps.json");
             if (In == null)
-              throw new Exception("Cannot find 'WebBasics.apps.json' initialization file in classpath");
+              throw new Exception("Cannot find 'wanda.apps.json' initialization file in classpath");
             R = new BufferedReader(new InputStreamReader(In));
-            WebBasicsDefApps Apps = gson.fromJson(R, WebBasicsDefApps.class);
+            WandaDefApps Apps = gson.fromJson(R, WandaDefApps.class);
 
             if (Apps._apps != null)
               for (AppDef ad : Apps._apps)
                 if (ad != null)
                   {
-                    String srcFile = "WebBasics.app." + ad._id + ".json";
+                    String srcFile = "wanda.app." + ad._id + ".json";
                     In = FileUtil.getResourceAsStream(srcFile);
                     if (In == null)
                       throw new Exception("The file " + srcFile + " cannot be found.");
@@ -156,7 +155,7 @@ public class LoadAppsConfig
                   }
 
             if (Apps.validate() == false)
-              throw new Exception("The WebBasics apps file is invalid.");
+              throw new Exception("The Wanda apps file is invalid.");
 
             process(C, Apps);
           }
@@ -175,7 +174,7 @@ public class LoadAppsConfig
         return SBW.getBuilder().toString();
       }
 
-    public static void process(Connection C, WebBasicsDefApps DA)
+    public static void process(Connection C, WandaDefApps DA)
     throws Exception
       {
         ZonedDateTime ZDT = C.getCurrentTimestamp();
@@ -215,15 +214,15 @@ public class LoadAppsConfig
 
               ++i; // sequence increment.
               // Looking up the app config for this host.
-              AppConfig_Data AC = AppConfig_Factory.lookupByAppHost(A.getRefnum(), WebBasics.getHostName());
+              AppConfig_Data AC = AppConfig_Factory.lookupByAppHost(A.getRefnum(), Wanda.getHostName());
               if (AC.read(C) == false) // cannot find.
                 {
                   // Need migration support: Looking up the app config for the default "" hostName value.
                   AC = AppConfig_Factory.lookupByAppHost(A.getRefnum(), "");
                   if (AC.read(C) == false)
-                    AC = AppConfig_Factory.create(A.getRefnum(), WebBasics.getHostName(), ad._AppDefDetail._label, i);
+                    AC = AppConfig_Factory.create(A.getRefnum(), Wanda.getHostName(), ad._AppDefDetail._label, i);
                 }
-              AC.setHostName(WebBasics.getHostName());
+              AC.setHostName(Wanda.getHostName());
               AC.setLabel(ad._AppDefDetail._label);
               AC.setSeq(i);
               AC.setNullDeleted();
@@ -259,7 +258,7 @@ public class LoadAppsConfig
         LOG.debug("   --> Updated " + i + " App configurations.");
 
         // App not updated in this round, i.e., lastUpdated < ZDT, have likely been removed, so they should be marked as deleted.
-        List<AppConfig_Data> L = AppConfig_Factory.lookupWhereLastUpdated(C, WebBasics.getHostName(), ZDT, 0, -1);
+        List<AppConfig_Data> L = AppConfig_Factory.lookupWhereLastUpdated(C, Wanda.getHostName(), ZDT, 0, -1);
         for (AppConfig_Data A : L)
           {
             A.setDeletedNow();

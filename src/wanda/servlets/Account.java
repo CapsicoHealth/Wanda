@@ -33,7 +33,7 @@ import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 @WebServlet("/svc/user/account")
 public class Account extends SimpleServlet
@@ -78,7 +78,7 @@ public class Account extends SimpleServlet
         if (TextUtil.isNullOrEmpty(password) == false)
           {
             String hashedPassword = null;
-            List<String> errors = WebBasics.validatePassword(password);
+            List<String> errors = Wanda.validatePassword(password);
             if (!errors.isEmpty())
               {
                 for (String error : errors)

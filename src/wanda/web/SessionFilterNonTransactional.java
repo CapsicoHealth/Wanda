@@ -35,7 +35,7 @@ import tilda.db.QueryDetails;
 import tilda.utils.AnsiUtil;
 import tilda.utils.DurationUtil;
 import tilda.utils.SystemValues;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 
 public class SessionFilterNonTransactional implements jakarta.servlet.Filter
@@ -48,7 +48,7 @@ public class SessionFilterNonTransactional implements jakarta.servlet.Filter
       {
         LOG.info("\n");
         LOG.info("*************************************************************************************************************************************");
-        WebBasics.autoInit();
+        Wanda.autoInit();
         ConnectionPool.autoInit();
         LOG.info("*************************************************************************************************************************************\n\n");
       }

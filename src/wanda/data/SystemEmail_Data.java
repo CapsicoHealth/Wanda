@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 import tilda.db.Connection;
 import tilda.db.ListResults;
 import wanda.web.EMailSender;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 /**
 This is the application class <B>Data_SYSTEMEMAIL</B> mapped to the table <B>ADMIN.SYSTEMEMAIL</B>.
@@ -49,7 +49,7 @@ public class SystemEmail_Data extends wanda.data._Tilda.TILDA__SYSTEMEMAIL
    public void deliver(User_Data User, Connection C) throws Exception
      {
        int Start = 0;
-       int Size = WebBasics.getEmailSettingsSys()._maxCount; // Max Limit for To is 5000. https://technet.microsoft.com/en-in/library/exchange-online-limits.aspx#RecipientLimits
+       int Size = Wanda.getEmailSettingsSys()._maxCount; // Max Limit for To is 5000. https://technet.microsoft.com/en-in/library/exchange-online-limits.aspx#RecipientLimits
        List<String> BCC = new ArrayList<String>();
        String []BCC_Arr = null;
        String []To_Arr = {User.getEmail()};

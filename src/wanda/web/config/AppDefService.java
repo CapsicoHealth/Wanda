@@ -69,13 +69,13 @@ public class AppDefService implements JSONable
 
         if (TextUtil.isNullOrEmpty(_path) == true)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " defined a service value with no path.");
+            Wanda.LOG.error("The Wanda app configuration file for app " + appLabel + " defined a service value with no path.");
             OK = false;
           }
         
         if (_access != null && TextUtil.findElement(_ACCESS_VALUES, _access, true, 0) == -1)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " define a service '"+_path+"' with an access flag '"+_access+"' which is not one of the following: "+TextUtil.print(_ACCESS_VALUES)+".");
+            Wanda.LOG.error("The Wanda app configuration file for app " + appLabel + " define a service '"+_path+"' with an access flag '"+_access+"' which is not one of the following: "+TextUtil.print(_ACCESS_VALUES)+".");
             OK = false;
           }
         

@@ -24,7 +24,7 @@ import tilda.utils.TextUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 import wanda.data.User_Data;
 
 /**
@@ -45,7 +45,7 @@ public class Logout extends SimpleServlet
         super(false);
       }
 
-    protected static String _DEFAULT_REDIRECT_URL = WebBasics.getHostName() + WebBasics.getAppPath() + WebBasics.getHomePagePath();
+    protected static String _DEFAULT_REDIRECT_URL = Wanda.getHostName() + Wanda.getAppPath() + Wanda.getHomePagePath();
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)

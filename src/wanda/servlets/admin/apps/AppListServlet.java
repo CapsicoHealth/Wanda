@@ -36,7 +36,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SimpleServlet;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 /**
 *
@@ -75,7 +75,7 @@ public class AppListServlet extends SimpleServlet
 
         if (refnum != SystemValues.EVIL_VALUE)
           {
-            AppConfig_Data AC = AppConfig_Factory.lookupByAppHost(refnum, WebBasics.getHostName());
+            AppConfig_Data AC = AppConfig_Factory.lookupByAppHost(refnum, Wanda.getHostName());
             AC.setActive(active==1); // active must be 1 or 0 at this point.
             if (AC.write(C) == false)
              req.addError("refnum", "App '"+refnum+"' cannot be found.");
@@ -98,8 +98,8 @@ public class AppListServlet extends SimpleServlet
           }
         else
           {
-            ListResults<AppView_Data> apps = active == SystemValues.EVIL_VALUE ? AppView_Factory.lookupWhereAll(C, WebBasics.getHostName(), 0, 250) 
-                                                                               : AppView_Factory.lookupWhereActive(C, WebBasics.getHostName(), active==1, 0, 250);
+            ListResults<AppView_Data> apps = active == SystemValues.EVIL_VALUE ? AppView_Factory.lookupWhereAll(C, Wanda.getHostName(), 0, 250) 
+                                                                               : AppView_Factory.lookupWhereActive(C, Wanda.getHostName(), active==1, 0, 250);
             JSONUtil.response(Out, "", apps);
           }
       }

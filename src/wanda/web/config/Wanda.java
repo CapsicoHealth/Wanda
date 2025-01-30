@@ -44,15 +44,15 @@ import wanda.data.Config_Data;
 import wanda.data.Config_Factory;
 
 
-public class WebBasics
+public class Wanda
   {
-    static final Logger               LOG         = LogManager.getLogger(WebBasics.class.getName());
+    static final Logger               LOG         = LogManager.getLogger(Wanda.class.getName());
 
-    private static WebBasicsDefConfig _Config;
+    private static WandaDefConfig     _Config;
     private static List<AppView_Data> _Apps       = new ArrayList<AppView_Data>();
     private static Config_Data        _AppsConfig = null;
 
-    private WebBasics()
+    private Wanda()
       {
 
       }
@@ -69,7 +69,7 @@ public class WebBasics
           }
         catch (Throwable T)
           {
-            LOG.error("An exception occurred while configuring the WebBasics library.\n", T);
+            LOG.error("An exception occurred while configuring the Wanda library.\n", T);
             if (T.getCause() != null)
               {
                 T = T.getCause();
@@ -92,28 +92,28 @@ public class WebBasics
         Connection C = null;
         try
           {
-            LOG.info("Loading '/WebBasics.config.json' from the classpath.");
+            LOG.info("Loading '/wanda.config.json' from the classpath.");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            InputStream In = FileUtil.getResourceAsStream("WebBasics.config.json");
+            InputStream In = FileUtil.getResourceAsStream("wanda.config.json");
             if (In == null)
-              throw new Exception("Cannot find the WebBasics configuration file '/WebBasics.config.json' in the classpath.");
+              throw new Exception("Cannot find the Wanda configuration file '/wanda.config.json' in the classpath.");
 
-            URL url = FileUtil.getResourceUrl("WebBasics.config.json");
-            LOG.info("   Found WebBasics.config.json file in " + url.toString());
+            URL url = FileUtil.getResourceUrl("wanda.config.json");
+            LOG.info("   Found wanda.config.json file in " + url.toString());
 
             C = ConnectionPool.get("MAIN");
 
             R = new BufferedReader(new InputStreamReader(In));
-            _Config = gson.fromJson(R, WebBasicsDefConfig.class);
+            _Config = gson.fromJson(R, WandaDefConfig.class);
             if (_Config.validate(C) == false)
-              throw new Exception("Invalid WebBasics configuration file '" + url.toString() + "'.");
+              throw new Exception("Invalid Wanda configuration file '" + url.toString() + "'.");
 
-            _Apps = AppView_Factory.lookupWhereAll(C, WebBasics.getHostName(), 0, -1);
+            _Apps = AppView_Factory.lookupWhereAll(C, Wanda.getHostName(), 0, -1);
             _AppsConfig = Config_Factory.lookupById("MAIN");
             if (_AppsConfig.read(C) == false)
               {
-                LOG.warn("The WebBasics app configuration is empty. This may be normal if this is the first time the server is started.");
-                // throw new Exception("The WebBasics app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
+                LOG.warn("The Wanda app configuration is empty. This may be normal if this is the first time the server is started.");
+                // throw new Exception("The Wanda app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
               }
             StringBuilder Str = new StringBuilder();
             Str.append("\n   ************************************************************************************************************************\n");
@@ -153,11 +153,6 @@ public class WebBasics
     public static BeaconConfig getBeaconConfig()
       {
         return _Config._beacon;
-      }
-
-    public static int getJobCheckIntervalSeconds()
-      {
-        return _Config._jobCheckIntervalSeconds;
       }
 
     public static int getLoginAttempts()
@@ -247,12 +242,12 @@ public class WebBasics
       {
         return isGuestRegistrationAllowed() == true ? _Config._guestRegistration._buttonLabel : null;
       }
-    
+
     public static GuestRegistration.GuestType getGuestRegistrationType()
       {
-        return _Config._guestRegistration == null ? GuestRegistration.GuestType.NONE  : _Config._guestRegistration._type;
+        return _Config._guestRegistration == null ? GuestRegistration.GuestType.NONE : _Config._guestRegistration._type;
       }
-    
+
     public static long[] getGuestRegistrationAppRefnums()
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;
@@ -350,11 +345,6 @@ public class WebBasics
         return _Config._laf._overrideCssFile;
       }
 
-    public static String getTwofishesUrl()
-      {
-        return _Config._twofishesUrl;
-      }
-
     public static Eula getEula(String TenantName)
       {
         if (TenantName == null)
@@ -388,6 +378,41 @@ public class WebBasics
 
         Map<String, String> config = _Config._extras.get(configName);
         return config == null ? null : config.get(elementName);
+      }
+
+    /**
+     * Returns the list of notification administrator accounts for answering to tickets if the wanda.config.json
+     * file specifies such a thing, and the subsystem is enabled, and admin accounts are specified.
+     * 
+     * @return
+     */
+    public static long[] getTicketAccountRefnums()
+      {
+        return _Config._ticketSystem._notificationUserRefnums;
+      }
+
+    /**
+     * Returns the list of notification administrator accounts for answering to tickets if the wanda.config.json
+     * file specifies such a thing, and the subsystem is enabled, and admin accounts are specified.
+     * 
+     * @return
+     */
+    public static int getTicketAlertMinutes()
+      {
+        return _Config._ticketSystem._enabled == true ? _Config._ticketSystem._notifications._alertMinutes : null;
+      }
+
+    /**
+     * Returns true if the user is listed as a ticket admin
+     * @param refnum
+     * @return
+     */
+    public static boolean isUserTicketAdmin(long refnum)
+      {
+        for (long r : _Config._ticketSystem._notificationUserRefnums)
+          if (r == refnum)
+            return true;
+        return false;
       }
 
   }

@@ -12,7 +12,7 @@ public class JWTHelper
       {
         try
           {
-            ALGORITHM = Algorithm.HMAC256(WebBasics.getJWTSecret());
+            ALGORITHM = Algorithm.HMAC256(Wanda.getJWTSecret());
           }
         catch (IllegalArgumentException e)
           {
@@ -66,7 +66,7 @@ public class JWTHelper
         throws Exception
           {
             ZonedDateTime createdDate = DateTimeUtil.nowUTC();
-            ZonedDateTime expiresAt = createdDate.plusMinutes(WebBasics.getForceReLoginMins());
+            ZonedDateTime expiresAt = createdDate.plusMinutes(Wanda.getForceReLoginMins());
             jwtBuilder.withIssuedAt(Date.from(createdDate.toInstant()));
             jwtBuilder.withExpiresAt(Date.from(expiresAt.toInstant()));
             signedToken = jwtBuilder.sign(ALGORITHM);

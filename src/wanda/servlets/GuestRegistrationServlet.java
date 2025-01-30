@@ -33,7 +33,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.GuestRegistration;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 @WebServlet("/svc/user/guest/registration")
 public class GuestRegistrationServlet extends SimpleServlet
@@ -55,11 +55,11 @@ public class GuestRegistrationServlet extends SimpleServlet
         String lName = Req.getParamString("lName", true);
         String promoCode = Req.getParamString("promoCode", false);
 
-        if (WebBasics.isGuestRegistrationAllowed() == false)
+        if (Wanda.isGuestRegistrationAllowed() == false)
           Req.addError("email", "Guest registrations are not allowed");
 
         Promo_Data p = null;
-        if (WebBasics.getGuestRegistrationType() == GuestRegistration.GuestType.PROMO)
+        if (Wanda.getGuestRegistrationType() == GuestRegistration.GuestType.PROMO)
           {
             if (TextUtil.isNullOrEmpty(promoCode) == true)
               Req.addError("promoCode", "An event/promotion code is required");
@@ -85,9 +85,9 @@ public class GuestRegistrationServlet extends SimpleServlet
         Req.throwIfErrors();
 
         String[] guestRole = p == null ? RoleHelper.GUEST : p.getRolesAsArray();
-        long[] appRefnums = p == null ? WebBasics.getGuestRegistrationAppRefnums() : CollectionUtil.toPrimitiveArray(p.getAppsAsArray());
+        long[] appRefnums = p == null ? Wanda.getGuestRegistrationAppRefnums() : CollectionUtil.toPrimitiveArray(p.getAppsAsArray());
         String[] contents = p == null ? null : p.getContentsAsArray();
-        long[] tenantRefnums = WebBasics.getGuestRegistrationTenantRefnums();
+        long[] tenantRefnums = Wanda.getGuestRegistrationTenantRefnums();
 
         if (previousUser == false)
           User_Data.inviteUser(C, promoCode, email, fName, lName, guestRole, tenantRefnums, appRefnums, contents);

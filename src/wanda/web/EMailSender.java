@@ -20,7 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import wanda.web.config.EmailConfigDetails;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 import tilda.utils.MailUtil;
 import tilda.utils.TextUtil;
@@ -30,7 +30,7 @@ public class EMailSender
     protected static final Logger LOG = LogManager.getLogger(EMailSender.class.getName());
 
     /**
-     * Sends an email using the System email configuration as per WebBasics.conf.json.
+     * Sends an email using the System email configuration as per wanda.conf.json.
      * @param To The list of addresses to send to. If null or empty, the "defaultAdmins" configuration value is used.
      * @param Cc
      * @param Bcc
@@ -46,7 +46,7 @@ public class EMailSender
       }
 
     /**
-     * Sends an email using the User email configuration as per WebBasics.conf.json.
+     * Sends an email using the User email configuration as per wanda.conf.json.
      * @param To The list of addresses to send to. If null or empty, the "defaultAdmins" configuration value is used.
      * @param Cc
      * @param Bcc
@@ -63,7 +63,7 @@ public class EMailSender
 
     protected static boolean sendMail(boolean system, String[] To, String[] Cc, String[] Bcc, String Subject, String Message, boolean Urgent, boolean Confidential)
       {
-        EmailConfigDetails emailConfig = system == true ? WebBasics.getEmailSettingsSys() : WebBasics.getEmailSettingsUsr();
+        EmailConfigDetails emailConfig = system == true ? Wanda.getEmailSettingsSys() : Wanda.getEmailSettingsUsr();
         if (emailConfig == null)
           {
             LOG.debug("Email component is not operational. No SMTP config set");

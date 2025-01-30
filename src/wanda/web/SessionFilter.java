@@ -30,6 +30,12 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
@@ -38,13 +44,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.db.QueryDetails;
@@ -58,8 +57,6 @@ import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
-import wanda.data.AppUser_Data;
-import wanda.data.AppUser_Factory;
 import wanda.data.AppView_Data;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
@@ -69,9 +66,8 @@ import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.data._Tilda.TILDA__APP.ServiceDefinition;
-import wanda.servlets.admin.apps.UserAppList;
 import wanda.servlets.helpers.RoleHelper;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 
@@ -102,7 +98,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                 +"*************************************************************************************************************************************\n"
                 +"***  Initializing Wanda environment"
                 );
-        WebBasics.autoInit();
+        Wanda.autoInit();
         
         LOG.info("\n\n\n"
                 +"*************************************************************************************************************************************\n"
@@ -497,7 +493,7 @@ public class SessionFilter implements jakarta.servlet.Filter
       {
         HttpSession S = SessionUtil.getSession(Request);
         double sessionDurationMinutes = DurationUtil.getDurationMinutes(DurationUtil.NANOSECS_PER_MILLISECOND * (System.currentTimeMillis() - S.getCreationTime()));
-        if (sessionDurationMinutes >= WebBasics.getForceReLoginMins())
+        if (sessionDurationMinutes >= Wanda.getForceReLoginMins())
           {
             SessionUtil.InvalidateSession(Request);
             S = SessionUtil.getSession(Request);
@@ -560,7 +556,7 @@ public class SessionFilter implements jakarta.servlet.Filter
     // Helpers
     private static boolean isAuthPassthrough(HttpServletRequest Request)
       {
-        Iterator<String> I = WebBasics.getAuthPassthroughs();
+        Iterator<String> I = Wanda.getAuthPassthroughs();
         while (I.hasNext() == true)
           {
             String u = I.next();
@@ -572,7 +568,7 @@ public class SessionFilter implements jakarta.servlet.Filter
 
     private static boolean isMasterPath(HttpServletRequest Request)
       {
-        Iterator<String> I = WebBasics.getMasterPaths();
+        Iterator<String> I = Wanda.getMasterPaths();
         while (I.hasNext() == true)
           {
             String u = I.next();
@@ -588,7 +584,7 @@ public class SessionFilter implements jakarta.servlet.Filter
           return false;
 
         String servletPath = Request.getServletPath();
-        for (AppView_Data app : WebBasics.getApps())
+        for (AppView_Data app : Wanda.getApps())
           {
             // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
             // doesn't have access to. This is a larger issue of app service access control which we are still developing!
@@ -688,7 +684,9 @@ public class SessionFilter implements jakarta.servlet.Filter
     public static boolean checkAppAccess(Connection C, User_Data U, String appName)
     throws Exception
       {
-        AppUserView_Data AU = AppUserView_Factory.lookupByUserAppId(WebBasics.getHostName(), U.getRefnum(), appName);
+        if (U.isSuperAdmin() == true)
+          return true;
+        AppUserView_Data AU = AppUserView_Factory.lookupByUserAppId(Wanda.getHostName(), U.getRefnum(), appName);
         return AU.read(C) == true && AU.getAppActive() == true;
       }
   }

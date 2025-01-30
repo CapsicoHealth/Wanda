@@ -34,7 +34,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SimpleServlet;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.NotFoundException;
 
 @WebServlet("/svc/user/onboarding")
@@ -62,7 +62,7 @@ public class UserOnBoarding extends SimpleServlet
         String password = Req.getParamString("password", true);
         String phone = Req.getParamString("phone", false);
         List<String> passwordHistory = new ArrayList<String>();
-        List<String> errors = WebBasics.validatePassword(password);
+        List<String> errors = Wanda.validatePassword(password);
         if (!errors.isEmpty())
           {
             for (String error : errors)

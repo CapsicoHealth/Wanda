@@ -33,7 +33,7 @@ import wanda.web.ContentDefinitionService.ContentDefinition;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 /**
  * Servlet implementation class Login
@@ -55,9 +55,9 @@ public class GetContentServices extends SimpleServlet
     protected static List<ContentDefinition> getContentDefinitions(Connection C, User_Data U)
       {
         List<ContentDefinition> contents = new ArrayList<ContentDefinition>();
-        if (WebBasics.getLoginSystem() != null && WebBasics.getLoginSystem()._contentDefinitionServices != null)
+        if (Wanda.getLoginSystem() != null && Wanda.getLoginSystem()._contentDefinitionServices != null)
           {
-            String[] contentDefinitionServices = WebBasics.getLoginSystem()._contentDefinitionServices;
+            String[] contentDefinitionServices = Wanda.getLoginSystem()._contentDefinitionServices;
             for (String cds : contentDefinitionServices)
               try
                 {

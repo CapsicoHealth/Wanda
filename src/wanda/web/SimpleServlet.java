@@ -26,7 +26,7 @@ import tilda.db.Connection;
 import tilda.utils.HttpStatus;
 import wanda.data.User_Data;
 import wanda.servlets.helpers.RoleHelper;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.SimpleServletException;
 
 /**
@@ -103,7 +103,7 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
      */
     protected boolean hasPasswordExpired(User_Data U)
       {
-        return U.getPswdCreate() != null && ChronoUnit.DAYS.between(U.getPswdCreate(), ZonedDateTime.now()) > WebBasics.getPasswordExpiry();
+        return U.getPswdCreate() != null && ChronoUnit.DAYS.between(U.getPswdCreate(), ZonedDateTime.now()) > Wanda.getPasswordExpiry();
       }
 
     protected boolean isUserLocked(User_Data U)

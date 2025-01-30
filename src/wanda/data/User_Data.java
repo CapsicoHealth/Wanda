@@ -40,7 +40,7 @@ import tilda.utils.pairs.StringStringPair;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.EMailSender;
 import wanda.web.SessionFilter;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.BadRequestException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
 
@@ -108,7 +108,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             pswdHistory.addAll(Arrays.asList(getPswdHistAsArray()));
           }
         pswdHistory.add(hashedPassword);
-        int difference = pswdHistory.size() - WebBasics.getMaxPswdHistory();
+        int difference = pswdHistory.size() - Wanda.getMaxPswdHistory();
         for (int i = 0; i < difference; i++)
           {
             pswdHistory.remove(0);
@@ -144,7 +144,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
               {
                 super.run();
                 StringBuilder sb = new StringBuilder();
-                List<String> copyTexts = WebBasics.getResetEmailTexts();
+                List<String> copyTexts = Wanda.getResetEmailTexts();
                 if (copyTexts != null)
                   {
                     Iterator<String> i = copyTexts.listIterator();
@@ -154,14 +154,14 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                       }
                   }
                 sb.append("<p><a href='");
-                sb.append(WebBasics.getHostName());
-                sb.append(WebBasics.getAppPath());
-                sb.append(WebBasics.getHomePagePath());
+                sb.append(Wanda.getHostName());
+                sb.append(Wanda.getAppPath());
+                sb.append(Wanda.getHomePagePath());
                 sb.append("?action=setPswd");
                 sb.append("&token=");
                 sb.append(getPswdResetCode());
                 sb.append("'>Click to reset your password</a>.</p>");
-                EMailSender.sendMailUsr(to, cc, bcc, "Reset your password -- " + WebBasics.getAppName(), sb.toString(), true, true);
+                EMailSender.sendMailUsr(to, cc, bcc, "Reset your password -- " + Wanda.getAppName(), sb.toString(), true, true);
               }
           }.start();
       }
@@ -337,7 +337,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 try
                   {
                     StringBuilder sb = new StringBuilder();
-                    List<String> copyTexts = WebBasics.getInviteUserTexts();
+                    List<String> copyTexts = Wanda.getInviteUserTexts();
                     if (copyTexts != null)
                       {
                         Iterator<String> i = copyTexts.listIterator();
@@ -346,12 +346,12 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                             sb.append(i.next());
                           }
                       }
-                    String url = WebBasics.getHostName() + WebBasics.getAppPath() + WebBasics.getHomePagePath() + "?action=signUp&token=" + getPswdResetCode();
+                    String url = Wanda.getHostName() + Wanda.getAppPath() + Wanda.getHomePagePath() + "?action=signUp&token=" + getPswdResetCode();
                     sb.append("<p><a href='");
                     sb.append(url);
                     sb.append("'>Click here to set your password</a></p>");
                     LOG.debug("Sending email invitation to " + getEmail() + " via thread with link "+url);
-                    EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + WebBasics.getAppName(), sb.toString(), true, true);
+                    EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + Wanda.getAppName(), sb.toString(), true, true);
                     LOG.debug("Sent email invitation to " + getEmail() + " via thread.");
                   }
                 catch (Throwable T)
@@ -414,7 +414,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
               {
                 super.run();
                 StringBuilder sb = new StringBuilder();
-                List<String> copyTexts = WebBasics.getEmailVerificationTexts();
+                List<String> copyTexts = Wanda.getEmailVerificationTexts();
                 if (copyTexts != null)
                   {
                     Iterator<String> i = copyTexts.listIterator();
@@ -424,14 +424,14 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                       }
                   }
                 sb.append("<p><a href='");
-                sb.append(WebBasics.getHostName());
-                sb.append(WebBasics.getAppPath());
-                sb.append(WebBasics.getHomePagePath());
+                sb.append(Wanda.getHostName());
+                sb.append(Wanda.getAppPath());
+                sb.append(Wanda.getHomePagePath());
                 sb.append("?action=emailVerification");
                 sb.append("&token=");
                 sb.append(getEmailVerificationCode());
                 sb.append("'>Click Here to complete verification</a></p>");
-                EMailSender.sendMailUsr(to, cc, bcc, "Email Verification: " + WebBasics.getAppName(), sb.toString(), true, true);
+                EMailSender.sendMailUsr(to, cc, bcc, "Email Verification: " + Wanda.getAppName(), sb.toString(), true, true);
               }
           }.start();
       }
@@ -454,19 +454,19 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         else
           {
             long minutes = firstFailure.until(ZonedDateTime.now(), ChronoUnit.MINUTES);
-            if (minutes <= WebBasics.getWithinTime())
+            if (minutes <= Wanda.getWithinTime())
               {
                 U.setFailCount(U.getFailCount() + 1);
-                if (U.getFailCount() >= WebBasics.getLoginAttempts())
+                if (U.getFailCount() >= Wanda.getLoginAttempts())
                   {
                     U.setFailCycleCount(U.getFailCycleCount() + 1);
-                    if (U.getFailCycleCount() >= WebBasics.getLoginFailedCycle())
+                    if (U.getFailCycleCount() >= Wanda.getLoginFailedCycle())
                       {
-                        U.setLocked(DateTimeUtil.nowUTC().plusDays(WebBasics.getLockForever()));
+                        U.setLocked(DateTimeUtil.nowUTC().plusDays(Wanda.getLockForever()));
                       }
                     else
                       {
-                        U.setLocked(DateTimeUtil.nowUTC().plusMinutes(WebBasics.getLockFor()));
+                        U.setLocked(DateTimeUtil.nowUTC().plusMinutes(Wanda.getLockFor()));
                       }
                     U.setNullFailFirst();
                   }

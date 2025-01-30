@@ -33,7 +33,7 @@ import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.NotFoundException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
 
@@ -60,7 +60,7 @@ public class SetPassword extends SimpleServlet
         String Email = Req.getParamString("email", true);
         String Token = Req.getParamString("token", true);
         String Password = Req.getParamString("password", true);
-        List<String> Errors = WebBasics.validatePassword(Password);
+        List<String> Errors = Wanda.validatePassword(Password);
         int FailCount = 0;
         String ErrorMessage = null;
         if (!Errors.isEmpty())
@@ -80,16 +80,16 @@ public class SetPassword extends SimpleServlet
           {
             Req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
             User_Data.markUserLoginFailure(C, user);
-            FailCount = WebBasics.getLoginAttempts() - user.getFailCount(); 
+            FailCount = Wanda.getLoginAttempts() - user.getFailCount(); 
             ErrorMessage = CompareUtil.equals(Token, user.getPswdResetCode()) == false ? "The token supplied is no longer valid. Please request a new reset token."
                          : FailCount <= 0 ? "Your account is locked! You have exeeded maximum password reset or login attempts" 
                          : "Unable to reset your password, you have "+FailCount+" attempts remaining";
             throw new ResourceNotAuthorizedException("User", Email, ErrorMessage);
           }
 
-        if (ChronoUnit.MINUTES.between(user.getPswdResetCreate(), ZonedDateTime.now()) > WebBasics.getResetCodeTTL())
+        if (ChronoUnit.MINUTES.between(user.getPswdResetCreate(), ZonedDateTime.now()) > Wanda.getResetCodeTTL())
           {
-            Req.addError("token", "The token has expired (after "+WebBasics.getResetCodeTTL()+" mn). Please request a new reset token.");
+            Req.addError("token", "The token has expired (after "+Wanda.getResetCodeTTL()+" mn). Please request a new reset token.");
           }
 
         String salt = user.getOrCreatePswdSalt();

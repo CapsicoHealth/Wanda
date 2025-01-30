@@ -33,7 +33,7 @@ import wanda.data.User_Factory;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.servlets.helpers.UserTenantSync;
 import wanda.web.config.Eula;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
@@ -103,7 +103,7 @@ public class Login extends SimpleServlet
             loginCallback.onLoginFailure(u);
           }
 
-        if (WebBasics.validatePassword(password).size() > 0)
+        if (Wanda.validatePassword(password).size() > 0)
           {
             u.sendForgotPswdEmail(C);
             throw new AccessForbiddenException("User", "Password invalid as per Password Rules");
@@ -123,9 +123,9 @@ public class Login extends SimpleServlet
     
     protected static void doUserSyncServices(Connection C, User_Data U)
       {
-        if (WebBasics.getLoginSystem() != null && WebBasics.getLoginSystem()._userSyncServices != null)
+        if (Wanda.getLoginSystem() != null && Wanda.getLoginSystem()._userSyncServices != null)
           {
-            String[] userSyncServices = WebBasics.getLoginSystem()._userSyncServices;
+            String[] userSyncServices = Wanda.getLoginSystem()._userSyncServices;
             for (String uss : userSyncServices)
               try
                 {
@@ -178,7 +178,7 @@ public class Login extends SimpleServlet
                 Req.throwIfErrors();
               }
 
-            Eula E = WebBasics.getEula(TV.getName());
+            Eula E = Wanda.getEula(TV.getName());
             int days = DateTimeUtil.computeDaysToNow(TV.getTenantUserLastEula());
             if (E != null && TextUtil.isNullOrEmpty(E._eulaUrl) == false && (days < 0 || days > E._days))
               {
@@ -247,7 +247,7 @@ public class Login extends SimpleServlet
 
                     if (ConnectionPool.isMultiTenant() == false)
                       {
-                        Eula E = WebBasics.getEula("");
+                        Eula E = Wanda.getEula("");
                         int days = DateTimeUtil.computeDaysToNow(U.getLastEula());
                         if (E != null && (days < 0 || days > E._days))
                           {
@@ -292,13 +292,13 @@ public class Login extends SimpleServlet
                     else
                       {
                         User_Data.markUserLoginFailure(C, U);
-                        int FailCount = WebBasics.getLoginAttempts() - U.getFailCount();
+                        int FailCount = Wanda.getLoginAttempts() - U.getFailCount();
                         if (U.isLocked() == true)
                           {
-                            if (U.getFailCycleCount() >= WebBasics.getLoginFailedCycle())
-                              ErrorMessage = "Your account is locked!\nYou have exceeded  the maximum " + WebBasics.getLoginAttempts() + " reset or login attempts.\nPlease contact your Administrator.";
+                            if (U.getFailCycleCount() >= Wanda.getLoginFailedCycle())
+                              ErrorMessage = "Your account is locked!\nYou have exceeded  the maximum " + Wanda.getLoginAttempts() + " reset or login attempts.\nPlease contact your Administrator.";
                             else
-                              ErrorMessage = "You have exceeded the maximum " + WebBasics.getLoginAttempts() + " reset or login attempts.\nPlease try again in " + WebBasics.getLockFor() + " minutes.";
+                              ErrorMessage = "You have exceeded the maximum " + Wanda.getLoginAttempts() + " reset or login attempts.\nPlease try again in " + Wanda.getLockFor() + " minutes.";
                           }
                         else
                           ErrorMessage = "Invalid Login Id or Password.\nYou have " + FailCount + " attempt(s) remaining";
@@ -370,7 +370,7 @@ public class Login extends SimpleServlet
           }
         else if (list.size() == 1)
           {
-            Eula E = WebBasics.getEula(list.get(0).getName());
+            Eula E = Wanda.getEula(list.get(0).getName());
             int days = DateTimeUtil.computeDaysToNow(U.getLastEula());
             if (E != null && (days < 0 || days > E._days))
               {
