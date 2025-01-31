@@ -121,6 +121,13 @@
                { "db": "*", "clause": "emailVerificationCode = ?()" }
              ]
           }
+        ,{ "name": "ActiveAdminOrEmails"
+          ,"description": "Active Users who are admins OR by emails"
+          ,"wheres": [
+              { "db": "*", "clause": "locked is null and (TILDA.in(email, ?[]) = true or TILDA.in('SA', roles) = true)" }
+            ]
+          ,"orderBy":["email"]
+         }
        ]
      ,"outputMaps": [
            { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
@@ -235,6 +242,7 @@
      ,"description":"Tickets"
      ,"columns":[
          { "name":"creatorRefnum" , "sameAs":"User.refnum", "nullable": false                         , "description":"The refnum of the User who created this ticket" }
+        ,{ "name":"creatorId"     , "sameAs":"User.id"    , "nullable": false                         , "description":"The id of the User who created this ticket" }
         ,{ "name":"topic"         , "type":"STRING(12)"   , "nullable": false, "protection":"ABSOLUTE", "description":"The type of ticket"}
         ,{ "name":"subject"       , "type":"STRING(1024)" , "nullable": false, "protection":"ABSOLUTE", "description":"The title for this ticket"}
         ,{ "name":"details"       , "type":"STRING(16384)", "nullable": false, "protection":"ABSOLUTE", "description":"The contents for this ticket"}
@@ -255,9 +263,13 @@
       ,"columns":[
           { "name":"ticketRefnum" , "sameAs":"Ticket.refnum", "nullable": false                         , "description":"The refnum of the ticket this answer is for" }
          ,{ "name":"creatorRefnum", "sameAs":"User.refnum"  , "nullable": false                         , "description":"The refnum of the User who created this answer" }
+         ,{ "name":"creatorId"    , "sameAs":"User.id"      , "nullable": false                         , "description":"The id of the User who created this answer" }
          ,{ "name":"answer"       , "type":"STRING(16384)"  , "nullable": false, "protection":"ABSOLUTE", "description":"The answer"}
         ]
       ,"primary": { "autogen": true }
+      ,"foreign": [
+           { "name":"TicketFK",  "srcColumns":["ticketRefnum"], "destObject":"Ticket" }
+        ]
       ,"indices":[ 
           { "name":"Ticket", "columns":["ticketRefnum"], "orderBy":["lastUpdated desc"], "db": true }
         ]
@@ -1173,6 +1185,46 @@
           { "name": "complex", "columns": [ "jobStatus", "loadMode",  "error", "zipFile", "endTime", "startTime", "refnum", "tenantName", "userRefnum", "jobRefnum", "tenantRefnum" ] }
        ]
     }
+
+,{ "name":"TicketWaitingView",
+   "description":"View of tickets waiting a response",
+   "columns":[
+      { "sameas":"Ticket.refnum"              }
+     ,{ "sameas":"Ticket.creatorRefnum"       }
+     ,{ "sameas":"Ticket.creatorId"           }
+     ,{ "sameas":"Ticket.topic"               }
+     ,{ "sameas":"Ticket.subject"             }
+     ,{ "sameas":"Ticket.lastUpdated"         }
+     ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswer" , "aggregate":"FIRST", "orderBy":["lastUpdated desc"] }
+     ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreator", "aggregate":"FIRST", "orderBy":["lastUpdated desc"] }
+    ]
+  ,"queries":[
+      { "name": "Unanswered"
+        ,"description": "TBD"
+        ,"wheres": [
+            { "db": "*", "clause": "lastAnswer is null OR (lastCreator is not null and TILDA.in(lastCreator, ?[]) = false)" }
+          ]
+        ,"orderBy":["lastUpdated desc"]
+      }
+     ,{ "name": "User"
+       ,"description": "TBD"
+       ,"wheres": [
+           { "db": "*", "clause": "creatorRefnum=?()" }
+         ]
+       ,"orderBy":["lastUpdated desc"]
+      }
+     ,{ "name": "All"
+       ,"description": "TBD"
+       ,"wheres": [
+           { "db": "*", "clause": "1=1" }
+         ]
+       ,"orderBy":["lastUpdated desc"]
+      }
+    ]
+  ,"json": [
+       { "name": "", "columns": [ "*" ] }
+    ]
+ }
   ]
 
  ,"migrations":{
@@ -1185,6 +1237,8 @@
        ]
      ,"notNulls":[
          { "object":"User" , "columns":["pswdSalt"], "default":""   }
+        ,{ "object":"Ticket" , "columns":["creatorId"], "default":"N/A"   }
+        ,{ "object":"TicketAnswer" , "columns":["creatorId"], "default":"N/A"   }
         ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
        ]
    }

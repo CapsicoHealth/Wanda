@@ -16,52 +16,52 @@
 
 package wanda.servlets.admin;
 
+import java.util.List;
+
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
-import tilda.db.ListResults;
-import tilda.utils.CollectionUtil;
-import wanda.data.TicketWaitingView_Data;
-import wanda.data.TicketWaitingView_Factory;
+import tilda.utils.json.JSONPrinter;
+import wanda.data.TicketAnswer_Data;
+import wanda.data.TicketAnswer_Factory;
+import wanda.data.Ticket_Data;
+import wanda.data.Ticket_Factory;
 import wanda.data.User_Data;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.Wanda;
 
-@WebServlet("/svc/admin/ticket/list")
-public class TicketList extends SimpleServlet
+@WebServlet("/svc/admin/ticket/conversation")
+public class TicketConversation extends SimpleServlet
   {
-
     private static final long serialVersionUID = -1745307937763620646L;
 
-    public TicketList()
+    public TicketConversation()
       {
         super(true, false, true);
       }
-
-    protected static long[] _ADMIN_REFNUMS = Wanda.getTicketAccountRefnums();
-    protected static int    _ALERT_TIMING  = Wanda.getTicketAlertMinutes();
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        boolean unanswered = req.getParamBoolean("unanswered", false);
-
-        ListResults<TicketWaitingView_Data> L = null;
+        long ticketRefnum = req.getParamLong("ticketRefnum", true);
         
-        // Is the user a super or ticket admin?
-        if (U.isSuperAdmin() == true || CollectionUtil.in(U.getRefnum(), _ADMIN_REFNUMS) == true)
-          {
-         if (unanswered == true)
-           L = TicketWaitingView_Factory.lookupWhereUnanswered(C, _ADMIN_REFNUMS, 0, 100);
-         else
-           L = TicketWaitingView_Factory.lookupWhereAll(C, 0, 100);
-          }
-        else // regular users can only see their tickets
-           L = TicketWaitingView_Factory.lookupWhereUser(C, U.getRefnum(), 0, 100); 
-                                                                   
-        Res.successJson("", L);
+        Ticket_Data t = Ticket_Factory.lookupByPrimaryKey(ticketRefnum);
+        if (U.isSuperAdmin() == false && Wanda.isUserTicketAdmin(U.getRefnum()) == false)
+         req.addError("ticketRefnum", "Unknown ticket or you do not have access.");
+        else if (t.read(C) == false)
+         req.addError("ticketRefnum", "Unknown ticket Id");
+
+        req.throwIfErrors();
+        
+        List<TicketAnswer_Data> L = TicketAnswer_Factory.lookupWhereTicket(C, ticketRefnum, 0, 50);
+        
+        JSONPrinter j = new JSONPrinter();
+        j.addElement("ticket", t, "");
+        j.addElement("answers", L, "");
+
+        Res.successJson(j);
       }
 
   }

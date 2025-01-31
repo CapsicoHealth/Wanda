@@ -21,7 +21,8 @@ import com.google.gson.annotations.SerializedName;
 public class LoginSystem
   {
     /*@formatter:off*/
-    @SerializedName("userSyncServices"         ) public String[]    _userSyncServices   = null  ;
-    @SerializedName("contentDefinitionServices") public String[]    _contentDefinitionServices   = null  ;
+    @SerializedName("userSyncServices"         ) public String[]     _userSyncServices   = null  ;
+    @SerializedName("contentDefinitionServices") public String[]     _contentDefinitionServices   = null  ;
+    @SerializedName("notifications"            ) public Notification _notifications      = null  ;
     /*@formatter:on*/
   }

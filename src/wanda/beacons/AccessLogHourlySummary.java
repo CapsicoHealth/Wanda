@@ -38,7 +38,7 @@ public class AccessLogHourlySummary implements BeaconBit
       }
 
     @Override
-    public void run(PrintWriter out, Connection C, int lookbackCount, LookbackUnit lookbackUnit)
+    public boolean run(PrintWriter out, Connection C, int lookbackCount, LookbackUnit lookbackUnit)
     throws Exception
       {
         ZonedDateTime Now = DateTimeUtil.nowLocal();
@@ -62,5 +62,6 @@ public class AccessLogHourlySummary implements BeaconBit
           }
         out.println("</TABLE>");
         AccessLogDailySummary.printHttpStatusLegend(out);
+        return true;
       }
   }

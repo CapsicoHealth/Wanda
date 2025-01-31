@@ -142,6 +142,25 @@ public class ResponseUtil
         J.printRaw(_Out);
       }
 
+    public void successJsonRaw(String json)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        _Out.append(json);
+      }
+
+    public void successJson(String jsonData, boolean asArray)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        
+        JSONUtil.startOK(_Out, asArray==true?'[':'{');
+        _Out.append(jsonData);
+        JSONUtil.end(_Out, asArray==true?']':'}');
+      }
+    
 
     public void successCsv(String csvExportName, List<? extends CSVable> L)
     throws Exception
@@ -176,7 +195,7 @@ public class ResponseUtil
 
     /**
      * This is meant for a serious system issue and will return a traditional error sequence for HTTP.
-     * This is expected mostly to be used by frameworks on top of WebBasics. If you have an application
+     * This is expected mostly to be used by frameworks on top of Wanda. If you have an application
      * error from a simpleServlet, you should use the standard {@link SimpleServletException} mechanism
      * to return a regular HTTPStatus=200 response, but with a JSON error payload.
      * 

@@ -46,7 +46,7 @@ public class AccessLogDailySummary implements BeaconBit
    };
   
   @Override
-  public void run(PrintWriter out, Connection C, int lookbackCount, LookbackUnit lookbackUnit)
+  public boolean run(PrintWriter out, Connection C, int lookbackCount, LookbackUnit lookbackUnit)
   throws Exception
     {
       LocalDate Today = DateTimeUtil.nowLocalDate().plusDays(1);
@@ -73,6 +73,7 @@ public class AccessLogDailySummary implements BeaconBit
         }
       out.println("</TABLE>");
       printHttpStatusLegend(out);
+      return true;
     }
 
   public static void printHttpStatusLegend(PrintWriter out)

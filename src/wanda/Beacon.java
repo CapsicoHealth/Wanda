@@ -33,17 +33,17 @@ import tilda.utils.TextUtil;
 import wanda.web.EMailSender;
 import wanda.web.config.BeaconBitConfig;
 import wanda.web.config.BeaconConfig;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 public class Beacon
   {
-    static final Logger LOG = LogManager.getLogger(Beacon.class.getName());
+    static public final Logger LOG = LogManager.getLogger(Beacon.class.getName());
 
     public static void main(String[] Args)
       {
         LOG.info("");
         LOG.info("Wanda Beacon");
-        LOG.info("  - This utility will load the list of active beacon bits from /WebBasics.config.json, run them");
+        LOG.info("  - This utility will load the list of active beacon bits from /wanda.config.json, run them");
         LOG.info("  - This utility will then email the results to the destination list as per the configuration");
         LOG.info("");
         Connection C = null;
@@ -90,7 +90,7 @@ public class Beacon
     private static void run(Connection C)
     throws Exception
       {
-        BeaconConfig B = WebBasics.getBeaconConfig();
+        BeaconConfig B = Wanda.getBeaconConfig();
         
         if (B == null || TextUtil.isNullOrEmpty(B._emails) == true)
           {
@@ -112,8 +112,8 @@ public class Beacon
           }
 
         Out.println("<PRE>");
-        Out.println("<B>APPLICATION</B>  : " + WebBasics.getAppName());
-        Out.println("<B>SERVER CONFIG</B>: " + WebBasics.getHostName());
+        Out.println("<B>APPLICATION</B>  : " + Wanda.getAppName());
+        Out.println("<B>SERVER CONFIG</B>: " + Wanda.getHostName());
         Out.println("<B>MACHINE</B>      : " + ip);
         Out.println("<B>DATE/TIME</B>    : " + DateTimeUtil.printDateTimeFriendly(DateTimeUtil.nowLocal(), true, true));
         Out.println("</PRE>");
@@ -130,7 +130,8 @@ public class Beacon
                 try
                   {
                     LOG.debug("Running beacon '"+b._bitObj.getTitle()+"' from '"+b._className+"'.");
-                    b._bitObj.run(Out, C, b._lookback, b._timing);
+                    if (b._bitObj.run(Out, C, b._lookback, b._timing) == false)
+                     Out.println("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; The beacon bit did not need to run.");
                   }
                 catch (Throwable T)
                   {
@@ -160,7 +161,7 @@ public class Beacon
         Out.println("</PRE>");
         Out.println("<BR>");
         
-        EMailSender.sendMailSys(B._emails, null, null, "Beacon - "+WebBasics.getAppName()+" - "+ip , Str.toString(), false, true);
+        EMailSender.sendMailSys(B._emails, null, null, "Beacon - "+Wanda.getAppName()+" - "+ip , Str.toString(), false, true);
         
     }
 

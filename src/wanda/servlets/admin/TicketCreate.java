@@ -51,6 +51,7 @@ public class TicketCreate extends SimpleServlet
         List<StringStringPair> errors = new ArrayList<StringStringPair>();
         Map<String, String[]> params = new HashMap<String, String[]>(req.getParameterMap());
         params.put("creatorRefnum", new String[] {""+U.getRefnum()});
+        params.put("creatorId", new String[] {""+U.getId()});
         Ticket_Data t = Ticket_Factory.init(params, errors);
 
         req.throwIfErrors(errors);
