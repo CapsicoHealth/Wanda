@@ -80,12 +80,13 @@ public class TicketSystem
               if (ATN.run(new PrintWriter(out), C, 0, null) == true)
                EMailSender.sendMailSys(_notifications._accounts, null, null, "Outstanding Tickets - "+Wanda.getAppName() , out.toString(), false, true);
               C.commit();
-              C = null;
             }
           catch (Exception E)
             {
               Beacon.LOG.error("The Ticketing System's notification beacon failed execution\n", E);
             }
+          if (C != null)
+           C.closeNoThrow();
         };
         service.scheduleAtFixedRate(task, 10, _notifications._scheduleMinutes, TimeUnit.MINUTES);
       }

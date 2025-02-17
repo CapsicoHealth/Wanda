@@ -49,18 +49,18 @@ public class TicketList extends SimpleServlet
         boolean unanswered = req.getParamBoolean("unanswered", false);
 
         ListResults<TicketWaitingView_Data> L = null;
-        
+
         // Is the user a super or ticket admin?
         if (U.isSuperAdmin() == true || CollectionUtil.in(U.getRefnum(), _ADMIN_REFNUMS) == true)
           {
-         if (unanswered == true)
-           L = TicketWaitingView_Factory.lookupWhereUnanswered(C, _ADMIN_REFNUMS, 0, 100);
-         else
-           L = TicketWaitingView_Factory.lookupWhereAll(C, 0, 100);
+            if (unanswered == true)
+              L = TicketWaitingView_Factory.lookupWhereUnanswered(C, _ADMIN_REFNUMS, 0, 100);
+            else
+              L = TicketWaitingView_Factory.lookupWhereAll(C, 0, 100);
           }
         else // regular users can only see their tickets
-           L = TicketWaitingView_Factory.lookupWhereUser(C, U.getRefnum(), 0, 100); 
-                                                                   
+          L = TicketWaitingView_Factory.lookupWhereUser(C, U.getRefnum(), 0, 100);
+
         Res.successJson("", L);
       }
 

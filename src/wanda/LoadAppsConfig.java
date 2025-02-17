@@ -205,7 +205,7 @@ public class LoadAppsConfig
                       A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                       if (A.write(C) == false)
                         {
-                          LogUtil.resetLogLevel();
+//                          LogUtil.resetLogLevel();
                           throw new Exception("Cannot insert/update App record");
                         }
                     }

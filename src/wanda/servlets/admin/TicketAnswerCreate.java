@@ -16,52 +16,49 @@
 
 package wanda.servlets.admin;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
-import tilda.utils.json.JSONPrinter;
+import tilda.utils.pairs.StringStringPair;
 import wanda.data.TicketAnswer_Data;
 import wanda.data.TicketAnswer_Factory;
-import wanda.data.Ticket_Data;
-import wanda.data.Ticket_Factory;
 import wanda.data.User_Data;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.config.Wanda;
 
-@WebServlet("/svc/admin/ticket/conversation")
-public class TicketConversation extends SimpleServlet
+@WebServlet("/svc/admin/ticket/answer/create")
+public class TicketAnswerCreate extends SimpleServlet
   {
+
     private static final long serialVersionUID = -1745307937763620646L;
 
-    public TicketConversation()
+    public TicketAnswerCreate()
       {
-        super(true, false, true);
+        super(true, true, true);
       }
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        long ticketRefnum = req.getParamLong("ticketRefnum", true);
-        
-        Ticket_Data t = Ticket_Factory.lookupByPrimaryKey(ticketRefnum);
-        if (t.read(C) == false)
-         req.addError("ticketRefnum", "Unknown ticket Id");
-        else if (U.isSuperAdmin() == false && t.getCreatorRefnum() != U.getRefnum() && Wanda.isUserTicketAdmin(U.getRefnum()) == false)
-         req.addError("ticketRefnum", "Unknown ticket or you do not have access.");
+          
+        List<StringStringPair> errors = new ArrayList<StringStringPair>();
+        Map<String, String[]> params = new HashMap<String, String[]>(req.getParameterMap());
+        params.put("creatorRefnum", new String[] {""+U.getRefnum()});
+        params.put("creatorId", new String[] {""+U.getId()});
+        TicketAnswer_Data ta = TicketAnswer_Factory.init(params, errors);
 
-        req.throwIfErrors();
-        
-        List<TicketAnswer_Data> L = TicketAnswer_Factory.lookupWhereTicket(C, ticketRefnum, 0, 50);
-        
-        JSONPrinter j = new JSONPrinter();
-        j.addElement("ticket", t, "");
-        j.addElement("answers", L, "");
+        req.throwIfErrors(errors);
 
-        Res.successJson(j);
+        if (ta.write(C) == false)
+         throw new Error("There was an error writing the ticket to the database due to an unknown error.");
+
+        Res.successJson("", ta);
       }
 
   }

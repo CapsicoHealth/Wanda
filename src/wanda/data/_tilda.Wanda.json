@@ -1195,14 +1195,15 @@
      ,{ "sameas":"Ticket.topic"               }
      ,{ "sameas":"Ticket.subject"             }
      ,{ "sameas":"Ticket.lastUpdated"         }
-     ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswer" , "aggregate":"FIRST", "orderBy":["lastUpdated desc"] }
-     ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreator", "aggregate":"FIRST", "orderBy":["lastUpdated desc"] }
+     ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswered"     , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+     ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreatorRefnum", "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+     ,{ "sameas":"TicketAnswer.creatorId"    , "name":"lastCreatorId"    , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
     ]
   ,"queries":[
       { "name": "Unanswered"
         ,"description": "TBD"
         ,"wheres": [
-            { "db": "*", "clause": "lastAnswer is null OR (lastCreator is not null and TILDA.in(lastCreator, ?[]) = false)" }
+            { "db": "*", "clause": "lastAnswered is null OR (lastCreatorRefnum is not null and TILDA.in(lastCreatorRefnum, ?[]) = false)" }
           ]
         ,"orderBy":["lastUpdated desc"]
       }

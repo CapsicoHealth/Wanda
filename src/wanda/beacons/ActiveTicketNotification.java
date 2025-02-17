@@ -59,7 +59,7 @@ public class ActiveTicketNotification implements BeaconBit
         out.println("<TR><TH>Topic</TH><TH>Time</TH></TR>");
         for (TicketWaitingView_Data t : L)
           {
-            ZonedDateTime ZDT = t.getLastAnswer() != null ? t.getLastAnswer() : t.getLastUpdated();
+            ZonedDateTime ZDT = t.getLastAnswered() != null ? t.getLastAnswered() : t.getLastUpdated();
             boolean alert = ZDT.isBefore(SomeMinutesAgo);
             out.println("<TR " + (alert == true ? "background=\"#FFCCCC\"" : "") + ">"
             + "<TD>" + t.getTopic() + "<BR>\n" + t.getSubject() + "</TD>"
