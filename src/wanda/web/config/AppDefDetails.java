@@ -33,8 +33,10 @@ public class AppDefDetails implements JSONable
     /*@formatter:off*/
     @SerializedName("label"        ) public String              _label         = null;
     @SerializedName("home"         ) public String              _home          = null;
-    @SerializedName("services"     ) public List<AppDefService> _services      = null;
     @SerializedName("admin"        ) public String              _admin         = null;
+    @SerializedName("tour"         ) public boolean             _tour          = false;
+    @SerializedName("subApps"      ) public List<SubApp>        _subApps       = null;    
+    @SerializedName("services"     ) public List<AppDefService> _services      = null;
     @SerializedName("policies"     ) public List<AppDefPolicy>  _policies      = null;
     @SerializedName("requiredRoles") public List<String>        _requiredRoles = null; // Still to be worked on
     /*@formatter:on*/
@@ -54,7 +56,9 @@ public class AppDefDetails implements JSONable
         JSONUtil.print(Out, "label", true, this._label);
         JSONUtil.print(Out, "home", false, this._home);
         JSONUtil.print(Out, "admin", false, this._admin);
-        JSONUtil.print(Out, "services", "", false, _services, "  ");
+        JSONUtil.print(Out, "tour", false, this._tour);
+        JSONUtil.print(Out, "subApps" , "", false, this._subApps, "  ");
+        JSONUtil.print(Out, "services", "", false, this._services, "  ");
         Out.write("}");
       }
 

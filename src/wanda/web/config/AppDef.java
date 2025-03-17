@@ -28,11 +28,12 @@ import tilda.utils.json.JSONUtil;
 public class AppDef implements JSONable
   {
     /*@formatter:off*/
-    @SerializedName("path" ) public String _path = null;
     @SerializedName("id"   ) public String _id   = null;
     @SerializedName("label") public String _label= null;
+    @SerializedName("path" ) public String _path = null;
     /*@formatter:on*/
 
+    transient public String _subAppOfId = null;
     transient public AppDefDetails _AppDefDetail = null;
 
     public void toJSON(Writer Out, String JsonExportName, String lead, boolean FullObject)
@@ -59,6 +60,24 @@ public class AppDef implements JSONable
     throws Exception
       {
         throw new Exception("No JSON sync exporter " + JsonExportName + " for PasswordRule.");
+      }
+    
+    public AppDef createSubApp(SubApp sa)
+      {
+        AppDef a = new AppDef();
+        a._id = _id + "_"+sa._id;
+        a._label = sa._label;
+        a._path = _path;
+        a._subAppOfId = _id;
+        a._AppDefDetail = new AppDefDetails();
+        a._AppDefDetail._label = sa._label;
+        a._AppDefDetail._home = sa._home;
+        a._AppDefDetail._admin = sa._admin;
+        a._AppDefDetail._tour = sa._tour;
+        a._AppDefDetail._policies = _AppDefDetail._policies;
+        a._AppDefDetail._requiredRoles = _AppDefDetail._requiredRoles;
+        a._AppDefDetail._services = _AppDefDetail._services;
+        return a;
       }
 
   }

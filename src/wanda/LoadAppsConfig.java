@@ -52,6 +52,7 @@ import wanda.data.Role_Factory;
 import wanda.web.config.AppDef;
 import wanda.web.config.AppDefDetails;
 import wanda.web.config.AppDefService;
+import wanda.web.config.SubApp;
 import wanda.web.config.Wanda;
 import wanda.web.config.WandaDefApps;
 
@@ -139,7 +140,9 @@ public class LoadAppsConfig
             WandaDefApps Apps = gson.fromJson(R, WandaDefApps.class);
 
             if (Apps._apps != null)
-              for (AppDef ad : Apps._apps)
+              for (int i = 0; i < Apps._apps.size(); ++i)
+                {
+                  AppDef ad  = Apps._apps.get(i);
                 if (ad != null)
                   {
                     String srcFile = "wanda.app." + ad._id + ".json";
@@ -152,7 +155,14 @@ public class LoadAppsConfig
                       throw new Exception("The file " + srcFile + " is invalid.");
                     if (TextUtil.isNullOrEmpty(ad._label) == false)
                       ad._AppDefDetail._label = ad._label;
+                    if (ad._AppDefDetail._subApps != null)
+                     for (SubApp sa : ad._AppDefDetail._subApps)
+                       {
+                         AppDef subApp = ad.createSubApp(sa);
+                         Apps._apps.add(++i, subApp);
+                       }
                   }
+                }
 
             if (Apps.validate() == false)
               throw new Exception("The Wanda apps file is invalid.");
@@ -187,6 +197,8 @@ public class LoadAppsConfig
             {
               App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home); // search by path and home
               A.setId(ad._id);
+              if (ad._subAppOfId != null)
+               A.setSubOfId(ad._subAppOfId);
               A.setAdmin(ad._AppDefDetail._admin);
               A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
               A.setNullDeleted();
@@ -195,6 +207,7 @@ public class LoadAppsConfig
                   A = App_Factory.lookupById(ad._id); // search by id
                   A.setPath(ad._path);
                   A.setHome(ad._AppDefDetail._home);
+                  A.setTour(ad._AppDefDetail._tour);
                   A.setAdmin(ad._AppDefDetail._admin);
                   A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                   A.setNullDeleted();
@@ -205,7 +218,7 @@ public class LoadAppsConfig
                       A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                       if (A.write(C) == false)
                         {
-//                          LogUtil.resetLogLevel();
+                          // LogUtil.resetLogLevel();
                           throw new Exception("Cannot insert/update App record");
                         }
                     }

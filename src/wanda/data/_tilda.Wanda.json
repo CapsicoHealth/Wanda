@@ -358,11 +358,13 @@
    ,{ "name": "App"
      ,"description": "App Details, on a per-host basis"
      ,"columns": [
-        ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":false, "description":"App unique Id"   }
-        ,{"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
-        ,{"name":"home"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App home page"   }
-        ,{"name":"admin"   , "type":"STRING"  , "size":250, "nullable":true , "description":"App admin page"  }
-        ,{"name":"services", "type":"JSON[]"  ,             "nullable":true , "description":"Service definition"
+        ,{"name":"id"      , "type":"STRING(250)", "nullable":false, "description":"App unique Id"   }
+        ,{"name":"path"    , "type":"STRING(250)", "nullable":false, "description":"App web path"    }
+        ,{"name":"home"    , "type":"STRING(250)", "nullable":false, "description":"App home page"   }
+        ,{"name":"tour"    , "type":"BOOLEAN"    , "nullable":false, "default":"false", "description":"App home page"   }
+        ,{"name":"subOfId" , "type":"STRING(250)", "nullable":true , "description":"Is this a sub-app, and if so, of what app?"   }
+        ,{"name":"admin"   , "type":"STRING(250)", "nullable":true , "description":"App admin page"  }
+        ,{"name":"services", "type":"JSON[]"     , "nullable":true , "description":"Service definition"
           ,"jsonSchema": {
               "typeName": "ServiceDefinition"
              ,"descr": "Define the services that comprise this app"
@@ -941,6 +943,8 @@
           { "sameas":"App.refnum"        , "name":"appRefnum"   }
          ,{ "sameas":"App.home"          , "name":"appHome"     }
          ,{ "sameas":"App.id"            , "name":"appId"       }
+         ,{ "sameas":"App.tour"          , "name":"appTour"     }
+         ,{ "sameas":"App.subOfId"       , "name":"appSubOfId"  }
          ,{ "sameas":"App.admin"         , "name":"appAdmin"    }
          ,{ "sameas":"App.path"          , "name":"appPath"     }
          ,{ "sameas":"App.services"      , "name":"appServices" }
@@ -951,7 +955,7 @@
        ]
      ,"subWhere": "App.deleted is null and AppConfig.deleted is null"
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appHostName", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive" ] }
+          { "name": "", "columns": ["appRefnum", "appHostName", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appTour", "appSubOfId", "appPath", "appActive" ] }
        ]
      ,"queries": [
           { "name"  :"All",
@@ -988,6 +992,8 @@
           { "sameas":"App.refnum"          , "name":"appRefnum"     }
          ,{ "sameas":"App.home"            , "name":"appHome"       }
          ,{ "sameas":"App.id"              , "name":"appId"         }
+         ,{ "sameas":"App.tour"            , "name":"appTour"       }
+         ,{ "sameas":"App.subOfId"         , "name":"appSubOfId"    }
          ,{ "sameas":"App.admin"           , "name":"appAdmin"      }
          ,{ "sameas":"App.path"            , "name":"appPath"       }
          ,{ "sameas":"AppConfig.hostName"  , "name":"appHostName"   }
@@ -1058,7 +1064,7 @@
        ]
      ,"outputMaps":[
           { "name": ""      , "outTypes":["JSON"], "columns": ["*"] }
-         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
+         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appId", "appTour", "appSubOfId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
        ]       
     }
 
