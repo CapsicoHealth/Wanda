@@ -132,7 +132,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
     public void sendForgotPswdEmail(Connection C)
     throws Exception
       {
-        setPswdResetCode(EncryptionUtil.getToken(12, true));
+        setPswdResetCode(EncryptionUtil.getToken(18, true));
         setPswdResetCreateNow();
         write(C);
         String[] to = { getEmail()
@@ -171,11 +171,11 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
 
-        String password = EncryptionUtil.getToken(16, true);
+        String password = EncryptionUtil.getToken(18, true);
         String salt = EncryptionUtil.getToken(8);
         HashSet<String> _roles = roles==null || roles.length == 0 ? null : new HashSet<String>(Arrays.asList(roles));
         User_Data U = User_Factory.create(email, email, _roles, password, salt);
-        U.setPswdResetCode(EncryptionUtil.getToken(16, true));
+        U.setPswdResetCode(EncryptionUtil.getToken(18, true));
         U.setPswdResetCreateNow();
         U.setInvitedUser(true);
         U.setNullInviteCancelled();
@@ -249,7 +249,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           U.setContentIds(Arrays.asList(contentIds));
         if (isResetPassword)
           {
-            U.setPswdResetCode(EncryptionUtil.getToken(16, true));
+            U.setPswdResetCode(EncryptionUtil.getToken(18, true));
             U.setPswdResetCreateNow();
             U.setInvitedUser(true);
           }
@@ -396,7 +396,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                   throw new BadRequestException("email", "User already exists with email '" + newEmail + "'");
 
                 setEmailUnverified(newEmail);
-                setEmailVerificationCode(EncryptionUtil.getToken(16, true));
+                setEmailVerificationCode(EncryptionUtil.getToken(18, true));
                 sendVerificationEmail(newEmail);
                 write(C);
               }

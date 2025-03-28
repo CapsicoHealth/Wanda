@@ -325,7 +325,7 @@ public class Login extends SimpleServlet
             return true;
           }
 
-        String TokenNew = EncryptionUtil.getToken(20, true);
+        String TokenNew = EncryptionUtil.getToken(18, true);
         Req.setSessionString(SessionUtil.Attributes.EULA_CODE.toString(), TokenNew);
         JSONUtil.startOK(Out, '{');
         JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));

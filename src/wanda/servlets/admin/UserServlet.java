@@ -69,7 +69,7 @@ public class UserServlet extends SimpleServlet
           }
         if (cancelInvite)
           {
-            user.setPswdResetCode(EncryptionUtil.getToken(16, true));
+            user.setPswdResetCode(EncryptionUtil.getToken(18, true));
             user.setInviteCancelled(true);
             user.setLockedNow();
           }
