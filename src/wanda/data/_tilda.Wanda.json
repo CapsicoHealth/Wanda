@@ -554,7 +554,8 @@
             { "name":"user", "srcColumns":["user_rn"], "destObject":"User" }
         ]
       ,"indices":[ 
-         { "name":"user_rn", "columns":["user_rn"], "orderBy":["created desc"], "db": true }
+         { "name":"user_rn"    , "columns":["user_rn"    ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"requestUUID", "columns":["requestUUID"], "orderBy":["created"], "db": true }
        ]
      ,"masks":[
          { "columns":["userEmail", "ipAddress", "parameters"], "mask":"******" }
@@ -700,7 +701,70 @@
          { "name": ""    , "outTypes":["JSON"], "columns": ["*"] }
        ]
      }   
-    
+
+
+
+
+    ,{ "name": "Tour"
+      ,"description": "Represents a tour"
+      ,"columns": [
+           { "name": "id" , "type": "STRING(255)", "nullable": false, "description": "The name of the tour, which will map to the file <tourName>.tour.json" },
+         ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Id", "columns":["id"], "db": true }
+        ]
+     }
+    ,{ "name": "TourPart"
+      ,"description": "Represents a tour part"
+      ,"columns": [
+          { "name": "tourRefnum", "sameAs": "Tour.refnum", "nullable": false, "description": "The tour this part belongs to" }
+         ,{ "name": "id"        , "type"  : "STRING(64)" , "nullable": false, "description": "The id of the tour part for class/folder names of assets" }
+         ,{ "name": "pos"       , "type"  : "SHORT"      , "nullable": false, "description": "The order of the step" }
+         ,{ "name": "title"     , "type"  : "STRING(255)", "nullable": false, "description": "The title of the tour" }
+        ]
+      ,"primary": { "autogen": true }
+      ,"foreign": [
+          { "name":"Tour",  "srcColumns":["tourRefnum"], "destObject":"Tour" }
+        ]
+      ,"indices":[ 
+          { "name":"TourId" , "columns":["tourRefnum", "id"], "db": true }
+         ,{ "name":"TourPos", "columns":["tourRefnum", "pos"], "db": true }
+        ]
+     }
+     
+    ,{ "name": "TourStep"
+      ,"description": "Represents a step in a tour"
+      ,"columns": [
+          { "name": "tourPartRefnum", "sameAs": "TourPart.refnum", "nullable": false, "description": "The tour part this step belongs to" }
+         ,{ "name": "id"            , "type"  : "STRING( 64)"    , "nullable": false, "description": "The id of the step, for class/folder names of assets" }
+         ,{ "name": "pos"           , "type"  : "SHORT"          , "nullable": false, "description": "The order of the step" }
+         ,{ "name": "title"         , "type"  : "STRING(255)"    , "nullable": false, "description": "The title of the step" }
+         ,{ "name": "actions"       , "type"  : "JSON[]"         , "nullable": true , "description": "List of actions"
+                                    , "jsonSchema": { "typeName": "TourStepAction" 
+                                                     ,"descr": "An action"
+                                                     ,"fields": [
+                                                         {"name": "elementId", "type": "STRING", "description":"The id of the target element" }
+                                                        ,{"name": "event"    , "type": "STRING", "description":"The event fired" }
+                                                        ,{"name": "timeout"  , "type": "STRING", "description":"The timeout before going to the next step" }
+                                                       ]
+                                                    }
+          }
+         ,{ "name": "actionsUndo", "type": "JSON[]"    , "nullable": true, "description": "List of undo actions"
+                                 , "jsonSchema": { "typeName": "TourStepAction" 
+                                                 }
+          }
+        ]
+      ,"primary": { "autogen": true }
+      ,"foreign": [
+          { "name":"TourPart",  "srcColumns":["tourPartRefnum"], "destObject":"TourPart" }
+        ]
+      ,"indices":[ 
+          { "name":"TourStepId" , "columns":["tourPartRefnum", "id"], "db": true }
+         ,{ "name":"TourStepPos", "columns":["tourPartRefnum", "pos"], "db": true }
+        ]
+     }
+     
  ]
   
  ,"views":[
@@ -1131,9 +1195,9 @@
           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
        ]       
     }
-   ,{ "name":"AccessLogHourlyView",
-      "description":"View that has Tenant + TenantUser",
-      "columns":[
+   ,{ "name":"AccessLogHourlyView"
+     ,"description":"View that has Tenant + TenantUser"
+     ,"columns":[
           { "sameAs":"AccessLog.created"    , "name":"hour"                  , "expression":"date_trunc('hour', ?)", "type":"DATETIME" }
          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
@@ -1161,7 +1225,78 @@
           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
        ]       
     }
+
+
+
+   ,{ "name":"AccessLogSessionView"
+     ,"description":"View that has Tenant + TenantUser"
+     ,"columns":[
+         { "sameAs":"AccessLog.requestUUID", "name":"sessionUUID"  }
+        ,{ "sameAs":"AccessLog.user_rn"    , "aggregate":"MAX" } 
+        ,{ "sameAs":"AccessLog.userEmail"  , "aggregate":"MAX" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"sessionId"   , "aggregate":"ROW_NUM", "orderBy":["sessionUUID"]  }
+        ,{ "sameAs":"AccessLog.created"    , "name":"sessionStart", "aggregate":"FIRST"  , "orderBy":["created"]    }
+        ,{ "sameAs":"AccessLog.created"    , "name":"sessionEnd"  , "aggregate":"LAST"   , "orderBy":["created"] }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"requestCount", "aggregate":"COUNT"  }
+       ]
+     ,"outputMaps":[
+         { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
     
+    
+
+   ,{ "name":"AccessLogHistoryView",
+      "description":"View that has Tenant + TenantUser",
+      "columns":[
+          { "sameAs":"AccessLogSessionView.*", "excludes":["sessionUUID"]    } 
+         ,{ "sameAs":"AccessLog.created"    , "name": "requestDT"    }
+         ,{ "sameAs":"AccessLog.servlet"    }
+         ,{ "sameAs":"AccessLog.login"      }
+         ,{ "sameAs":"AccessLog.servlet"    , "name":"type", "expression":"case when servlet like '%.jsp' then 'P' else 'C' end", "type":"CHAR" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"requestNumber", "aggregate":"ROW_NUM", "partitionBy":["sessionUUID"], "orderBy":["created"]    }
+        ]
+      ,"joins": [
+          { "object": "AccessLog", "joinType": "LEFT", "on": [ { "db":"*", "clause":"AccessLog.requestUUID = AccessLogSessionView.sessionUUID" } ] }
+        ]
+      ,"subWhere":"AccessLog.servlet not in ('/svc/config', '/svc/MyTenantList', '/apps/home.jsp', '/svc/user/token') and AccessLog.responseCode not in ('302','401','404')"
+      ,"formulaColumns":[
+          { "name": "sessionDurationSeconds"
+           ,"type": "INTEGER"
+           ,"formula":[ 
+               "EXTRACT(EPOCH FROM (sessionEnd - sessionStart))"
+             ]
+           ,"title": "Duration in seconds of the session"
+           ,"description":[
+               "The duration in seconds of the session, i.e., end-start."
+             ]
+          }
+         ,{ "name": "sessionDurationSoFarSeconds"
+           ,"type": "INTEGER"
+           ,"formula":[ 
+               "EXTRACT(EPOCH FROM (requestDT - sessionStart))"
+             ]
+           ,"title": "Duration in seconds of the session so far"
+           ,"description":[
+               "The duration in seconds of the session so far at the time of this request, i.e., request-start."
+             ]
+          }
+        ]
+      ,"queries": [
+          { "name": "User"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "user_rn = ?()" }
+             ]
+           ,"orderBy":["sessionStart desc", "sessionUUID", "requestDT"]
+          }
+        ]
+      ,"outputMaps":[
+           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+        ]       
+     }
+    
+         
    ,{ "name":"TenantJobView",
       "description":"User Job + Tenant",
       "columns":[
@@ -1192,46 +1327,83 @@
        ]
     }
 
-,{ "name":"TicketWaitingView",
-   "description":"View of tickets waiting a response",
-   "columns":[
-      { "sameas":"Ticket.refnum"              }
-     ,{ "sameas":"Ticket.creatorRefnum"       }
-     ,{ "sameas":"Ticket.creatorId"           }
-     ,{ "sameas":"Ticket.topic"               }
-     ,{ "sameas":"Ticket.subject"             }
-     ,{ "sameas":"Ticket.lastUpdated"         }
-     ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswered"     , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
-     ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreatorRefnum", "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
-     ,{ "sameas":"TicketAnswer.creatorId"    , "name":"lastCreatorId"    , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
-    ]
-  ,"queries":[
-      { "name": "Unanswered"
-        ,"description": "TBD"
-        ,"wheres": [
-            { "db": "*", "clause": "lastAnswered is null OR (lastCreatorRefnum is not null and TILDA.in(lastCreatorRefnum, ?[]) = false)" }
-          ]
-        ,"orderBy":["lastUpdated desc"]
-      }
-     ,{ "name": "User"
-       ,"description": "TBD"
-       ,"wheres": [
-           { "db": "*", "clause": "creatorRefnum=?()" }
+    ,{ "name":"TicketWaitingView",
+       "description":"View of tickets waiting a response",
+       "columns":[
+          { "sameas":"Ticket.refnum"              }
+         ,{ "sameas":"Ticket.creatorRefnum"       }
+         ,{ "sameas":"Ticket.creatorId"           }
+         ,{ "sameas":"Ticket.topic"               }
+         ,{ "sameas":"Ticket.subject"             }
+         ,{ "sameas":"Ticket.lastUpdated"         }
+         ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswered"     , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+         ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreatorRefnum", "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+         ,{ "sameas":"TicketAnswer.creatorId"    , "name":"lastCreatorId"    , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+        ]
+      ,"queries":[
+          { "name": "Unanswered"
+            ,"description": "TBD"
+            ,"wheres": [
+                { "db": "*", "clause": "lastAnswered is null OR (lastCreatorRefnum is not null and TILDA.in(lastCreatorRefnum, ?[]) = false)" }
+              ]
+            ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name": "User"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "creatorRefnum=?()" }
+             ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name": "All"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "1=1" }
+             ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+        ]
+      ,"json": [
+           { "name": "", "columns": [ "*" ] }
+        ]
+     }
+     
+     ,{ "name":"TourView",
+        "description":"View of tickets waiting a response",
+        "columns":[
+            { "sameAs":"Tour.refnum"         , "name":"tourRefnum"          }
+           ,{ "sameAs":"Tour.id"             , "name":"tourId"              }
+           ,{ "sameAs":"TourPart.refnum"     , "name":"tourPartRefnum"      }
+           ,{ "sameAs":"TourPart.id"         , "name":"tourPartId"          }
+           ,{ "sameAs":"TourPart.pos"        , "name":"tourPartPos"         }
+           ,{ "sameAs":"TourPart.title"      , "name":"tourPartTitle"       }
+           ,{ "sameAs":"TourStep.refnum"     , "name":"tourStepRefnum"      }
+           ,{ "sameAs":"TourStep.id"         , "name":"tourStepId"          }
+           ,{ "sameAs":"TourStep.pos"        , "name":"tourStepPos"         }
+           ,{ "sameAs":"TourStep.title"      , "name":"tourStepTitle"       }
+           ,{ "sameAs":"TourStep.actions"    , "name":"tourStepActions"     }
+           ,{ "sameAs":"TourStep.actionsUndo", "name":"tourStepActionsUndo" }
          ]
-       ,"orderBy":["lastUpdated desc"]
-      }
-     ,{ "name": "All"
-       ,"description": "TBD"
-       ,"wheres": [
-           { "db": "*", "clause": "1=1" }
+       ,"queries":[
+           { "name": "Tour"
+             ,"description": "TBD"
+             ,"wheres": [
+                 { "db": "*", "clause": "tourRefnum=?()" }
+               ]
+             ,"orderBy":["tourPartPos", "tourStepPos"]
+           }
+          ,{ "name": "TourPart"
+            ,"description": "TBD"
+            ,"wheres": [
+                { "db": "*", "clause": "tourPartRefnum=?()" }
+              ]
+            ,"orderBy":["tourPartPos", "tourStepPos"]
+           }
          ]
-       ,"orderBy":["lastUpdated desc"]
+       ,"json": [
+            { "name": "", "columns": [ "*" ] }
+         ]
       }
-    ]
-  ,"json": [
-       { "name": "", "columns": [ "*" ] }
-    ]
- }
   ]
 
  ,"migrations":{
