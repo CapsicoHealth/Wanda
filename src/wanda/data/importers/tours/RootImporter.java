@@ -27,6 +27,7 @@ import tilda.Importer;
 import tilda.db.Connection;
 import wanda.data.TourPart_Data;
 import wanda.data.TourStep_Data;
+import wanda.data.TourStep_Factory;
 import wanda.data.Tour_Data;
 import wanda.data.Tour_Factory;
 
@@ -62,6 +63,7 @@ public class RootImporter implements Importer
               throw new Exception("Cannot upsert Part '" + p.getId() + "' for Tour '" + _id + "'.");
             short stepPos = 0;
             Set<String> stepIds = new HashSet<String>();
+            TourStep_Factory.shiftOutSteps(C, p.getRefnum());
             for (TourStep_Data s : p._steps)
               {
                 if (s == null)
@@ -71,9 +73,11 @@ public class RootImporter implements Importer
                 ++Count;
                 s.setTourPartRefnum(p.getRefnum());
                 s.setPos(++stepPos);
+                // It is possible for parts to be moved around, so we might need to shuffle things around.
                 if (s.upsert(C) == false)
                   throw new Exception("Cannot upsert Step '"+s.getId()+"' for Part '" + p.getId() + "', for Tour '" + _id + "'.");
               }
+             TourStep_Factory.cleanOldSteps(C, p.getRefnum());
           }
 
         return Count;
