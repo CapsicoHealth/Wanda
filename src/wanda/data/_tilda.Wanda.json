@@ -534,8 +534,7 @@
     }
 
     
-   ,{
-    	"name": "AccessLog",
+   ,{	"name": "AccessLog",
     	"description": "Logs HTTP URL, Params & Response",
     	"columns": [
            { "name": "requestUUID"   , "type": "STRING", "size": 50, "nullable": false, "description": "HTTP Request UUID" }
@@ -548,6 +547,7 @@
           ,{ "name": "responseStatus", "type": "STRING", "size": 2048                 , "description": "HTTP Response status" }
           ,{ "name": "parameters"    , "type": "STRING", "size": 262144               , "description": "parameters sent with http request" }
           ,{ "name": "login"         , "type": "BOOLEAN"                              , "description": "Login status: null=not login, true=successfull login, false=failed login" }
+          ,{ "name": "durationNanos" , "type": "LONG"                                 , "description": "Duration in nanoseconds for the request" }
     	],
       "primary": { "autogen": true },
         "foreign": [
@@ -1244,6 +1244,44 @@
        ]       
     }
     
+   ,{ "name":"AccessLogPerformanceDayView"
+     ,"description":"View of logs geared towards performance analysis per day per servlet"
+     ,"columns":[
+         { "sameAs":"AccessLog.servlet"      , "name":"servlet"  }
+        ,{ "sameAs":"AccessLog.created"      , "name":"day"         , "expression":"DATE_TRUNC('day',?)::DATE", "type":"DATE" } 
+        ,{ "sameAs":"AccessLog.refnum"       , "name":"requestCount", "aggregate":"COUNT" }
+        ,{ "sameAs":"AccessLog.durationNanos", "name":"minNanos"    , "aggregate":"MIN", "formulaOnly":true }
+        ,{ "sameAs":"AccessLog.durationNanos", "name":"avgNanos"    , "aggregate":"AVG", "formulaOnly":true }
+        ,{ "sameAs":"AccessLog.durationNanos", "name":"maxNanos"    , "aggregate":"MAX", "formulaOnly":true }
+       ]
+     ,"subWhere":"AccessLog.servlet not in ('/apps/home.jsp', '/svc/user/token') and AccessLog.responseCode not in ('302','401','404')"
+     ,"formulaColumns":[
+           { "name": "minMillis", "type": "LONG"
+            ,"formula":[ "minNanos/1000000" ]
+            ,"title": "Minimum duration"
+            ,"description":[
+                "The minimum duration in milliseconds of the requests."
+              ]
+           }
+          ,{ "name": "avgMillis", "type": "LONG"
+            ,"formula":[ "avgNanos/1000000" ]
+            ,"title": "Average duration"
+            ,"description":[
+                "The average duration in milliseconds of the requests."
+              ]
+           }
+          ,{ "name": "maxMillis", "type": "LONG"
+            ,"formula":[ "maxNanos/1000000" ]
+            ,"title": "Maximum duration"
+            ,"description":[
+                "The maximum duration in milliseconds of the requests."
+              ]
+           }
+         ]
+     ,"outputMaps":[
+         { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
     
 
    ,{ "name":"AccessLogHistoryView",
