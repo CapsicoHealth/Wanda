@@ -42,6 +42,7 @@ import wanda.data.AppView_Data;
 import wanda.data.AppView_Factory;
 import wanda.data.Config_Data;
 import wanda.data.Config_Factory;
+import wanda.web.RequestUtil;
 
 
 public class Wanda
@@ -404,6 +405,7 @@ public class Wanda
 
     /**
      * Returns true if the user is listed as a ticket admin
+     * 
      * @param refnum
      * @return
      */
@@ -413,6 +415,33 @@ public class Wanda
           if (r == refnum)
             return true;
         return false;
+      }
+
+    public static boolean validateApiKey(RequestUtil request, String clientId, String apiKey)
+    throws Exception
+      {
+        if (TextUtil.isNullOrEmpty(clientId) == true || TextUtil.isNullOrEmpty(apiKey) == true)
+          throw new Exception("validateApiKey: clientID and/or apikey is/are null or empty.");
+
+        if (_Config._loginSystem != null)
+          {
+            String[] IPs = _Config._loginSystem.checkApiKeyAllowedSourceIps(clientId, apiKey);
+            if (IPs == null || IPs.length == 0)
+              {
+                LOG.error("No API key or allowed source IPs found for clientId: " + clientId);
+                return false;
+              }
+            String remoteIp = request.getRemoteAddr();
+            for (String ip : IPs)
+              {
+                if (ip.endsWith("*") == true)
+                  ip = ip.substring(0, ip.length() - 1);
+                if (remoteIp.startsWith(ip) == true)
+                  return true;
+              }
+          }
+        return false;
+
       }
 
   }

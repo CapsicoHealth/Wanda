@@ -319,6 +319,9 @@ public class WandaDefConfig
         
         _ticketSystem.validate(C);
         _ticketSystem.launch();
+        
+        if (_loginSystem.validate() == false)
+         OK = false;
 
         return OK;
       }

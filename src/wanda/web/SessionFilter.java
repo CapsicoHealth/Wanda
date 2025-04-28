@@ -80,32 +80,28 @@ public class SessionFilter implements jakarta.servlet.Filter
     throws ServletException
       {
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Starting web app initialization for '"+arg.getServletContext().getServletContextName()+"'\n"
-                +"***  Loading Tilda and Connections configurations"
-                );
+        + "*************************************************************************************************************************************\n"
+        + "***  Starting web app initialization for '" + arg.getServletContext().getServletContextName() + "'\n"
+        + "***  Loading Tilda and Connections configurations");
         ConnectionPool.autoInit();
 
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Loading Wanda app Config"
-                );
+        + "*************************************************************************************************************************************\n"
+        + "***  Loading Wanda app Config");
         // may fail in a sub-context where app config files are not available, i.e., an admin context vs a main-app context.
         LoadAppsConfig._COMMAND_LINE_RUN = false;
         LoadAppsConfig.main(null);
 
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Initializing Wanda environment"
-                );
+        + "*************************************************************************************************************************************\n"
+        + "***  Initializing Wanda environment");
         Wanda.autoInit();
-        
+
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Completed web app initialization for '"+arg.getServletContext().getServletContextName()+"'\n"
-                +"*************************************************************************************************************************************\n"
-                +"\n\n\n\n\n\n"
-                );
+        + "*************************************************************************************************************************************\n"
+        + "***  Completed web app initialization for '" + arg.getServletContext().getServletContextName() + "'\n"
+        + "*************************************************************************************************************************************\n"
+        + "\n\n\n\n\n\n");
       }
 
     @Override
@@ -252,22 +248,34 @@ public class SessionFilter implements jakarta.servlet.Filter
               }
             Request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
 
-            // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path.
-            if (isAuthPassthrough == false && isMasterPath == false && mainUser != null)
+            // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path or an apikey service
+            if (isAuthPassthrough == false && isMasterPath == false)
               {
-                if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
-                 {
-                   LOG.info("User is a guest and is not cleared for this url ("+Request.getServletPath()+") or the url is not listed as guest-allowed in the application definition information.");
-                   Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
-                   throw new ServletException("Unauthorized guest access as per app service configuration");
-                 }
-                // Must have at least one ROLE
-                String[] roles = mainUser.getRolesAsArray();
-                if (roles == null || roles.length == 0)
+                if (mainUser == null) // No user: check for apiKey access
                   {
-                    LOG.info("User is role-less.");
-                    Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
-                    throw new ServletException("Unauthorized access as user is role-less");
+                    if (isApiKeyAccess(Request) == false)
+                      {
+                        LOG.info("Anonymous access without apiKey set up.");
+                        Response.sendError(HttpStatus.BadRequest._Code, "Unauthenticated session");
+                        throw new ServletException("Unauthenticated session");
+                      }
+                  }
+                else if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
+                  {
+                    LOG.info("User is a guest and is not cleared for this url (" + Request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
+                    Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
+                    throw new ServletException("Unauthorized guest access as per app service configuration");
+                  }
+                else
+                  {
+                    // Must have at least one ROLE
+                    String[] roles = mainUser.getRolesAsArray();
+                    if (roles == null || roles.length == 0)
+                      {
+                        LOG.info("User is role-less.");
+                        Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
+                        throw new ServletException("Unauthorized access as user is role-less");
+                      }
                   }
               }
 
@@ -298,7 +306,9 @@ public class SessionFilter implements jakarta.servlet.Filter
             + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(AL.getDurationNanos()) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
             + "   ********************************************************************************************************************************************");
           }
-        catch (Throwable T)
+        catch (
+
+        Throwable T)
           {
             LOG.error(AnsiUtil.NEGATIVE + ">>>>>>>>>>>>>>>" + AnsiUtil.NEGATIVE_OFF + "  R E Q U E S T  #" + (AL == null ? "NULL" : AL.getRefnum()) + "  F A I L E D  " + AnsiUtil.NEGATIVE + "<<<<<<<<<<<<<<<" + AnsiUtil.NEGATIVE_OFF);
             LOG.error("**    in " + DurationUtil.printDurationMilliSeconds(System.nanoTime() - T0) + ".");
@@ -365,6 +375,17 @@ public class SessionFilter implements jakarta.servlet.Filter
               }
             LOG.info(SystemValues.NEWLINEx4);
           }
+      }
+
+    private static boolean isApiKeyAccess(HttpServletRequest request)
+      {
+        String servletPath = request.getServletPath();
+        for (AppView_Data app : Wanda.getApps())
+          if (app.getAppServices() != null)
+            for (ServiceDefinition sd : app.getAppServices())
+              if (servletPath.equals(sd._path) == true && sd._apiKey == true)
+                return true;
+        return false;
       }
 
     private static void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL, HttpServletResponse Response, Throwable T, boolean skipRollback)
@@ -605,14 +626,15 @@ public class SessionFilter implements jakarta.servlet.Filter
     static private Cache<Long, String[]> _USER_APPS_CACHE = CacheBuilder.newBuilder().maximumSize(200).expireAfterWrite(5, TimeUnit.MINUTES).build();
 
     public static void evictUserFromAppCache(long userRefnum)
-     {
-       _USER_APPS_CACHE.invalidate(userRefnum);
-     }
+      {
+        _USER_APPS_CACHE.invalidate(userRefnum);
+      }
+
     public static void clearAppCache()
       {
         _USER_APPS_CACHE.invalidateAll();
       }
-    
+
     /**
      * Checks whether an incoming .jsp URL is to an app authorized for the user
      * 

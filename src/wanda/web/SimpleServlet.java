@@ -48,30 +48,59 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
   {
     protected static final Logger LOG = LogManager.getLogger(SimpleServlet.class.getName());
 
+    /**
+     * Creates a new SimpleServlet instance with defaults for postOnly=false, guestAllowed=false and apiKey=false. 
+     * @param mustAuthenticate
+     */
     public SimpleServlet(boolean mustAuthenticate)
       {
-        this(mustAuthenticate, false, false);
+        this(mustAuthenticate, false, false, null);
       }
 
+    /**
+     * Creates a new SimpleServlet instance with defaults for guestAllowed=false and apiKey=false. 
+     * @param mustAuthenticate
+     */
     public SimpleServlet(boolean mustAuthenticate, boolean postOnly)
       {
-        this(mustAuthenticate, postOnly, false);
+        this(mustAuthenticate, postOnly, false, null);
       }
 
+    /**
+     * Creates a new SimpleServlet instance with defaults for apiKey=false. 
+     * @param mustAuthenticate
+     */
     public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed)
       {
-        this(mustAuthenticate, postOnly, guestAllowed, false);
+        this(mustAuthenticate, postOnly, guestAllowed, null);
+      }
+    
+    public static enum APIKeyEnum
+      {
+      ALLOWED;
       }
 
-    public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed, boolean skipTransactionSetup)
+    /**
+     * Creates a new SimpleServlet instance. 
+     * @param mustAuthenticate if true, the servlet will only be accessible to authenticated users.
+     * @param postOnly if true, the servlet will only accept POST requests.
+     * @param guestAllowed if true, the servlet will accept requests from users with the guest role.
+     * @param apiKey if set to APIKeyEnum.ALLOWED, the servlet will accept unauthenticated requests with a valid API Key
+     */
+    public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed, APIKeyEnum apiKey)
       {
         super(postOnly);
         _mustAuth = mustAuthenticate;
         _guestAllowed = guestAllowed;
+        _apiKey = apiKey != null && apiKey == APIKeyEnum.ALLOWED;
       }
+    
 
     protected final boolean _mustAuth;
     protected final boolean _guestAllowed;
+    protected final boolean _apiKey;
+    
+    protected final static String BEARER = "Bearer ";
 
     @Override
     protected void justDo(RequestUtil request, ResponseUtil response)
@@ -83,9 +112,21 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
           throw new SimpleServletException(HttpStatus.InternalServerError, "No DB connection found in the request's attributes!");
 
         U = (User_Data) request.getAttribute(RequestUtil.Attributes.USER.toString());
-        if (U == null && _mustAuth == true)
+
+        if (U==null && _apiKey == true)
+          {
+            String apiKey = request.getHeader("Authorization"); // "Bearer <apiKey>"
+            if (apiKey == null || apiKey.startsWith(BEARER) == false)
+             throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+            String[] parts = apiKey.substring(BEARER.length()).trim().split("\\s+");
+            if (parts.length != 2)
+             throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+            if (Wanda.validateApiKey(request, parts[0], parts[1]) == false)
+             throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+          }
+        else if (U == null && _mustAuth == true)
           throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
-        if (U != null && _mustAuth == true && U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
+        else if (U != null && _mustAuth == true && U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
           throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per servlet configuration");
 
         justDo(request, response, C, U);

@@ -29,7 +29,8 @@ public class AppDefService implements JSONable
   {
     /*@formatter:off*/
     @SerializedName("path" )  public String  _path   = null;
-    @SerializedName("access") public String _access  = null;
+    @SerializedName("access") public String  _access = null;
+    @SerializedName("apiKey") public boolean _apiKey = false;
     /*@formatter:on*/
 
     @Override
@@ -46,6 +47,7 @@ public class AppDefService implements JSONable
         Out.write("{");
         JSONUtil.print(Out, "path"  , true , this._path);
         JSONUtil.print(Out, "access", false, this._access);
+        JSONUtil.print(Out, "apiKey", false, this._apiKey);
         Out.write("}");
       }
     

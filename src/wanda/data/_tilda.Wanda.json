@@ -369,9 +369,10 @@
               "typeName": "ServiceDefinition"
              ,"descr": "Define the services that comprise this app"
              ,"fields": [
-                 {"name": "path"  , "type": "STRING", "description":"The path for the service" }
-                ,{"name": "access", "type": "STRING", "description":"The access level required for the servvice: 'AA' (for app admin), GST (for guest), 'A' (for authenticated) or null (for general access). Must match the implementation of the servlet for the service if applicable." }
-                ]
+                 {"name": "path"  , "type": "STRING" , "description":"The path for the service" }
+                ,{"name": "access", "type": "STRING" , "description":"The access level required for the service: 'AA' (for app admin), GST (for guest), 'A' (for authenticated) or null (for general access). Must match the implementation of the servlet for the service if applicable." }
+                ,{"name": "apiKey", "type": "BOOLEAN", "description":"Whether this service can be accessed with an API key." }
+               ]
              ,"validation": {
                  "rule": ["path IS NOT NOE and (access is null or access in ('AA', 'GST', 'A'))"
                          ]
