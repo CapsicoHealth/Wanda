@@ -16,13 +16,192 @@
 
 package wanda.web.config;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.google.gson.annotations.SerializedName;
+
+import tilda.utils.TextUtil;
+import wanda.web.LoginSyncService;
 
 public class LoginSystem
   {
     /*@formatter:off*/
-    @SerializedName("userSyncServices"         ) public String[]     _userSyncServices   = null  ;
-    @SerializedName("contentDefinitionServices") public String[]     _contentDefinitionServices   = null  ;
-    @SerializedName("notifications"            ) public Notification _notifications      = null  ;
+    @SerializedName("ssoConfigs"               ) public List<SSOConfig> _ssoConfigs  = new ArrayList<SSOConfig>();
+    @SerializedName("apiKeys"                  ) public List<ApiKey>    _apiKeys  = new ArrayList<ApiKey>();
+    @SerializedName("userSyncServices"         ) public String[]        _userSyncServices   = null  ;
+    @SerializedName("contentDefinitionServices") public String[]        _contentDefinitionServices   = null  ;
+    @SerializedName("notifications"            ) public Notification    _notifications      = null  ;
     /*@formatter:on*/
+
+    protected transient List<LoginSyncService> _userSyncServiceClasses    = new ArrayList<LoginSyncService>();
+
+    public boolean validate()
+      {
+        boolean OK = true;
+        if (_ssoConfigs != null)
+          OK = validateSSOConfigs(OK);
+
+        if (_apiKeys != null)
+          OK = validateApiKeys(OK);
+
+        if (_userSyncServices != null)
+          OK = validateUserSyncServices(OK);
+
+        return OK;
+      }
+
+    private boolean validateApiKeys(boolean OK)
+      {
+        Set<String> ids = new HashSet<String>();
+        Set<String> keys = new HashSet<String>();
+        for (ApiKey apiKey : _apiKeys)
+          if (apiKey != null)
+            {
+              if (TextUtil.isNullOrEmpty(apiKey._id) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an apiKey without an id value.");
+                  OK = false;
+                }
+              else if (ids.add(apiKey._id) == false)
+                {
+                  Wanda.LOG.error("The loginSystem entry defines an apiKey '" + apiKey._id + "' multiple times.");
+                  OK = false;
+                }
+
+              if (TextUtil.isNullOrEmpty(apiKey._key) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an apiKey '" + apiKey._id + "' without a key value.");
+                  OK = false;
+                }
+              else if (keys.add(apiKey._key) == false)
+                {
+                  Wanda.LOG.error("The loginSystem entry defines an apiKey '" + apiKey._id + "' with the key '" + apiKey._key + "' which is being used multiple times.");
+                  OK = false;
+                }
+
+              if (apiKey._sourceIps == null || apiKey._sourceIps.length == 0)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an apiKey '" + apiKey._id + "' without a sourceIps value.");
+                  OK = false;
+                }
+              else
+                {
+                  for (String ip : apiKey._sourceIps)
+                    {
+                      if (TextUtil.isNullOrEmpty(ip) == true)
+                        {
+                          Wanda.LOG.error("The loginSystem entry has an apiKey '" + apiKey._id + "' with a sourceIps value which is empty.");
+                          OK = false;
+                        }
+                      if (ip.equals("*") == true && apiKey._sourceIps.length > 1)
+                        {
+                          Wanda.LOG.error("The loginSystem entry has an apiKey '" + apiKey._id + "' with a sourceIps value which is '*' and another value.");
+                          OK = false;
+                        }
+                      int pos = ip.indexOf('*');
+                      if (pos >= 0 && pos != ip.length() - 1)
+                        {
+                          Wanda.LOG.error("The loginSystem entry has an apiKey '" + apiKey._id + "' with a sourceIps value which contains a '*' not at the end.");
+                          OK = false;
+                        }
+                    }
+                }
+            }
+        return OK;
+      }
+
+    protected boolean validateUserSyncServices(boolean OK)
+      {
+        Set<String> names = new HashSet<String>();
+        for (String uss : _userSyncServices)
+          if (TextUtil.isNullOrEmpty(uss) == false)
+            try
+              {
+                if (names.add(uss) == false)
+                  {
+                    Wanda.LOG.error("The loginSystem entry defines a userSyncService class '" + uss + "' multiple times.");
+                    OK = false;
+                  }
+                else
+                  {
+                    Class<LoginSyncService> c = (Class<LoginSyncService>) Class.forName(uss);
+                    LoginSyncService LSS = c.getConstructor().newInstance();
+                    _userSyncServiceClasses.add(LSS);
+                  }
+              }
+            catch (Throwable T)
+              {
+                Wanda.LOG.error("The loginSystem entry defines a userSyncService class '" + uss + "' which cannot be resolved to a class.");
+                OK = false;
+              }
+        return OK;
+      }
+
+    protected boolean validateSSOConfigs(boolean OK)
+      {
+        Set<String> ids = new HashSet<String>();
+        Set<String> files = new HashSet<String>();
+        for (SSOConfig conf : _ssoConfigs)
+          if (conf != null)
+            {
+              if (TextUtil.isNullOrEmpty(conf._id) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig without an id value.");
+                  OK = false;
+                }
+              else if (ids.add(conf._id) == false)
+                {
+                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' multiple times.");
+                  OK = false;
+                }
+
+              if (TextUtil.isNullOrEmpty(conf._configFile) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a configFile value.");
+                  OK = false;
+                }
+              else if (files.add(conf._configFile) == false)
+                {
+                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with the config file '" + conf._configFile + "' which is being used multiple times.");
+                  OK = false;
+                }
+              else
+                {
+                  File f = new File(conf._configFile);
+                  if (f.exists() == false)
+                    {
+                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a config file defined as '" + conf._configFile + "' which cannot be found.");
+                      OK = false;
+                    }
+                }
+            }
+        return OK;
+      }
+
+    public List<LoginSyncService> getUserSyncServiceClasses()
+      {
+        return _userSyncServiceClasses;
+      }
+
+    public String getSsoConfigFile(String id)
+      {
+        if (_ssoConfigs != null)
+          for (SSOConfig conf : _ssoConfigs)
+            if (conf != null && conf._id.equals(id) == true)
+              return conf._configFile;
+        return null;
+      }
+
+    public String[] checkApiKeyAllowedSourceIps(String id, String key)
+      {
+        if (_apiKeys != null)
+          for (ApiKey apiKey : _apiKeys)
+            if (apiKey != null && apiKey._id.equals(id) == true && apiKey._key.equals(key) == true)
+              return apiKey._sourceIps;
+        return null;
+      }
   }

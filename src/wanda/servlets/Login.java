@@ -17,6 +17,7 @@
 package wanda.servlets;
 
 import java.io.PrintWriter;
+import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -30,6 +31,7 @@ import wanda.data.TenantView_Data;
 import wanda.data.TenantView_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
+import wanda.saml.ConfigSAML;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.servlets.helpers.UserTenantSync;
 import wanda.web.config.Eula;
@@ -120,25 +122,25 @@ public class Login extends SimpleServlet
 
         loginCallback.onLoginSuccess(u);
       }
-    
+
     protected static void doUserSyncServices(Connection C, User_Data U)
       {
-        if (Wanda.getLoginSystem() != null && Wanda.getLoginSystem()._userSyncServices != null)
+        if (Wanda.getLoginSystem() != null)
           {
-            String[] userSyncServices = Wanda.getLoginSystem()._userSyncServices;
-            for (String uss : userSyncServices)
-              try
-                {
-                  Class<LoginSyncService> c = (Class<LoginSyncService>) Class.forName(uss);
-                  c.getConstructor().newInstance().syncUser(C, U);
-                }
-              catch (Throwable T)
-                {
-                  LOG.warn("Cannot follow user sync process off of '" + uss + "'.");
-                }
+            List<LoginSyncService> L = Wanda.getLoginSystem().getUserSyncServiceClasses();
+            for (LoginSyncService lss : L)
+              if (lss != null)
+                try
+                  {
+                    lss.syncUser(C, U);
+                  }
+                catch (Throwable T)
+                  {
+                    LOG.warn("Cannot follow user sync process off of '" + lss.getClass().getCanonicalName() + "'.");
+                  }
           }
       }
-    
+
 
     @Override
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
@@ -148,6 +150,13 @@ public class Login extends SimpleServlet
         long TenantUserRefnum = Req.getParamLong("tenantUserRefnum", false);
         String eulaToken = Req.getParamString("eulaToken", false);
         int accept = Req.getParamInt("accept", false);
+        String ssoId = Req.getParamString("ssoId", false);
+
+        if (TextUtil.isNullOrEmpty(ssoId) == false)
+          {
+            ConfigSAML.init(ssoId);
+            return;
+          }
 
         if (TextUtil.isNullOrEmpty(eulaToken) == false && U != null)
           { // Eula step
