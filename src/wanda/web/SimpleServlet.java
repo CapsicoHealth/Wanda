@@ -100,7 +100,7 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
     protected final boolean _guestAllowed;
     protected final boolean _apiKey;
     
-    protected final static String BEARER = "Bearer ";
+    protected final static String _BEARER = "Bearer ";
 
     @Override
     protected void justDo(RequestUtil request, ResponseUtil response)
@@ -116,13 +116,14 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
         if (U==null && _apiKey == true)
           {
             String apiKey = request.getHeader("Authorization"); // "Bearer <apiKey>"
-            if (apiKey == null || apiKey.startsWith(BEARER) == false)
+            if (apiKey == null || apiKey.startsWith(_BEARER) == false)
              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
-            String[] parts = apiKey.substring(BEARER.length()).trim().split("\\s+");
+            String[] parts = apiKey.substring(_BEARER.length()).trim().split("\\s+");
             if (parts.length != 2)
              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
             if (Wanda.validateApiKey(request, parts[0], parts[1]) == false)
              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+            request.setApiCall(true);
           }
         else if (U == null && _mustAuth == true)
           throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");

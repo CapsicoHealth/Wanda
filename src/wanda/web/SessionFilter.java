@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
@@ -145,6 +146,9 @@ public class SessionFilter implements jakarta.servlet.Filter
 
             isMultiTenant = ConnectionPool.isMultiTenant();
 
+            String apiKey = Request.getHeader("Authorization"); // "Bearer <apiKey>"
+            boolean isApiKeyRequest = apiKey != null && apiKey.startsWith(SimpleServlet._BEARER) == true;
+
             if (Request.getScheme().equals("https") == false)
               {
                 LOG.error("The server only accepts HTTPS requests.");
@@ -153,7 +157,17 @@ public class SessionFilter implements jakarta.servlet.Filter
 
             if (MasterDbUser == null)
               {
-                if (isAuthPassthrough == false)
+                if (isApiKeyRequest == true)
+                  {
+                    if (isApiKeyAccessEnabled(Request) == false)
+                      {
+                        LOG.info("Anonymous access without apiKey set up.");
+                        Response.sendError(HttpStatus.BadRequest._Code, "Unauthenticated session");
+                        throw new ServletException("Unauthenticated session");
+                      }
+                    LOG.info("Anonymous access with apiKey-enabled service.");
+                  }
+                else if (isAuthPassthrough == false)
                   {
                     Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                     throw new ServletException("Unauthenticated session");
@@ -224,7 +238,7 @@ public class SessionFilter implements jakarta.servlet.Filter
             int EulaClear = Req.getSessionInt(SessionUtil.Attributes.EULA_CLEAR.name());
             if (EulaClear == SystemValues.EVIL_VALUE)
               {
-                if (isAuthPassthrough == false)
+                if (isApiKeyRequest == false && isAuthPassthrough == false)
                   {
                     LOG.info("User not cleared for EULA.");
                     SessionUtil.InvalidateSession(Request);
@@ -249,18 +263,9 @@ public class SessionFilter implements jakarta.servlet.Filter
             Request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
 
             // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path or an apikey service
-            if (isAuthPassthrough == false && isMasterPath == false)
+            if (isAuthPassthrough == false && isMasterPath == false && mainUser != null)
               {
-                if (mainUser == null) // No user: check for apiKey access
-                  {
-                    if (isApiKeyAccess(Request) == false)
-                      {
-                        LOG.info("Anonymous access without apiKey set up.");
-                        Response.sendError(HttpStatus.BadRequest._Code, "Unauthenticated session");
-                        throw new ServletException("Unauthenticated session");
-                      }
-                  }
-                else if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
+                if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
                   {
                     LOG.info("User is a guest and is not cleared for this url (" + Request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
                     Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
@@ -377,7 +382,7 @@ public class SessionFilter implements jakarta.servlet.Filter
           }
       }
 
-    private static boolean isApiKeyAccess(HttpServletRequest request)
+    private static boolean isApiKeyAccessEnabled(HttpServletRequest request)
       {
         String servletPath = request.getServletPath();
         for (AppView_Data app : Wanda.getApps())
@@ -444,6 +449,8 @@ public class SessionFilter implements jakarta.servlet.Filter
         LOG.info(getRequestHeaderLogStr(Request, AL, true, dataMasking));
         return AL;
       }
+    
+    protected static Pattern _AUTH = Pattern.compile("Bearer\\s+([\\w-]+)\\s+[\\w-]+");
 
     public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking)
     throws UnsupportedEncodingException, Exception
@@ -467,8 +474,19 @@ public class SessionFilter implements jakarta.servlet.Filter
           {
             String Name = HeaderNames.nextElement();
             Enumeration<String> Headers = Request.getHeaders(Name);
-            while (Headers.hasMoreElements())
-              Str.append("   ***    " + Name + ": " + Headers.nextElement() + "\n");
+            while (Headers.hasMoreElements() == true)
+              {
+                String val = Headers.nextElement();
+                if (Name.equalsIgnoreCase("authorization") == true)
+                  {
+                    Matcher m = _AUTH.matcher(val);
+                    if (m.matches() == false)
+                      val = "*******************************";
+                    else
+                      val = m.replaceAll("Bearer $1 ********");
+                  }
+                Str.append("   ***    " + Name + ": " + val + "\n");
+              }
           }
 
         StringBuilder Params = new StringBuilder();

@@ -60,6 +60,7 @@ public class RequestUtil
 
     protected HttpServletRequest     _Req;
     protected List<StringStringPair> _Errors = new ArrayList<StringStringPair>();
+    protected boolean                _apiCall = false;
 
     public void addError(String ParamName, String Error)
       {
@@ -488,5 +489,13 @@ public class RequestUtil
             if (c.getName().equals(cookieName) == true)
               return c;
         return null;
+      }
+    public void setApiCall(boolean b)
+      {
+        _apiCall = true;
+      }
+    public boolean isApiCall()
+      {
+        return _apiCall;
       }
   }
