@@ -88,13 +88,15 @@
                                        [ 
                                           {"name":"Local", "value":"LO", "description":"Local Login", "label":"Local Logn", "default":"CREATE" } 
                                          ,{"name":"Ldap" , "value":"LD", "description":"LDAP Login" , "label":"LDAP Login"  }
+                                         ,{"name":"SSO"  , "value":"SO", "description":"SSO Login"  , "label":"SSO Login"  }
                                        ]
            }
-          ,{ "name":"inviteCancelled"      , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify cancelled invites" }
-          ,{ "name":"invitedUser"          , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify if user is invited" }
-          ,{ "name":"emailUnverified"      , "type"  :"STRING"  ,                    "size": 255,                             "description":"Unverified Email Address" }
-          ,{ "name":"emailVerificationCode", "type"  :"STRING"  ,                    "size":  20,                             "description":"A one-time use randomly generated code to verify invitations or password resets."}
-          ,{ "name":"appData"              , "type"  :"JSON[]"  ,                    "nullable": true,                        "description":"Spoonful App Details"
+          ,{ "name":"loginDomain"          , "type"  :"STRING(254)", "nullable": true, "description":"The login domain for SSO or LDAP"    }
+          ,{ "name":"inviteCancelled"      , "type"  :"BOOLEAN"                      , "description":"flag to identify cancelled invites"  }
+          ,{ "name":"invitedUser"          , "type"  :"BOOLEAN"                      , "description":"flag to identify if user is invited" }
+          ,{ "name":"emailUnverified"      , "type"  :"STRING(254)"                  , "description":"Unverified Email Address"            }
+          ,{ "name":"emailVerificationCode", "type"  :"STRING( 20)"                  , "description":"A one-time use randomly generated code to verify invitations or password resets."}
+          ,{ "name":"appData"              , "type"  :"JSON[]"     , "nullable": true, "description":"Spoonful App Details"
             ,"jsonSchema": {
                "typeName": "AppData"
               ,"descr": "Spoonful App Details"
@@ -765,6 +767,28 @@
          ,{ "name":"TourStepPos", "columns":["tourPartRefnum", "pos"], "db": true }
         ]
      }
+
+     ,{ "name": "TourUserClick"
+       ,"lc":"WORM"
+       ,"description": "Represents a step in a tour that a user took"
+       ,"columns": [
+           { "name":"userRefnum", "sameas":"User.refnum", "nullable" : false, "description":"The user PK"}
+          ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable" : false, "description":"The context/project/app for this tour"}
+          ,{ "name":"tourId"    , "sameas":"Tour.id"    , "nullable" : false, "description":"The tour id"}
+          ,{ "name":"partId"    , "sameAs":"TourPart.id", "nullable" : false, "description":"The tour part id" }
+          ,{ "name":"stepId"    , "sameAs":"TourStep.id", "nullable" : false, "description":"List tour part step id" }
+         ]
+       ,"primary": { "autogen": true, "keyBatch": 5000 }
+       ,"foreign": [
+           { "name":"User",  "srcColumns":["userRefnum"], "destObject":"User" }
+         ]
+       ,"indices":[ 
+           { "name":"TourId"   , "columns":["tourId"    ], "orderBy":["created desc"], "db": true }
+          ,{ "name":"User"     , "columns":["userRefnum"], "orderBy":["created desc"], "db": true }
+          ,{ "name":"ContextId", "columns":["contextId" ], "orderBy":["created desc"], "db": true }
+          ,{ "name":"Created"  , "columns":[]            , "orderBy":["created desc"], "db": true }
+         ]
+      }     
      
  ]
   
@@ -882,9 +906,9 @@
          { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"], "outTypes":["JSON"] }
         ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
        ]       
-    },
+    }
     
-    {
+   ,{
       "name": "AdminUsersAndTenantsView",
       "description": "View that has basic user details",
       "columns": [
@@ -924,9 +948,8 @@
          { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"], "outTypes":["JSON"] }
         ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
        ]       
-    },
-    {
-      "name": "TenantView",
+    }
+   ,{ "name": "TenantView",
       "description": "View that has Tenant + TenantUser",
       "columns": [
           { "sameas": "TenantUser.refnum"     , "name": "tenantUserRefnum"   }
@@ -946,60 +969,59 @@
          { "name": "tenantJson", "columns": ["refnum", "name", "description", "connectionId", "tenantUserActive"] }
         ,{ "name": "tenantUserJson", "columns": ["name", "tenantUserRefnum", "tenantUserActive"] }
       ]
-    },
+    }
     
-    {
-        "name": "TenantConnectionView",
-        "description": "Tenant + Connection",
-        "columns": [
-          { "sameas": "Tenant.refnum"                          },
-          { "sameas": "Tenant.name"                            },
-          { "sameas": "Tenant.description"                     },
-          { "sameas": "Tenant.loginMsg"                        },
-          { "sameas": "Tenant.connectionId"                    },
-          { "sameas": "Tenant.active"                          },
-          { "sameas": "tilda.data.tilda.connection.driver"     },
-          { "sameas": "tilda.data.tilda.connection.db"         },
-          { "sameas": "tilda.data.tilda.connection.user"       },
-          { "sameas": "tilda.data.tilda.connection.pswd"       },
-          { "sameas": "tilda.data.tilda.connection.initial"    },
-          { "sameas": "tilda.data.tilda.connection.max"        },
-          { "sameas": "tilda.data.tilda.connection.active", "name": "connectionActive"     }
-        ],
-        "json": [
-          { "name": "", "columns": [ "refnum", "name", "connectionId", "driver", "db", "user", "initial", "max", "active", "connectionActive" ] }
-        ]
+   ,{ "name": "TenantConnectionView"
+     ,"description": "Tenant + Connection"
+     ,"columns": [
+         { "sameas": "Tenant.refnum"                          }
+        ,{ "sameas": "Tenant.name"                            }
+        ,{ "sameas": "Tenant.description"                     }
+        ,{ "sameas": "Tenant.loginMsg"                        }
+        ,{ "sameas": "Tenant.connectionId"                    }
+        ,{ "sameas": "Tenant.active"                          }
+        ,{ "sameas": "tilda.data.tilda.connection.driver"     }
+        ,{ "sameas": "tilda.data.tilda.connection.db"         }
+        ,{ "sameas": "tilda.data.tilda.connection.user"       }
+        ,{ "sameas": "tilda.data.tilda.connection.pswd"       }
+        ,{ "sameas": "tilda.data.tilda.connection.initial"    }
+        ,{ "sameas": "tilda.data.tilda.connection.max"        }
+        ,{ "sameas": "tilda.data.tilda.connection.active", "name": "connectionActive"     }
+       ]
+     ,"json": [
+         { "name": "", "columns": [ "refnum", "name", "connectionId", "driver", "db", "user", "initial", "max", "active", "connectionActive" ] }
+       ]
     }
 
     
-    ,{ "name":"RoleView",
-       "description":"View of roles that have not been deleted",
-       "columns":[
-           { "sameas":"Role.*"      }
-          ,{ "sameas":"Role.value"  , "name":"roleAdmin", "expression":"LOWER(value||' '||label) LIKE '%admin%'", "type":"BOOLEAN" }
-        ]
-      ,"json":[
-           { "name": "", "columns": ["*" ] }
-        ]
-      ,"queries": [
-           { "name"  :"All",
-             "description":"Get all Roles.",
-             "from"  : [], 
-             "wheres": [
-                 { "db":"*", "clause":"1=1" }
-              ],
-             "orderBy": ["value"]
-           }
-          ,{ "name"  :"Admin",
-             "description":"Get all Roles admin or not.",
-             "from"  : [], 
-             "wheres": [
-                { "db":"*", "clause":"roleAdmin=?()" }
-              ],
-             "orderBy": ["value"]
-           }
-        ]
-     }    
+   ,{ "name":"RoleView",
+      "description":"View of roles that have not been deleted",
+      "columns":[
+          { "sameas":"Role.*"      }
+         ,{ "sameas":"Role.value"  , "name":"roleAdmin", "expression":"LOWER(value||' '||label) LIKE '%admin%'", "type":"BOOLEAN" }
+       ]
+     ,"json":[
+          { "name": "", "columns": ["*" ] }
+       ]
+     ,"queries": [
+          { "name"  :"All",
+            "description":"Get all Roles.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"1=1" }
+             ],
+            "orderBy": ["value"]
+          }
+         ,{ "name"  :"Admin",
+            "description":"Get all Roles admin or not.",
+            "from"  : [], 
+            "wheres": [
+               { "db":"*", "clause":"roleAdmin=?()" }
+             ],
+            "orderBy": ["value"]
+          }
+       ]
+    }    
     
     
    ,{ "name":"AppView",
@@ -1135,36 +1157,36 @@
 
     
     
-    ,{ "name":"AccessLogMonthlyView",
-       "description":"View that has Tenant + TenantUser",
-       "columns":[
-           { "sameAs":"AccessLog.created"    , "name":"month"                 , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
-          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
-          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
-        ]
-      ,"queries": [
-           { "name"  :"Month",
-             "description":"Get the logs info by month from >= start and < end.",
-             "from"  : [], 
-             "wheres": [
-                 { "db":"*", "clause":"month >= ?(Start) and month < ?(End)" }
-              ],
-             "orderBy": ["month desc"]
-           }
-        ]
-      ,"outputMaps":[
-           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
-        ]       
-     }
+   ,{ "name":"AccessLogMonthlyView",
+      "description":"View that has Tenant + TenantUser",
+      "columns":[
+         { "sameAs":"AccessLog.created"    , "name":"month"                 , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
+        ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
+        ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+       ]
+     ,"queries": [
+         { "name"  :"Month",
+           "description":"Get the logs info by month from >= start and < end.",
+           "from"  : [], 
+           "wheres": [
+               { "db":"*", "clause":"month >= ?(Start) and month < ?(End)" }
+            ],
+           "orderBy": ["month desc"]
+         }
+       ]
+     ,"outputMaps":[
+          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
    ,{ "name":"AccessLogDailyView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
@@ -1333,7 +1355,7 @@
       ,"outputMaps":[
            { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
         ]       
-     }
+    }
     
          
    ,{ "name":"TenantJobView",
@@ -1366,83 +1388,168 @@
        ]
     }
 
-    ,{ "name":"TicketWaitingView",
-       "description":"View of tickets waiting a response",
-       "columns":[
-          { "sameas":"Ticket.refnum"              }
-         ,{ "sameas":"Ticket.creatorRefnum"       }
-         ,{ "sameas":"Ticket.creatorId"           }
-         ,{ "sameas":"Ticket.topic"               }
-         ,{ "sameas":"Ticket.subject"             }
-         ,{ "sameas":"Ticket.lastUpdated"         }
-         ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswered"     , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
-         ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreatorRefnum", "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
-         ,{ "sameas":"TicketAnswer.creatorId"    , "name":"lastCreatorId"    , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+   ,{ "name":"TicketWaitingView",
+      "description":"View of tickets waiting a response",
+      "columns":[
+         { "sameas":"Ticket.refnum"              }
+        ,{ "sameas":"Ticket.creatorRefnum"       }
+        ,{ "sameas":"Ticket.creatorId"           }
+        ,{ "sameas":"Ticket.topic"               }
+        ,{ "sameas":"Ticket.subject"             }
+        ,{ "sameas":"Ticket.lastUpdated"         }
+        ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswered"     , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+        ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreatorRefnum", "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+        ,{ "sameas":"TicketAnswer.creatorId"    , "name":"lastCreatorId"    , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+       ]
+     ,"queries":[
+         { "name": "Unanswered"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "lastAnswered is null OR (lastCreatorRefnum is not null and TILDA.in(lastCreatorRefnum, ?[]) = false)" }
+             ]
+           ,"orderBy":["lastUpdated desc"]
+         }
+        ,{ "name": "User"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "creatorRefnum=?()" }
+            ]
+          ,"orderBy":["lastUpdated desc"]
+         }
+        ,{ "name": "All"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "1=1" }
+            ]
+          ,"orderBy":["lastUpdated desc"]
+         }
+       ]
+     ,"json": [
+          { "name": "", "columns": [ "*" ] }
+       ]
+    }
+     
+   ,{ "name":"TourView",
+      "description":"View of tickets waiting a response",
+      "columns":[
+          { "sameAs":"Tour.refnum"         , "name":"tourRefnum"          }
+         ,{ "sameAs":"Tour.id"             , "name":"tourId"              }
+         ,{ "sameAs":"TourPart.refnum"     , "name":"tourPartRefnum"      }
+         ,{ "sameAs":"TourPart.id"         , "name":"tourPartId"          }
+         ,{ "sameAs":"TourPart.pos"        , "name":"tourPartPos"         }
+         ,{ "sameAs":"TourPart.title"      , "name":"tourPartTitle"       }
+         ,{ "sameAs":"TourStep.refnum"     , "name":"tourStepRefnum"      }
+         ,{ "sameAs":"TourStep.id"         , "name":"tourStepId"          }
+         ,{ "sameAs":"TourStep.pos"        , "name":"tourStepPos"         }
+         ,{ "sameAs":"TourStep.title"      , "name":"tourStepTitle"       }
+         ,{ "sameAs":"TourStep.actions"    , "name":"tourStepActions"     }
+         ,{ "sameAs":"TourStep.actionsUndo", "name":"tourStepActionsUndo" }
+       ]
+     ,"queries":[
+         { "name": "Tour"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "tourRefnum=?()" }
+             ]
+           ,"orderBy":["tourPartPos", "tourStepPos"]
+         }
+        ,{ "name": "TourPart"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourPartRefnum=?()" }
+            ]
+          ,"orderBy":["tourPartPos", "tourStepPos"]
+         }
+        ,{ "name": "TourPartStepIds"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourId=?() and tourPartId=?() and tourStepId=?()" }
+            ]
+         }
+       ]
+     ,"json": [
+          { "name": "", "columns": [ "*" ] }
+       ]
+    }
+      
+   ,{ "name":"TourStatsView"
+     ,"description":"Tour stats"
+     ,"columns":[
+         { "sameAs":"Tour.refnum"     , "name":"tourRefnum"          }
+        ,{ "sameAs":"Tour.id"         , "name":"tourId"              }
+        ,{ "sameAs":"TourPart.refnum" , "name":"tourPartRefnum"      , "joinOnly":true }
+        ,{ "sameAs":"TourStep.refnum" , "name":"totalSteps", "aggregate":"COUNT", "distinct":true, "formulaOnly":true   }
+       ]
+     ,"formulaColumns":[
+         { "name": "totalSteps"
+          ,"type": "SHORT"
+          ,"formula":[ "totalSteps+1" ]
+          ,"title": "Total steps"
+          ,"description":[
+              "The total number of steps in the tour, plus the learning plan starting step (automatic and not defined in the data)."
+            ]
+         }
+       ]
+     ,"queries":[
+         { "name": "Tour"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourRefnum=?()" }
+            ]
+         }
+       ]
+     ,"json": [
+         { "name": "", "columns": [ "*" ] }
+       ]
+    }
+    
+    ,{ "name":"TourUserStatsView"
+      ,"description":"Tour user stats"
+      ,"columns":[
+          { "sameAs":"TourUserClick.userRefnum", "name":"userRefnum"          }
+         ,{ "sameAs":"TourUserClick.tourId"    , "name":"tourId"              }
+         ,{ "sameAs":"TourUserClick.contextId" , "name":"contextId"           }
+         ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps", "expression":"TourUserClick.partId||'|'||TourUserClick.stepId", "type":"STRING(1024)", "aggregate":"COUNT", "distinct":true   }
+         ,{ "sameAs":"TourUserClick.created"   , "name":"started"   , "aggregate":"MIN" }
+         ,{ "sameAs":"TourUserClick.created"   , "name":"latest"    , "aggregate":"MAX" }
         ]
       ,"queries":[
-          { "name": "Unanswered"
-            ,"description": "TBD"
-            ,"wheres": [
-                { "db": "*", "clause": "lastAnswered is null OR (lastCreatorRefnum is not null and TILDA.in(lastCreatorRefnum, ?[]) = false)" }
-              ]
-            ,"orderBy":["lastUpdated desc"]
-          }
-         ,{ "name": "User"
+          { "name": "User"
            ,"description": "TBD"
            ,"wheres": [
-               { "db": "*", "clause": "creatorRefnum=?()" }
+               { "db": "*", "clause": "userRefnum=?()" }
              ]
-           ,"orderBy":["lastUpdated desc"]
-          }
-         ,{ "name": "All"
-           ,"description": "TBD"
-           ,"wheres": [
-               { "db": "*", "clause": "1=1" }
-             ]
-           ,"orderBy":["lastUpdated desc"]
+           ,"orderBy":["tourId", "contextId"]
           }
         ]
       ,"json": [
-           { "name": "", "columns": [ "*" ] }
+          { "name": "", "columns": [ "*" ] }
+        ]
+     }
+
+    ,{ "name":"TourUserStatusView"
+      ,"description":"Tour user status"
+      ,"columns":[
+          { "sameAs":"TourUserStatsView.*" }
+         ,{ "sameAs":"TourStatsView.totalSteps"  }
+        ]
+      ,"joins":[
+          { "object": "TourStatsView", "joinType": "INNER", "on": [ { "db":"*", "clause":"TourUserStatsView.tourId = TourStatsView.tourId" } ] }
+        ]
+      ,"queries":[
+          { "name": "User"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "userRefnum=?()" }
+             ]
+           ,"orderBy":["tourId", "contextId"]
+          }
+        ]
+      ,"json": [
+          { "name": "", "columns": [ "*" ] }
         ]
      }
      
-     ,{ "name":"TourView",
-        "description":"View of tickets waiting a response",
-        "columns":[
-            { "sameAs":"Tour.refnum"         , "name":"tourRefnum"          }
-           ,{ "sameAs":"Tour.id"             , "name":"tourId"              }
-           ,{ "sameAs":"TourPart.refnum"     , "name":"tourPartRefnum"      }
-           ,{ "sameAs":"TourPart.id"         , "name":"tourPartId"          }
-           ,{ "sameAs":"TourPart.pos"        , "name":"tourPartPos"         }
-           ,{ "sameAs":"TourPart.title"      , "name":"tourPartTitle"       }
-           ,{ "sameAs":"TourStep.refnum"     , "name":"tourStepRefnum"      }
-           ,{ "sameAs":"TourStep.id"         , "name":"tourStepId"          }
-           ,{ "sameAs":"TourStep.pos"        , "name":"tourStepPos"         }
-           ,{ "sameAs":"TourStep.title"      , "name":"tourStepTitle"       }
-           ,{ "sameAs":"TourStep.actions"    , "name":"tourStepActions"     }
-           ,{ "sameAs":"TourStep.actionsUndo", "name":"tourStepActionsUndo" }
-         ]
-       ,"queries":[
-           { "name": "Tour"
-             ,"description": "TBD"
-             ,"wheres": [
-                 { "db": "*", "clause": "tourRefnum=?()" }
-               ]
-             ,"orderBy":["tourPartPos", "tourStepPos"]
-           }
-          ,{ "name": "TourPart"
-            ,"description": "TBD"
-            ,"wheres": [
-                { "db": "*", "clause": "tourPartRefnum=?()" }
-              ]
-            ,"orderBy":["tourPartPos", "tourStepPos"]
-           }
-         ]
-       ,"json": [
-            { "name": "", "columns": [ "*" ] }
-         ]
-      }
   ]
 
  ,"migrations":{
