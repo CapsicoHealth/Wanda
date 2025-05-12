@@ -35,13 +35,13 @@ import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.Wanda;
 
-@WebServlet("/svc/user/account")
-public class Account extends SimpleServlet
+@WebServlet("/svc/user/account/update")
+public class AccountUpdate extends SimpleServlet
   {
 
     private static final long serialVersionUID = 988554219257979935L;
 
-    public Account()
+    public AccountUpdate()
       {
         super(true, false, true);
       }
