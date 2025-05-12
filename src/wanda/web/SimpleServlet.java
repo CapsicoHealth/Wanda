@@ -49,7 +49,8 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
     protected static final Logger LOG = LogManager.getLogger(SimpleServlet.class.getName());
 
     /**
-     * Creates a new SimpleServlet instance with defaults for postOnly=false, guestAllowed=false and apiKey=false. 
+     * Creates a new SimpleServlet instance with defaults for postOnly=false, guestAllowed=false and apiKey=false.
+     * 
      * @param mustAuthenticate
      */
     public SimpleServlet(boolean mustAuthenticate)
@@ -58,7 +59,8 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
       }
 
     /**
-     * Creates a new SimpleServlet instance with defaults for guestAllowed=false and apiKey=false. 
+     * Creates a new SimpleServlet instance with defaults for guestAllowed=false and apiKey=false.
+     * 
      * @param mustAuthenticate
      */
     public SimpleServlet(boolean mustAuthenticate, boolean postOnly)
@@ -67,21 +69,23 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
       }
 
     /**
-     * Creates a new SimpleServlet instance with defaults for apiKey=false. 
+     * Creates a new SimpleServlet instance with defaults for apiKey=false.
+     * 
      * @param mustAuthenticate
      */
     public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed)
       {
         this(mustAuthenticate, postOnly, guestAllowed, null);
       }
-    
+
     public static enum APIKeyEnum
       {
-      ALLOWED;
+      ALLOWED, EXCLUSIVELY;
       }
 
     /**
-     * Creates a new SimpleServlet instance. 
+     * Creates a new SimpleServlet instance.
+     * 
      * @param mustAuthenticate if true, the servlet will only be accessible to authenticated users.
      * @param postOnly if true, the servlet will only accept POST requests.
      * @param guestAllowed if true, the servlet will accept requests from users with the guest role.
@@ -92,14 +96,14 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
         super(postOnly);
         _mustAuth = mustAuthenticate;
         _guestAllowed = guestAllowed;
-        _apiKey = apiKey != null && apiKey == APIKeyEnum.ALLOWED;
+        _apiKey = apiKey;
       }
-    
 
-    protected final boolean _mustAuth;
-    protected final boolean _guestAllowed;
-    protected final boolean _apiKey;
-    
+
+    protected final boolean       _mustAuth;
+    protected final boolean       _guestAllowed;
+    protected final APIKeyEnum    _apiKey;
+
     protected final static String _BEARER = "Bearer ";
 
     @Override
@@ -113,17 +117,20 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
 
         U = (User_Data) request.getAttribute(RequestUtil.Attributes.USER.toString());
 
-        if (U==null && _apiKey == true)
+        if (_apiKey == APIKeyEnum.EXCLUSIVELY && U != null)
+          throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request: this API is only accessible via a formal API call.");
+        
+        if (U == null && _apiKey != null)
           {
             String apiKey = request.getHeader("Authorization"); // "Bearer <apiKey>"
             if (apiKey == null || apiKey.startsWith(_BEARER) == false)
-             throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
             String[] parts = apiKey.substring(_BEARER.length()).trim().split("\\s+");
             if (parts.length != 2)
-             throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
             if (Wanda.validateApiKey(request, parts[0], parts[1]) == false)
-             throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
-            request.setApiCall(true);
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+            request.setApiCall(parts[0]);
           }
         else if (U == null && _mustAuth == true)
           throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");

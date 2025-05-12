@@ -24,6 +24,7 @@ import java.util.Set;
 
 import com.google.gson.annotations.SerializedName;
 
+import tilda.utils.EncryptionUtil;
 import tilda.utils.TextUtil;
 import wanda.web.LoginSyncService;
 
@@ -159,6 +160,7 @@ public class LoginSystem
                   OK = false;
                 }
 
+              // saml config file
               if (TextUtil.isNullOrEmpty(conf._configFile) == true)
                 {
                   Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a configFile value.");
@@ -178,6 +180,41 @@ public class LoginSystem
                       OK = false;
                     }
                 }
+
+              if (TextUtil.isNullOrEmpty(conf._entityId) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an entityId value.");
+                  OK = false;
+                }
+
+
+              // Keystore path
+              if (TextUtil.isNullOrEmpty(conf._keyStorePath) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a keyStorePath value.");
+                  OK = false;
+                }
+              else
+                {
+                  File f = new File(conf._keyStorePath);
+                  if (f.exists() == false)
+                    {
+                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a keystore file '" + conf._keyStorePath + "' which cannot be found.");
+                      OK = false;
+                    }
+                  else if (EncryptionUtil.isKeystorePasswordValid(conf._keyStorePath, conf._keyStorePswd) == false)
+                    {
+                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a keystore file '" + conf._keyStorePath + "' and a password which is invalid.");
+                      OK = false;
+                    }
+                }
+
+              if (TextUtil.isNullOrEmpty(conf._keyStorePswd) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a keyStorePswd value.");
+                  OK = false;
+                }
+              
             }
         return OK;
       }
@@ -187,12 +224,13 @@ public class LoginSystem
         return _userSyncServiceClasses;
       }
 
-    public String getSsoConfigFile(String id)
+    public SSOConfig getSsoConfig(String id)
+    throws CloneNotSupportedException
       {
         if (_ssoConfigs != null)
           for (SSOConfig conf : _ssoConfigs)
             if (conf != null && conf._id.equals(id) == true)
-              return conf._configFile;
+              return conf.clone();
         return null;
       }
 

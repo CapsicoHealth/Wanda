@@ -18,10 +18,23 @@ package wanda.web.config;
 
 import com.google.gson.annotations.SerializedName;
 
-public class SSOConfig
+public class SSOConfig implements Cloneable
   {
     /*@formatter:off*/
-    @SerializedName("id"        ) public String _id         = null  ;
-    @SerializedName("configFile") public String _configFile = null ;
+    @SerializedName("id"          ) public String _id           = null  ;
+    @SerializedName("configFile"  ) public String _configFile   = null ;
+    @SerializedName("entityId"    ) public String _entityId     = null ;
+    @SerializedName("keyStorePath") public String _keyStorePath = null ;
+    @SerializedName("keyStorePswd") public String _keyStorePswd = null ;
     /*@formatter:on*/
+
+
+    // Override clone() method
+    @Override
+    public SSOConfig clone()
+    throws CloneNotSupportedException
+      {
+        return (SSOConfig) super.clone();
+      }
+
   }

@@ -59,13 +59,14 @@ public class RequestUtil
       }
 
     protected HttpServletRequest     _Req;
-    protected List<StringStringPair> _Errors = new ArrayList<StringStringPair>();
-    protected boolean                _apiCall = false;
+    protected List<StringStringPair> _Errors          = new ArrayList<StringStringPair>();
+    protected String                 _apiCallParnerId = null;
 
     public void addError(String ParamName, String Error)
       {
         _Errors.add(new StringStringPair(ParamName, Error));
       }
+
     public void addErrors(List<StringStringPair> errs)
       {
         _Errors.addAll(errs);
@@ -490,12 +491,14 @@ public class RequestUtil
               return c;
         return null;
       }
-    public void setApiCall(boolean b)
+
+    public void setApiCall(String partnerId)
       {
-        _apiCall = true;
+        _apiCallParnerId = partnerId;
       }
-    public boolean isApiCall()
+
+    public String getApiCallParnerId()
       {
-        return _apiCall;
+        return _apiCallParnerId;
       }
   }

@@ -214,6 +214,9 @@ public class WandaDefConfig
               _laf._logoSmall = "";
             if (TextUtil.isNullOrEmpty(_laf._pageTitle) == true)
               _laf._pageTitle = "";
+            
+            if (_laf._urlRedirectPostLogin == null)
+             _laf._urlRedirectPostLogin = _appPath+_homePagePath;
           }
         Set<String> Names = new HashSet<String>();
         for (Eula E : _eulas)

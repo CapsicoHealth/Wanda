@@ -19,6 +19,7 @@ package wanda.web;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
 import java.util.List;
 
 import jakarta.servlet.ServletException;
@@ -106,7 +107,7 @@ public class ResponseUtil
         successJson(JsonExportName, obj, null);
       }
 
-    public void successJson(String JsonExportName, List<? extends JSONable> L, String perfMessage)
+    public void successJson(String JsonExportName, Collection<? extends JSONable> L, String perfMessage)
     throws Exception
       {
         if (_Out == null)
@@ -114,7 +115,8 @@ public class ResponseUtil
         JSONUtil.response(_Out, JsonExportName, L, perfMessage);
       }
 
-    public void successJson(String JsonExportName, List<? extends JSONable> L)
+    
+    public void successJson(String JsonExportName, Collection<? extends JSONable> L)
     throws Exception
       {
         successJson(JsonExportName, L, null);
