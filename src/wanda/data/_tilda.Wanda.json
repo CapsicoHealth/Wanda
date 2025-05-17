@@ -61,9 +61,10 @@
                                         { "name":"Create", "value":"0", "description":"Default Password Creation Time", "default":"CREATE" }
                                       ]
            }
-          ,{ "name":"roles"          , "sameas":"Role.id",                                                             "description":"The comma-separated role(s) for this user"
-                                      ,"enum": { "srcColumns": [], "destObject":"Role", "multi":"SET" }
+          ,{ "name":"roles"          , "sameas":"Role.id",                                                             "description":"The administrative role(s) for this user"
+                                     ,"enum": { "srcColumns": [], "destObject":"Role", "multi":"SET" }
            }
+          ,{ "name":"profRoles"      , "type":"STRING{}" , "nullable": true ,                                          "description":"The professional role(s) for this user" }
           ,{ "name":"pswd"           , "type":"STRING"   , "nullable": false, "size": 100,                             "description":"The hashed password"}
           ,{ "name":"pswdSalt"       , "type":"STRING"   , "nullable": false, "size":  12, "allowEmpty":true,          "description":"The salt, if any, for the hashed password"}
           ,{ "name":"pswdCreate"     , "type":"DATETIME" , "nullable": false,                                          "description":"The date/time the password was created"
@@ -1472,7 +1473,7 @@
        ]
     }
       
-   ,{ "name":"TourStatsView"
+   ,{ "name":"TourInfoView"
      ,"description":"Tour stats"
      ,"columns":[
          { "sameAs":"Tour.refnum"     , "name":"tourRefnum"          }
@@ -1503,15 +1504,16 @@
        ]
     }
     
-    ,{ "name":"TourUserStatsView"
+    ,{ "name":"TourUserInfoView"
       ,"description":"Tour user stats"
       ,"columns":[
           { "sameAs":"TourUserClick.userRefnum", "name":"userRefnum"          }
+         ,{ "sameAs":"User.id"                 , "name":"userId"              }
          ,{ "sameAs":"TourUserClick.tourId"    , "name":"tourId"              }
          ,{ "sameAs":"TourUserClick.contextId" , "name":"contextId"           }
-         ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps", "expression":"TourUserClick.partId||'|'||TourUserClick.stepId", "type":"STRING(1024)", "aggregate":"COUNT", "distinct":true   }
-         ,{ "sameAs":"TourUserClick.created"   , "name":"started"   , "aggregate":"MIN" }
-         ,{ "sameAs":"TourUserClick.created"   , "name":"latest"    , "aggregate":"MAX" }
+         ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps"  , "expression":"TourUserClick.partId||'|'||TourUserClick.stepId", "type":"STRING(1024)", "aggregate":"COUNT", "distinct":true   }
+         ,{ "sameAs":"TourUserClick.created"   , "name":"startDt"     , "aggregate":"MIN" }
+         ,{ "sameAs":"TourUserClick.created"   , "name":"lastAccessDt", "aggregate":"MAX" }
         ]
       ,"queries":[
           { "name": "User"
@@ -1530,23 +1532,77 @@
     ,{ "name":"TourUserStatusView"
       ,"description":"Tour user status"
       ,"columns":[
-          { "sameAs":"TourUserStatsView.*" }
-         ,{ "sameAs":"TourStatsView.totalSteps"  }
+          { "sameAs":"TourUserInfoView.*" }
+         ,{ "sameAs":"TourInfoView.totalSteps"  }
         ]
       ,"joins":[
-          { "object": "TourStatsView", "joinType": "INNER", "on": [ { "db":"*", "clause":"TourUserStatsView.tourId = TourStatsView.tourId" } ] }
+          { "object": "TourInfoView", "joinType": "INNER", "on": [ { "db":"*", "clause":"TourUserInfoView.tourId = TourInfoView.tourId" } ] }
+        ]
+      ,"formulaColumns":[
+          { "name": "timeSpentMn"
+           ,"type": "SHORT"
+           ,"formula":[ "TILDA.MinutesBetween(startDt, lastAccessDt)" ]
+           ,"title": "Time Spent"
+           ,"description":[
+               "The time spent in minutes between the user first started the project and the last time the project was accessed."
+             ]
+          }
+         ,{ "name": "progressStatus"
+           ,"type": "SHORT"
+           ,"formula":[ "case when takenSteps < totalSteps/8 then 1"
+                       ,"     when takenSteps < totalSteps/4 then 10"
+                       ,"     else 25*FLOOR((100.0*takenSteps/totalSteps)/25)"
+                       ,"end"
+                      ]
+           ,"title": "Progress Status"
+           ,"description":[
+               "The percentage of steps completed, in 25% increments, with an easing curve at the begining to 1%, then 10%."
+             ]
+          }
+         ,{ "name": "progressType"
+           ,"type": "STRING(32)"
+           ,"formula":[ "case when takenSteps <= 1 then 'Not Started' "
+                       ,"     when takenSteps=totalSteps then 'Completed' "
+                       ,"     else 'In Progress' "
+                       ,"end"
+                      ]
+           ,"title": "Progress Type"
+           ,"description":[
+               "A label for the progress status."
+             ]
+           ,"values":[
+               { "value":"Not Started", "description":"The project wasn't started yet (i.e., progress is at 0%)." }
+              ,{ "value":"In Progress", "description":"The project is in progress (i.e., progress is between 1% and 99%)." }
+              ,{ "value":"Completed"  , "description":"The project is completed (i.e., progress is at 100%" }
+             ]
+          }
         ]
       ,"queries":[
-          { "name": "User"
+          { "name": "UserId"
            ,"description": "TBD"
            ,"wheres": [
-               { "db": "*", "clause": "userRefnum=?()" }
+               { "db": "*", "clause": "userId=?()" }
              ]
            ,"orderBy":["tourId", "contextId"]
           }
+         ,{ "name": "LastAccessed"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "lastAccessDt>=?()" }
+             ]
+           ,"orderBy":["lastAccessDt"]
+          }
+         ,{ "name": "UserLastAccessed"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "userId=?() and lastAccessDt=?()" }
+             ]
+           ,"orderBy":["lastAccessDt"]
+          }
         ]
-      ,"json": [
-          { "name": "", "columns": [ "*" ] }
+      ,"outputMaps": [
+          { "name": ""      , "outTypes":["JSON","CSV"], "columns": [ "*" ] }
+         ,{ "name": "export", "outTypes":["JSON"]      , "columns": [ "*" ], "exclude":["userRefnum", "tourId", "takenSteps", "totalSteps"] }
         ]
      }
      
