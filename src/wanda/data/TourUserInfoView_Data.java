@@ -10,14 +10,14 @@ import org.apache.logging.log4j.Logger;
 import tilda.db.Connection;
 
 /**
-This is the application class <B>Data_TourStatsView</B> mapped to the table <B>WANDA.TourStatsView</B>.
-@see wanda.data._Tilda.TILDA__TOURSTATSVIEW
+This is the application class <B>Data_TourUserInfoView</B> mapped to the table <B>WANDA.TourUserInfoView</B>.
+@see wanda.data._Tilda.TILDA__TOURUSERINFOVIEW
 */
-public class TourStatsView_Data extends wanda.data._Tilda.TILDA__TOURSTATSVIEW
+public class TourUserInfoView_Data extends wanda.data._Tilda.TILDA__TOURUSERINFOVIEW
  {
-   protected static final Logger LOG = LogManager.getLogger(TourStatsView_Data.class.getName());
+   protected static final Logger LOG = LogManager.getLogger(TourUserInfoView_Data.class.getName());
 
-   public TourStatsView_Data() { }
+   public TourUserInfoView_Data() { }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
