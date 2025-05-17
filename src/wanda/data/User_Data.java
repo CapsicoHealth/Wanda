@@ -173,7 +173,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
 
         String password = EncryptionUtil.getToken(18, true);
         String salt = EncryptionUtil.getToken(8);
-        HashSet<String> _roles = roles==null || roles.length == 0 ? null : new HashSet<String>(Arrays.asList(roles));
+        HashSet<String> _roles = roles == null || roles.length == 0 ? null : new HashSet<String>(Arrays.asList(roles));
         User_Data U = User_Factory.create(email, email, _roles, password, salt);
         U.setPswdResetCode(EncryptionUtil.getToken(18, true));
         U.setPswdResetCreateNow();
@@ -181,9 +181,9 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.setNullInviteCancelled();
         U.setNullLocked();
         if (TextUtil.isNullOrEmpty(promoCode) == false)
-         U.setPromoCode(promoCode);
+          U.setPromoCode(promoCode);
         if (TextUtil.isNullOrEmpty(contentIds) == false)
-         U.setContentIds(Arrays.asList(contentIds));
+          U.setContentIds(Arrays.asList(contentIds));
         if (U.write(C) == false)
           Errors.add(new StringStringPair("User", "Unable to save changes"));
 
@@ -203,6 +203,18 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                   }
               }
           }
+        addApps(C, appRefnums, Errors, U);
+        if (Errors.isEmpty() == false)
+          {
+            throw new BadRequestException(Errors);
+          }
+        LOG.debug("Sending a new invitation email to '" + U.getEmail() + "'.");
+        U.sendInviteEmail();
+      }
+
+    public static void addApps(Connection C, long[] appRefnums, List<StringStringPair> Errors, User_Data U)
+    throws Exception
+      {
         if (appRefnums != null)
           {
             for (long appRefnum : appRefnums)
@@ -211,16 +223,10 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 appUser.setUserRefnum(U.getRefnum());
                 if (appUser.write(C) == false)
                   {
-                    Errors.add(new StringStringPair("TenantUser " + appRefnum, "Unable to save changes"));
+                    Errors.add(new StringStringPair("AppUser " + appRefnum, "Unable to save changes"));
                   }
               }
           }
-        if (Errors.isEmpty() == false)
-          {
-            throw new BadRequestException(Errors);
-          }
-        LOG.debug("Sending a new invitation email to '" + U.getEmail() + "'.");
-        U.sendInviteEmail();
       }
 
     public static void updateDetailsAndInvite(Connection C, User_Data U, String promoCode, String email,
@@ -245,7 +251,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.setRoles(new HashSet<String>(Arrays.asList(roles)));
         if (TextUtil.isNullOrEmpty(promoCode) == false)
           U.setPromoCode(promoCode);
-         if (TextUtil.isNullOrEmpty(contentIds) == false)
+        if (TextUtil.isNullOrEmpty(contentIds) == false)
           U.setContentIds(Arrays.asList(contentIds));
         if (isResetPassword)
           {
@@ -294,20 +300,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                   }
               }
 
-            SessionFilter.evictUserFromAppCache(U.getRefnum());
-            if (appRefnums != null)
-              {
-                AppUser_Factory.deleteUserApps(C, U.getRefnum());
-                List<AppUser_Data> L = new ArrayList<AppUser_Data>();
-                for (long appRefnum : appRefnums)
-                  {
-                    AppUser_Data appUser = AppUser_Factory.create(appRefnum);
-                    appUser.setUserRefnum(U.getRefnum());
-                    L.add(appUser);
-                  }
-                if (AppUser_Factory.writeBatch(C, L, 100, 500) != -1)
-                  throw new Exception("Cannot update user application list");
-              }
+            updateAppAccess(C, U, appRefnums);
           }
         if (Errors.isEmpty() == false)
           {
@@ -321,6 +314,25 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         else
           {
             LOG.debug("NOT SENDING another invitation email to '" + U.getEmail() + "' because U.getLoginCount() = " + U.getLoginCount() + ".");
+          }
+      }
+
+    protected static void updateAppAccess(Connection C, User_Data U, long[] appRefnums)
+    throws Exception
+      {
+        SessionFilter.evictUserFromAppCache(U.getRefnum());
+        if (appRefnums != null)
+          {
+            AppUser_Factory.deleteUserApps(C, U.getRefnum());
+            List<AppUser_Data> L = new ArrayList<AppUser_Data>();
+            for (long appRefnum : appRefnums)
+              {
+                AppUser_Data appUser = AppUser_Factory.create(appRefnum);
+                appUser.setUserRefnum(U.getRefnum());
+                L.add(appUser);
+              }
+            if (AppUser_Factory.writeBatch(C, L, 100, 500) != -1)
+              throw new Exception("Cannot update user application list");
           }
       }
 
@@ -350,7 +362,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                     sb.append("<p><a href='");
                     sb.append(url);
                     sb.append("'>Click here to set your password</a></p>");
-                    LOG.debug("Sending email invitation to " + getEmail() + " via thread with link "+url);
+                    LOG.debug("Sending email invitation to " + getEmail() + " via thread with link " + url);
                     EMailSender.sendMailUsr(to, cc, bcc, "Set Password: Invited to " + Wanda.getAppName(), sb.toString(), true, true);
                     LOG.debug("Sent email invitation to " + getEmail() + " via thread.");
                   }
@@ -566,7 +578,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       }
 
     private static final Pattern _GUEST_NAMESPACE_PREFIX_PATTERN = Pattern.compile("^\\[\\d+\\]\\s.*");
-    protected String guestNamespacePrefix = null;
+    protected String             guestNamespacePrefix            = null;
 
     /**
      * Return a namespace prefix for Guest users as "[1234] " where 1234 is the unique refnum of a user. If
@@ -599,7 +611,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           guestNamespacePrefix = "[" + getRefnum() + "] ";
         return guestNamespacePrefix;
       }
-    
+
     public String getGuestNamePrefixed(String name)
     throws Exception
       {
@@ -608,10 +620,10 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         boolean guest = isGuest();
         // User is guest and the name-prefix isn't already set, so return the prefixed name
         if (guest == true && alreadySet == false)
-         return prefix+name;
+          return prefix + name;
         // User is not a guest and the name-prefix is set, so return the clean name (without the prefix)
         if (guest == false && alreadySet == true)
-         return name.substring(prefix.length());
+          return name.substring(prefix.length());
         // return the name as-is.
         return name;
       }
@@ -623,12 +635,13 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         boolean alreadySet = isGuestNamespacePrefixed(name);
         return alreadySet == true ? name.substring(prefix.length()) : name;
       }
-    
+
 
     /**
      * In migration or transition scenarios (e.g., a user was guest and becomes a full user), it might be necessary
-     * to detect if an entity is names with a guest user prefix such as "[1234] " where 1234 is the unique refnum 
+     * to detect if an entity is names with a guest user prefix such as "[1234] " where 1234 is the unique refnum
      * of a user.
+     * 
      * @param name
      * @return
      */
@@ -638,9 +651,21 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           guestNamespacePrefix = "[" + getRefnum() + "] ";
         return name.startsWith(guestNamespacePrefix);
       }
-    
+
     public static boolean isNameGuestNamespacePrefixed(String name)
-     {
-       return _GUEST_NAMESPACE_PREFIX_PATTERN.matches(name);
-     }
+      {
+        return _GUEST_NAMESPACE_PREFIX_PATTERN.matches(name);
+      }
+
+    public void syncUpApps(Connection C, User_Data U, String defaultPromoCode, String ssoId)
+    throws Exception
+      {
+        Promo_Data p = Promo_Factory.lookupByCode(defaultPromoCode);
+        if (p.read(C) == false)
+         {
+           LOG.error("The promo code '"+defaultPromoCode+"' defined for ssoId '" + ssoId + "' cannot be found in the database.");
+           throw new Exception("No applications found for this user.");
+         }
+        updateAppAccess(C, U, CollectionUtil.toPrimitiveArray(p.getAppsAsArray()));
+      }
   }

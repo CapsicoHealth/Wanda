@@ -122,14 +122,14 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
         
         if (U == null && _apiKey != null)
           {
-            String apiKey = request.getHeader("Authorization"); // "Bearer <apiKey>"
+            String apiKey = request.getHeader("Authorization"); // "Bearer <partnerId> <apiKey>"
             if (apiKey == null || apiKey.startsWith(_BEARER) == false)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid Authorization header format: expecting 'Bearer <partnerId> <apiKey>'.");
             String[] parts = apiKey.substring(_BEARER.length()).trim().split("\\s+");
             if (parts.length != 2)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid Authorization header format: expecting 'Bearer <partnerId> <apiKey>'.");
             if (Wanda.validateApiKey(request, parts[0], parts[1]) == false)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid API Key");
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid partner ID and/or API Key");
             request.setApiCall(parts[0]);
           }
         else if (U == null && _mustAuth == true)
@@ -144,21 +144,6 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
     throws Exception;
 
 
-    /**
-     * Checks if the user's password has expired. Mostly used for the login servlet. Wondering if it should be elsewhere.
-     * 
-     * @param U
-     * @return
-     */
-    protected boolean hasPasswordExpired(User_Data U)
-      {
-        return U.getPswdCreate() != null && ChronoUnit.DAYS.between(U.getPswdCreate(), ZonedDateTime.now()) > Wanda.getPasswordExpiry();
-      }
-
-    protected boolean isUserLocked(User_Data U)
-      {
-        return User_Data.isUserLocked(U);
-      }
 
     /**
      * Tests is a user has at least one of the specified roles. If not, will throw a HttpStatus.Forbidden exception.

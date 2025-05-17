@@ -17,42 +17,36 @@
 package wanda.servlets;
 
 import java.io.PrintWriter;
-import java.util.List;
-
-import jakarta.servlet.ServletConfig;
-import jakarta.servlet.annotation.WebServlet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.data.TenantUser_Data;
-import wanda.data.TenantUser_Factory;
-import wanda.data.TenantView_Data;
-import wanda.data.TenantView_Factory;
-import wanda.data.User_Data;
-import wanda.data.User_Factory;
-import wanda.saml.ConfigSAML;
-import wanda.servlets.helpers.RoleHelper;
-import wanda.servlets.helpers.UserTenantSync;
-import wanda.web.config.Eula;
-import wanda.web.config.Wanda;
-
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
-import tilda.db.ConnectionPool;
-import tilda.db.ListResults;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
-import wanda.web.LoginSyncService;
+import wanda.data.TenantView_Data;
+import wanda.data.TenantView_Factory;
+import wanda.data.User_Data;
+import wanda.data.User_Factory;
+import wanda.saml.ConfigSAML;
+import wanda.saml.SAMLUserProfile;
+import wanda.servlets.helpers.LoginCallbackInterface;
+import wanda.servlets.helpers.LoginHelper;
+import wanda.servlets.helpers.UserTenantSync;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.config.Eula;
+import wanda.web.config.SSOConfig;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.AccessForbiddenException;
-import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 /**
  * Servlet implementation class Login
@@ -60,16 +54,7 @@ import wanda.web.exceptions.ResourceNotAuthorizedException;
 @WebServlet("/svc/Login")
 public class Login extends SimpleServlet
   {
-    interface LoginCallback
-      {
-        void onLoginSuccess(User_Data u)
-        throws Exception;
-
-        void onLoginFailure(User_Data u)
-        throws Exception;
-      }
-
-    protected static final Logger LOG              = LogManager.getLogger(Login.class.getName());
+    protected static final Logger LOG              = LogManager.getLogger(LoginHelper.class.getName());
     private static final long     serialVersionUID = 7833614578489016882L;
 
     /**
@@ -86,7 +71,7 @@ public class Login extends SimpleServlet
         SessionFilter.addMaskedUrlNvp("pswd");
       }
 
-    private static void login(Connection C, String username, String password, LoginCallback loginCallback)
+    private static void login(Connection C, String username, String password, LoginCallbackInterface loginCallback)
     throws Exception
       {
         LOG.debug("Loging in user locally");
@@ -123,59 +108,36 @@ public class Login extends SimpleServlet
         loginCallback.onLoginSuccess(u);
       }
 
-    protected static void doUserSyncServices(Connection C, User_Data U)
-      {
-        if (Wanda.getLoginSystem() != null)
-          {
-            List<LoginSyncService> L = Wanda.getLoginSystem().getUserSyncServiceClasses();
-            for (LoginSyncService lss : L)
-              if (lss != null)
-                try
-                  {
-                    lss.syncUser(C, U);
-                  }
-                catch (Throwable T)
-                  {
-                    LOG.warn("Cannot follow user sync process off of '" + lss.getClass().getCanonicalName() + "'.");
-                  }
-          }
-      }
 
 
     @Override
-    protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
+    protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
     throws Exception
       {
-        PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        long TenantUserRefnum = Req.getParamLong("tenantUserRefnum", false);
-        String eulaToken = Req.getParamString("eulaToken", false);
-        int accept = Req.getParamInt("accept", false);
-        String ssoId = Req.getParamString("ssoId", false);
-
-        if (TextUtil.isNullOrEmpty(ssoId) == false)
-          {
-            ConfigSAML.init(ssoId);
-            return;
-          }
+        PrintWriter Out = res.setContentType(ResponseUtil.ContentType.JSON);
+        long TenantUserRefnum = req.getParamLong("tenantUserRefnum", false);
+        String eulaToken = req.getParamString("eulaToken", false);
+        int accept = req.getParamInt("accept", false);
+        String ssoId = req.getParamString("ssoId", false);
 
         if (TextUtil.isNullOrEmpty(eulaToken) == false && U != null)
           { // Eula step
-            String EulaTokenSaved = Req.getSessionString(SessionUtil.Attributes.EULA_CODE.name());
+            String EulaTokenSaved = req.getSessionString(SessionUtil.Attributes.EULA_CODE.name());
             if (eulaToken.equals(EulaTokenSaved) == false)
               {
-                Req.addError("eulaToken", "is Invalid");
-                Req.throwIfErrors();
+                req.addError("eulaToken", "is Invalid");
+                req.throwIfErrors();
               }
             if (accept != 1)
               {
-                Req.addError("accept", "You must accept the EULA before continuing.");
-                Req.throwIfErrors();
+                req.addError("accept", "You must accept the EULA before continuing.");
+                req.throwIfErrors();
               }
-            Req.setSessionTenantUser(TenantUserRefnum);
-            ClearUserForEula(C, Req, U, TenantUserRefnum);
+            req.setSessionTenantUser(TenantUserRefnum);
+            LoginHelper.ClearUserForEula(C, req, U, TenantUserRefnum);
             if (TenantUserRefnum != SystemValues.EVIL_VALUE)
               UserTenantSync.sync(C, U, TenantUserRefnum);
-            Res.success();
+            res.success();
           }
         else if (TenantUserRefnum != SystemValues.EVIL_VALUE && U != null)
           { // User Selected a Tenant
@@ -183,227 +145,65 @@ public class Login extends SimpleServlet
 
             if (TV == null)
               {
-                Req.addError("tenantUserRefnum", "is Invalid");
-                Req.throwIfErrors();
+                req.addError("tenantUserRefnum", "is Invalid");
+                req.throwIfErrors();
               }
 
             Eula E = Wanda.getEula(TV.getName());
             int days = DateTimeUtil.computeDaysToNow(TV.getTenantUserLastEula());
             if (E != null && TextUtil.isNullOrEmpty(E._eulaUrl) == false && (days < 0 || days > E._days))
               {
-                doEula(Out, Req, C, TenantUserRefnum, E, U);
+                LoginHelper.doEula(Out, req, C, TenantUserRefnum, E, U);
               }
             else
               {
-                Req.setSessionTenantUser(TV.getTenantUserRefnum());
-                ClearUserForEula(C, Req, U, TenantUserRefnum);
+                req.setSessionTenantUser(TV.getTenantUserRefnum());
+                LoginHelper.ClearUserForEula(C, req, U, TenantUserRefnum);
                 UserTenantSync.sync(C, U, TenantUserRefnum);
                 JSONUtil.response(Out, "tenantUserJson", TV);
               }
           }
-        else
-          { // User trying to login
-            String Email = Req.getParamString("email", true);
-            String Pswd = Req.getParamString("pswd", true);
-            Req.throwIfErrors();
+        else if (TextUtil.isNullOrEmpty(ssoId) == false) // SSO
+          {
+            SAMLUserProfile userProfile = ConfigSAML.processCallback(req.getHttpServletRequest(), res.getHttpServletResponse(), C, ssoId);
+            if (userProfile == null)
+              return;
+            req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
+            U = User_Factory.lookupByEmail(userProfile._email);
+            if (U.read(C) == false)
+             throw new Exception("SSO user '" + userProfile._email + "' not found in the local DB.");
+            SSOConfig ssoConfig = Wanda.getSsoConfig(ssoId);
+            if (ssoConfig._eula == false)
+             req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
+            LoginHelper.onBasicLoginSuccess(req, C, U);
+            U.syncUpApps(C, U, ssoConfig._defaultPromoCode, ssoId);            
+            res.sendRedirect("/web/apps/learning-ai/main.jsp");
+          }
+        else // User trying to login
+          {
+            String Email = req.getParamString("email", true);
+            String Pswd = req.getParamString("pswd", true);
+            req.throwIfErrors();
             // To override the DB rollback
-            Req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
-            login(C, Email, Pswd, new LoginCallback()
+            req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
+            login(C, Email, Pswd, new LoginCallbackInterface()
               {
                 @Override
                 public void onLoginSuccess(User_Data U)
                 throws Exception
                   {
-                    doUserSyncServices(C, U);
-                    boolean maskedMode = Req.getParamBoolean("dataMasking", false);
-                    Req.setSessionBool(SessionUtil.Attributes.MASKING_MODE.name(), maskedMode);
-
-                    // Generate App Data if empty
-                    if (U.getAppData().size() < 1 && U.generateAppData(C) == false)
-                      {
-                        throw new Exception("Failed to generate AppData.");
-                      }
-
-                    if (User_Data.isUserLocked(U))
-                      {
-                        throw new ResourceNotAuthorizedException("User", Email);
-                      }
-
-                    if (hasPasswordExpired(U))
-                      {
-                        U.sendForgotPswdEmail(C);
-                        throw new AccessForbiddenException("User", "Your password has expired, please reset your password");
-                      }
-                    U.setLastipaddress(Req.getRemoteAddr());
-                    U.setLastLoginNow();
-                    U.setLoginCount(U.getLoginCount() + 1);
-                    U.setFailCount(0);
-                    U.setFailCycleCount(0);
-                    U.setNullFailFirst();
-                    U.setNullLocked();
-                    U.write(C);
-                    Req.setSessionUser(U);
-                    Req.setSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name(), SessionUtil.FORCE_RELOAD_USER);
-                    // SuperAdmin Check
-                    if (U.hasRoles(RoleHelper.SUPERADMIN))
-                      {
-                        ClearUserForEula(C, Req, U, SystemValues.EVIL_VALUE);
-                        JSONUtil.startOK(Out, '{');
-                        JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-                        JSONUtil.end(Out, '}');
-                        return;
-                      }
-
-                    if (ConnectionPool.isMultiTenant() == false)
-                      {
-                        Eula E = Wanda.getEula("");
-                        int days = DateTimeUtil.computeDaysToNow(U.getLastEula());
-                        if (E != null && (days < 0 || days > E._days))
-                          {
-                            doEula(Out, Req, C, TenantUserRefnum, E, U);
-                          }
-                        else
-                          {
-                            Req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
-                            // Generate Response
-                            JSONUtil.startOK(Out, '{');
-                            JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-                            JSONUtil.end(Out, '}');
-                          }
-                      }
-                    else
-                      {
-                        nextLoginStep(C, U, Req, Res, Out); // Also returns response
-                      }
+                    LoginHelper.onLoginSuccess(req, res, C, Out, TenantUserRefnum, Email, Pswd, U);
                   }
 
                 @Override
                 public void onLoginFailure(User_Data U)
                 throws Exception
                   {
-                    String ErrorMessage;
-                    // Failure logging handled in session filter.
-                    if (U == null || U.getDeleted() != null || U.isLocked() == true || U.getInviteCancelled() == true)
-                      {
-                        if (U == null)
-                          LOG.error("Patient not found");
-                        else
-                          {
-                            if (U.getDeleted() != null)
-                              LOG.error("Patient is deleted");
-                            if (U.isLocked() == true)
-                              LOG.error("Patient is locked until " + DateTimeUtil.printDateTimeCompact(U.getLocked(), true, true));
-                            if (U.getInviteCancelled() == true)
-                              LOG.error("Patient has been uninvited");
-                          }
-                        ErrorMessage = "Invalid Login Id or Password, or this account is locked.";
-                      }
-                    else
-                      {
-                        User_Data.markUserLoginFailure(C, U);
-                        int FailCount = Wanda.getLoginAttempts() - U.getFailCount();
-                        if (U.isLocked() == true)
-                          {
-                            if (U.getFailCycleCount() >= Wanda.getLoginFailedCycle())
-                              ErrorMessage = "Your account is locked!\nYou have exceeded  the maximum " + Wanda.getLoginAttempts() + " reset or login attempts.\nPlease contact your Administrator.";
-                            else
-                              ErrorMessage = "You have exceeded the maximum " + Wanda.getLoginAttempts() + " reset or login attempts.\nPlease try again in " + Wanda.getLockFor() + " minutes.";
-                          }
-                        else
-                          ErrorMessage = "Invalid Login Id or Password.\nYou have " + FailCount + " attempt(s) remaining";
-                      }
-                    throw new ResourceNotAuthorizedException("User", Email, ErrorMessage);
+                    LoginHelper.onLoginFailure(C, U);
                   }
+
               }); // End of login() method
-
           }
       }
 
-    private static boolean doEula(PrintWriter Out, RequestUtil Req, Connection C, long TenantUserRefnum, Eula E, User_Data U)
-    throws Exception
-      {
-        // For encrypting AppData._dbKey
-        String Email = Req.getParamString("email", true);
-        String Pswd = Req.getParamString("pswd", true);
-        // For Eula
-        String TokenIn = Req.getParamString("eulaToken", false);
-        String TokenSaved = Req.getSessionString(SessionUtil.Attributes.EULA_CODE.toString());
-        if (TextUtil.isNullOrEmpty(TokenSaved) == false && TokenSaved.equals(TokenIn) == true)
-          {
-            ClearUserForEula(C, Req, U, TenantUserRefnum);
-            return true;
-          }
-
-        String TokenNew = EncryptionUtil.getToken(18, true);
-        Req.setSessionString(SessionUtil.Attributes.EULA_CODE.toString(), TokenNew);
-        JSONUtil.startOK(Out, '{');
-        JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-        JSONUtil.print(Out, "tenantUserRefnum", false, TenantUserRefnum);
-        JSONUtil.print(Out, "eulaUrl", false, E._eulaUrl);
-        JSONUtil.print(Out, "eulaToken", false, TokenNew);
-        JSONUtil.end(Out, '}');
-        return false;
-      }
-
-
-    private static void ClearUserForEula(Connection C, RequestUtil Req, User_Data U, long tenantUserRefnum)
-    throws Exception
-      {
-        U.setLastEulaNow();
-        if (U.write(C) == false)
-          throw new Exception("Cannot update user " + U.getRefnum());
-        if (tenantUserRefnum != SystemValues.EVIL_VALUE)
-          {
-            TenantUser_Data TU = TenantUser_Factory.lookupByPrimaryKey(tenantUserRefnum);
-            TU.setLastEulaNow();
-            if (TU.write(C) == false)
-              throw new Exception("Cannot update TenantUser refnum " + tenantUserRefnum);
-            Req.setSessionTenantUser(TU.getRefnum());
-          }
-        Req.removeSessionAttribute(SessionUtil.Attributes.EULA_CODE.toString());
-        Req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
-      }
-
-    private static void nextLoginStep(Connection C, User_Data U, RequestUtil Req, ResponseUtil Res, PrintWriter Out)
-    throws Exception
-      {
-        // For Encrypting AppData._dbKey
-        String Email = Req.getParamString("email", true);
-        String Pswd = Req.getParamString("pswd", true);
-
-        ListResults<TenantView_Data> list = TenantView_Factory.getAllActiveByUserRefnum(C, U.getRefnum(), 0, 1000);
-        if (list.size() == 0)
-          {
-            Req.removeSessionUser();
-            throw new ResourceNotAuthorizedException("User", U.getEmail(), "You do not have access to any Tenants.\nPlease contact your Administrator.");
-          }
-        else if (list.size() == 1)
-          {
-            Eula E = Wanda.getEula(list.get(0).getName());
-            int days = DateTimeUtil.computeDaysToNow(U.getLastEula());
-            if (E != null && (days < 0 || days > E._days))
-              {
-                doEula(Out, Req, C, list.get(0).getTenantUserRefnum(), E, U);
-              }
-            else
-              {
-                Req.setSessionLong(SessionUtil.Attributes.USERREFNUM.toString(), list.get(0).getUserRefnum());
-                Req.setSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString(), list.get(0).getTenantUserRefnum());
-                ClearUserForEula(C, Req, U, list.get(0).getTenantUserRefnum());
-                UserTenantSync.sync(C, U, list.get(0).getTenantUserRefnum());
-                JSONUtil.startOK(Out, '{');
-                list.get(0).toJSON(Out, "tenantUserJson", false);
-                JSONUtil.print(Out, "appData", false, U.getAppDataJson(Email + "@@" + Pswd));
-                JSONUtil.end(Out, '}');
-              }
-          }
-        else
-          {
-            JSONUtil.startOK(Out, '{');
-            JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-            JSONUtil.print(Out, "tenants", "tenantUserJson", false, list, " ");
-            JSONUtil.print(Out, "message", false, "Please select a tenant");
-            JSONUtil.end(Out, '}');
-          }
-      }
   }

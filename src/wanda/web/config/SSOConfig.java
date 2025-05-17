@@ -21,11 +21,16 @@ import com.google.gson.annotations.SerializedName;
 public class SSOConfig implements Cloneable
   {
     /*@formatter:off*/
-    @SerializedName("id"          ) public String _id           = null  ;
-    @SerializedName("configFile"  ) public String _configFile   = null ;
-    @SerializedName("entityId"    ) public String _entityId     = null ;
-    @SerializedName("keyStorePath") public String _keyStorePath = null ;
-    @SerializedName("keyStorePswd") public String _keyStorePswd = null ;
+    @SerializedName("id"                        ) public String  _id                         = null ;
+    @SerializedName("identityProviderConfigFile") public String  _identityProviderConfigFile = null ;
+    @SerializedName("serviceProviderConfigFile" ) public String  _serviceProviderConfigFile  = null ;
+    @SerializedName("identityProviderEntityId"  ) public String  _identityProviderEntityId   = null ;
+    @SerializedName("redirectUrl"               ) public String  _redirectUrl                = null ;
+    @SerializedName("keyStorePath"              ) public String  _keyStorePath               = null ;
+    @SerializedName("keyStorePswd"              ) public String  _keyStorePswd               = null ;
+    @SerializedName("defaultPromoCode"          ) public String  _defaultPromoCode           = null ;
+    @SerializedName("eula"                      ) public boolean _eula                       = true ;
+    
     /*@formatter:on*/
 
 

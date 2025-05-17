@@ -160,33 +160,66 @@ public class LoginSystem
                   OK = false;
                 }
 
-              // saml config file
-              if (TextUtil.isNullOrEmpty(conf._configFile) == true)
+              // saml IP config file
+              if (TextUtil.isNullOrEmpty(conf._identityProviderConfigFile) == true)
                 {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a configFile value.");
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an identityProviderConfigFile value.");
                   OK = false;
                 }
-              else if (files.add(conf._configFile) == false)
+              else if (files.add(conf._identityProviderConfigFile) == false)
                 {
-                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with the config file '" + conf._configFile + "' which is being used multiple times.");
+                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with identityProviderConfigFile '" + conf._identityProviderConfigFile + "' which is being used multiple times.");
                   OK = false;
                 }
               else
                 {
-                  File f = new File(conf._configFile);
+                  File f = new File(conf._identityProviderConfigFile);
                   if (f.exists() == false)
                     {
-                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a config file defined as '" + conf._configFile + "' which cannot be found.");
+                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with identityProviderConfigFile '" + conf._identityProviderConfigFile + "' which cannot be found.");
                       OK = false;
                     }
                 }
 
-              if (TextUtil.isNullOrEmpty(conf._entityId) == true)
+              // saml SP config file
+              if (TextUtil.isNullOrEmpty(conf._serviceProviderConfigFile) == true)
                 {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an entityId value.");
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a serviceProviderConfigFile value.");
+                  OK = false;
+                }
+              else if (files.add(conf._serviceProviderConfigFile) == false)
+                {
+                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with serviceProviderConfigFile '" + conf._identityProviderConfigFile + "' which is being used multiple times.");
+                  OK = false;
+                }
+              else
+                {
+                  File f = new File(conf._serviceProviderConfigFile);
+                  if (f.exists() == false)
+                    {
+                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with serviceProviderConfigFile '" + conf._identityProviderConfigFile + "' which cannot be found.");
+                      OK = false;
+                    }
+                }
+              
+              if (TextUtil.isNullOrEmpty(conf._identityProviderEntityId) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an ipEntityId value.");
                   OK = false;
                 }
 
+              if (TextUtil.isNullOrEmpty(conf._redirectUrl) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a redirectUrl value.");
+                  OK = false;
+                }
+              else if (conf._redirectUrl.indexOf("${partnerId}") < 0)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' a redirectUrl value that is missing the partner replacement marker '${partnerId}'.");
+                  OK = false;
+                }
+              else
+                conf._redirectUrl = conf._redirectUrl.replace("${partnerId}", conf._id);
 
               // Keystore path
               if (TextUtil.isNullOrEmpty(conf._keyStorePath) == true)
@@ -215,6 +248,12 @@ public class LoginSystem
                   OK = false;
                 }
               
+              // defaut promo code
+              if (TextUtil.isNullOrEmpty(conf._defaultPromoCode) == true)
+                {
+                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a defaultPromoCode value.");
+                  OK = false;
+                }
             }
         return OK;
       }

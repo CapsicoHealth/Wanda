@@ -1,80 +1,342 @@
 
 package wanda.saml;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Iterator;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensaml.core.config.InitializationService;
+import org.opensaml.core.xml.XMLObject;
 import org.opensaml.saml.common.xml.SAMLConstants;
-import org.opensaml.saml.metadata.resolver.impl.FilesystemMetadataResolver;
-import org.opensaml.saml.saml2.metadata.EntityDescriptor;
-import org.opensaml.saml.saml2.metadata.IDPSSODescriptor;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.Attribute;
+import org.opensaml.saml.saml2.core.AttributeStatement;
+import org.pac4j.core.client.Clients;
+import org.pac4j.core.client.IndirectClient;
+import org.pac4j.core.config.Config;
+import org.pac4j.core.context.CallContext;
+import org.pac4j.core.context.session.SessionStore;
+import org.pac4j.core.exception.http.RedirectionAction;
+import org.pac4j.jee.context.JEEContext;
+import org.pac4j.jee.context.session.JEESessionStore;
+import org.pac4j.jee.http.adapter.JEEHttpActionAdapter;
 import org.pac4j.saml.client.SAML2Client;
 import org.pac4j.saml.config.SAML2Configuration;
+import org.pac4j.saml.credentials.SAML2Credentials;
 
-import net.shibboleth.shared.xml.impl.BasicParserPool;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import tilda.db.Connection;
+import tilda.utils.FileUtil;
+import tilda.utils.TextUtil;
 import wanda.web.config.SSOConfig;
 import wanda.web.config.Wanda;
 
 
 public class ConfigSAML
   {
-    protected static final Logger LOG = LogManager.getLogger(ConfigSAML.class.getName());
+    public static final Logger         LOG           = LogManager.getLogger(ConfigSAML.class.getName());
 
-    public static void init(String configId)
-    throws Exception
+    private static Map<String, Config> _saml2Configs = new HashMap<String, Config>();
+
+    private ConfigSAML()
+      throws Exception
       {
-        InitializationService.initialize();
+      }
 
-        File metadataFile = null;
-        SSOConfig conf = Wanda.getSsoConfig(configId);
-        if (conf != null || conf._configFile != null)
-          metadataFile = new File(conf._configFile);
+    public static Config getInstance(String ssoId)
+    throws ServletException
+      {
+        return getInstance(ssoId, null);
+      }
 
-        if (metadataFile == null)
+    public static Config getInstance(String ssoId, String overrideCallbackRootUrl)
+    throws ServletException
+      {
+        LOG.debug("Registered configs: " + _saml2Configs.keySet());
+        Config cfg = _saml2Configs.get(ssoId);
+        if (cfg == null)
           {
-            LOG.error("No sso configuration can be found in the wanda.config.json file with the id '" + configId + "'.");
-            return;
-          }
-
-        if (metadataFile.exists() == false)
-          {
-            LOG.error("The sso configuration '" + configId + "' in the wanda.config.json defines the file '" + metadataFile.getCanonicalPath() + "' which cannot be found.");
-            return;
-          }
-
-        // Create and configure the ParserPool
-        BasicParserPool parserPool = new BasicParserPool();
-        parserPool.setNamespaceAware(true);
-        parserPool.initialize();
-
-        // Load the metadata XML
-        FilesystemMetadataResolver metadataResolver = new FilesystemMetadataResolver(metadataFile);
-        metadataResolver.setParserPool(parserPool);
-        metadataResolver.setId("metadataResolver");
-        metadataResolver.initialize();
-
-        System.out.println("Metadata File Exists: " + metadataFile.exists());
-        System.out.println("Metadata Resolver Initialized: " + metadataResolver.isInitialized());
-
-        // Get the EntityDescriptor from the metadata
-        Iterator<EntityDescriptor> entityDescriptors = metadataResolver.iterator();
-        while (entityDescriptors.hasNext() == true)
-          {
-            EntityDescriptor entityDescriptor = entityDescriptors.next();
-            System.out.println("Resolved Entity ID: " + entityDescriptor.getEntityID());
-            IDPSSODescriptor idpSSODescriptor = entityDescriptor.getIDPSSODescriptor("urn:oasis:names:tc:SAML:2.0:protocol");
-            if (idpSSODescriptor != null)
+            LOG.debug("Config not found for ssoId: " + ssoId + ". Synchronizing the map now.");
+            synchronized (_saml2Configs)
               {
-                String ssoServiceUrl = idpSSODescriptor.getSingleSignOnServices().get(0).getLocation();
-                System.out.println("SSO URL: " + ssoServiceUrl);
+                cfg = _saml2Configs.get(ssoId);
+                if (cfg == null)
+                  { // Second check (with locking)
+                    LOG.debug("Config still not found for ssoId: " + ssoId + ". Let's create it.");
+                    try
+                      {
+                        InitializationService.initialize();
+                        SAML2Client saml2Client = ConfigSAML.buildSaml2Client(ssoId, overrideCallbackRootUrl);
+                        Clients clients = new Clients(saml2Client);
+                        cfg = new Config(clients);
+                        _saml2Configs.put(ssoId, cfg);
+                      }
+                    catch (Exception e)
+                      {
+                        throw new ServletException("Failed to initialize SAML2 client", e);
+                      }
+                  }
+                else
+                  LOG.debug("Config for ssoId: " + ssoId + " found.");
               }
           }
+        else
+          LOG.debug("Config for ssoId: " + ssoId + " found.");
+
+        return cfg;
       }
+
+    protected static SAML2Client buildSaml2Client(String ssoConfigId, String overrideCallbackRootUrl)
+    throws Exception
+      {
+        LOG.debug("Initializing SAML2 client for '" + ssoConfigId + "'");
+        SSOConfig conf = Wanda.getSsoConfig(ssoConfigId);
+        if (conf == null)
+          {
+            LOG.error("Cannot initializing SAML2 client for '" + ssoConfigId + "' because it wasn't fonund in the Wanda configuration information.");
+            return null;
+          }
+
+        SAML2Configuration config = new SAML2Configuration();
+        config.setIdentityProviderMetadataResourceFilepath(conf._identityProviderConfigFile);
+        config.setIdentityProviderEntityId(conf._identityProviderEntityId);
+        config.setKeystoreResourceFilepath(conf._keyStorePath);
+        config.setKeystorePassword(conf._keyStorePswd);
+        config.setPrivateKeyPassword(conf._keyStorePswd);
+        config.setKeyStoreAlias("pac4j");
+        // config.setUseNameQualifier(true); // this breaks the redirect to the SSO partner login page.
+        // config.setForceServiceProviderMetadataGeneration(true);
+        config.setServiceProviderMetadataResourceFilepath(conf._serviceProviderConfigFile);
+        // config.setServiceProviderMetadataResourceFilepath("file:/absolute/path/to/sp-metadata.xml");
+        config.setMaximumAuthenticationLifetime(3600);
+        // config.setAuthnRequestBindingType(SAMLConstants.SAML2_POST_BINDING_URI); // REDIRECT protocol is preferred
+        config.setAuthnRequestBindingType(SAMLConstants.SAML2_REDIRECT_BINDING_URI);
+        config.setWantsAssertionsSigned(false); // or true if your IdP signs assertions
+        // Set index to activate attribute consuming service in metadata
+
+        config.setAttributeConsumingServiceIndex(1);
+        config.setMetadataGenerator(new SAMLCustomMetadataGenerator(ssoConfigId));
+
+        SAML2Client saml2Client = new SAML2Client(config);
+        String callbackUrl = (overrideCallbackRootUrl == null ? Wanda.getHostName() + Wanda.getAppPath() : overrideCallbackRootUrl) + conf._redirectUrl;
+        saml2Client.setCallbackUrl(callbackUrl);
+
+        saml2Client.init();
+        LOG.debug("Completed SAML2 client for '" + ssoConfigId + "'"); // \n" + metadata + "\n");
+        return saml2Client;
+      }
+
+    public static void processRedirect(HttpServletRequest req, HttpServletResponse res, String ssoId)
+    throws Exception
+      {
+        JEEContext context = new JEEContext(req, res);
+        SessionStore sessionStore = new JEESessionStore();
+
+        IndirectClient client = (IndirectClient) ConfigSAML.getInstance(ssoId).getClients().findClient("SAML2Client").get();
+
+        CallContext callContext = new CallContext(context, sessionStore);
+        Optional<RedirectionAction> action = client.getRedirectionAction(callContext);
+        if (action.isPresent())
+          {
+            JEEHttpActionAdapter.INSTANCE.adapt(action.get(), context);
+          }
+        else
+          {
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST, "No redirection action available.");
+          }
+      }
+
+    public static SAMLUserProfile processCallback(HttpServletRequest req, HttpServletResponse res, Connection C, String ssoId)
+    throws Exception
+      {
+        ConfigSAML.LOG.debug("Processing SAML callback...");
+        JEEContext ctx = new JEEContext(req, res);
+        SessionStore sessionStore = new JEESessionStore();
+        CallContext callContext = new CallContext(ctx, sessionStore);
+
+        IndirectClient client = (IndirectClient) ConfigSAML.getInstance(ssoId).getClients().findClient("SAML2Client").get();
+        // Get credentials from the response
+        SAML2Credentials credentials = (SAML2Credentials) client.getCredentials(callContext).get();
+//        LOG.debug("Credentials class: {}", credentials.getClass());
+//        LOG.debug("Credentials source: " + credentials.getSource());
+//        LOG.debug("Credentials logoug type: " + credentials.getLogoutType());
+        
+        Map<String, String> M = processAttributes(credentials);
+        String email = M.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
+        String nameLast = M.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname");
+        String nameFirst = M.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname");
+        String orgId = M.get("orgId");
+        
+        if (TextUtil.isNullOrEmpty(email) == true)
+          {
+            LOG.error("Missing email in SAML response.");
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing email in SAML response.");
+            return null;
+          }
+        if (TextUtil.isNullOrEmpty(orgId) == true)
+          {
+            LOG.error("Missing orgid in SAML response.");
+            res.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing email in SAML response.");
+            return null;
+          }
+        
+        return new SAMLUserProfile(email, email, nameFirst, nameLast, orgId);
+
+/*
+        // Get user profile from the IdP using those credentials
+        Optional<UserProfile> profileOptional = client.getUserProfile(callContext, credentials);
+        if (profileOptional.isEmpty())
+          {
+            LOG.error("No user profile found for the given credentials.");
+            res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "No user profile found for the given credentials.");
+            return null;
+          }
+        UserProfile profile = profileOptional.get();
+        LOG.debug("UserProfile class: {}", profile.getClass().getName());
+        LOG.debug("User profile ID: {}", profile.getId());
+        LOG.debug("User profile user name: {}", profile.getUsername());
+        LOG.debug("User profile type id: {}", profile.getTypedId());
+        LOG.debug("User profile linked id: {}", profile.getLinkedId());
+        LOG.debug("User client name: {}", profile.getClientName());
+        LOG.debug("User profile attributes: {}", profile.getAttributes());
+        LOG.debug("User profile roles: {}", profile.getRoles());
+        if (profile instanceof SAML2Profile samlProfile)
+          {
+            samlProfile.getAttributes().forEach((key, value) -> {
+              LOG.debug("Attribute: {} = {}", key, value);
+            });
+            LOG.debug("Roles: {}", samlProfile.getRoles());
+
+            // You can also try this if you know expected keys:
+            LOG.debug("email: {}", samlProfile.getAttribute("email"));
+            LOG.debug("givenName: {}", samlProfile.getAttribute("givenName"));
+          }
+          
+        // Save profile in session
+        sessionStore.set(ctx, Pac4jConstants.USER_PROFILES, List.of(profile));
+*/
+        
+        // Redirect to the original URL
+//        return (String) sessionStore.get(ctx, Pac4jConstants.REQUESTED_URL).orElse("");
+      }
+
+    protected static Map<String, String>  processAttributes(SAML2Credentials credentials)
+      {
+        Map<String, String> M = new HashMap<String, String>();
+        Object context = credentials.getContext();
+        if (context != null)
+          {
+            try
+              {
+                java.lang.reflect.Method getMessageContextMethod = context.getClass().getMethod("getMessageContext");
+                Object messageContext = getMessageContextMethod.invoke(context);
+
+                java.lang.reflect.Method getMessageMethod = messageContext.getClass().getMethod("getMessage");
+                Object message = getMessageMethod.invoke(messageContext);
+
+                if (message instanceof org.opensaml.saml.saml2.core.Response samlResponse)
+                  {
+                    for (Assertion assertion : samlResponse.getAssertions())
+                      {
+                        for (AttributeStatement stmt : assertion.getAttributeStatements())
+                          {
+                            for (Attribute attr : stmt.getAttributes())
+                              {
+                                String name = attr.getName();
+                                List<String> values = new ArrayList<>();
+                                for (XMLObject xmlObj : attr.getAttributeValues())
+                                  {
+                                    String val = xmlObj.getDOM() != null
+                                    ? xmlObj.getDOM().getTextContent()
+                                    : xmlObj.toString();
+                                    values.add(val);
+                                  }
+                                LOG.debug("Raw SAML Attribute: {} = {}", name, values);
+                                if (values.size() > 0)
+                                 M.put(name, values.get(0));
+                              }
+                          }
+                      }
+                  }
+                else
+                  {
+                    LOG.warn("Expected SAML Response but got: {}", message != null ? message.getClass() : "null");
+                  }
+
+              }
+            catch (Exception e)
+              {
+                LOG.error("Error reflecting into SAML credentials context: {}", e.toString(), e);
+              }
+          }
+        else
+          {
+            LOG.warn("SAML2Credentials.getContext() returned null.");
+          }
+        
+        return M;
+      }
+
+
+    /*
+     * public static void init(String configId)
+     * throws Exception
+     * {
+     * InitializationService.initialize();
+     * 
+     * File metadataFile = null;
+     * SSOConfig conf = Wanda.getSsoConfig(configId);
+     * if (conf != null || conf._configFile != null)
+     * metadataFile = new File(conf._configFile);
+     * 
+     * if (metadataFile == null)
+     * {
+     * LOG.error("No sso configuration can be found in the wanda.config.json file with the id '" + configId + "'.");
+     * return;
+     * }
+     * 
+     * if (metadataFile.exists() == false)
+     * {
+     * LOG.error("The sso configuration '" + configId + "' in the wanda.config.json defines the file '" + metadataFile.getCanonicalPath() + "' which cannot be found.");
+     * return;
+     * }
+     * 
+     * // Create and configure the ParserPool
+     * BasicParserPool parserPool = new BasicParserPool();
+     * parserPool.setNamespaceAware(true);
+     * parserPool.initialize();
+     * 
+     * // Load the metadata XML
+     * FilesystemMetadataResolver metadataResolver = new FilesystemMetadataResolver(metadataFile);
+     * metadataResolver.setParserPool(parserPool);
+     * metadataResolver.setId("metadataResolver");
+     * metadataResolver.initialize();
+     * 
+     * System.out.println("Metadata File Exists: " + metadataFile.exists());
+     * System.out.println("Metadata Resolver Initialized: " + metadataResolver.isInitialized());
+     * 
+     * // Get the EntityDescriptor from the metadata
+     * Iterator<EntityDescriptor> entityDescriptors = metadataResolver.iterator();
+     * while (entityDescriptors.hasNext() == true)
+     * {
+     * EntityDescriptor entityDescriptor = entityDescriptors.next();
+     * System.out.println("Resolved Entity ID: " + entityDescriptor.getEntityID());
+     * IDPSSODescriptor idpSSODescriptor = entityDescriptor.getIDPSSODescriptor("urn:oasis:names:tc:SAML:2.0:protocol");
+     * if (idpSSODescriptor != null)
+     * {
+     * String ssoServiceUrl = idpSSODescriptor.getSingleSignOnServices().get(0).getLocation();
+     * System.out.println("SSO URL: " + ssoServiceUrl);
+     * }
+     * }
+     * }
+     */
 
     /*
      * public static SAML2Client prepareServiceProviderMetaData(String ssoConfigId)
@@ -114,50 +376,25 @@ public class ConfigSAML
      * }
      */
 
-    public static SAML2Client buildSaml2Client(String ssoConfigId, String callbackUrl)
-    throws Exception
-      {
-        LOG.debug("Initializing SAML2 client for '" + ssoConfigId + "'");
-        SSOConfig conf = Wanda.getSsoConfig(ssoConfigId);
-        if (conf == null)
-          {
-            LOG.error("Cannot initializing SAML2 client for '" + ssoConfigId + "' because it wasn't fonund in the Wanda configuration information.");
-            return null;
-          }
-
-        SAML2Configuration config = new SAML2Configuration();
-        config.setIdentityProviderMetadataResourceFilepath(conf._configFile);
-        config.setServiceProviderEntityId(conf._entityId);
-        config.setKeystoreResourceFilepath(conf._keyStorePath);
-        config.setKeystorePassword(conf._keyStorePswd);
-        config.setPrivateKeyPassword(conf._keyStorePswd);
-        config.setKeyStoreAlias("pac4j");
-        config.setForceServiceProviderMetadataGeneration(true);
-        // config.setServiceProviderMetadataResourceFilepath("file:/absolute/path/to/sp-metadata.xml");
-        config.setMaximumAuthenticationLifetime(3600);
-        config.setAuthnRequestBindingType("POST");
-//        config.setAuthnRequestBindingType(SAMLConstants.SAML2_POST_BINDING_URI);
-        config.setAuthnRequestBindingType(SAMLConstants.SAML2_REDIRECT_BINDING_URI);
-
-
-        SAML2Client saml2Client = new SAML2Client(config);
-        saml2Client.setCallbackUrl(callbackUrl);
-        saml2Client.init();
-        LOG.debug("Completed SAML2 client for '" + ssoConfigId + "'");
-        return saml2Client;
-      }
 
     public static void main(String[] args)
     throws Exception
       {
         Wanda.autoInit();
         LOG.info("\n\n\n\n\n\n\n=====================================\n   Init\n=====================================");
-        init("ALV");
-        LOG.info("\n\n\n\n\n\n\n=====================================\n   buildSaml2Client\n=====================================");
-        if (buildSaml2Client("ALV", "/sso") != null)
-          LOG.info("SAML2Client created successfully.");
+        SAML2Client saml2Client = buildSaml2Client("ALV", "https://learn-ai.capsicohealth.com/web");
+        if (saml2Client != null)
+          {
+            LOG.info("SAML2Client created successfully.");
+            String metadata = saml2Client.getServiceProviderMetadataResolver().getMetadata();
+            metadata = FileUtil.prettyPrintXML(metadata);
+            PrintWriter out = FileUtil.getBufferedPrintWriter("C:\\Users\\LaurentHasson\\sp_capsico_ALV_metadata.xml", false);
+            out.write(metadata);
+            out.close();
+          }
         else
           LOG.error("Failed to create SAML2Client.");
-        LOG.info("\n\n\n\n\n\n\n=====================================\n   DONE!!!\n=====================================");
+        LOG.info("\n=====================================\n   DONE!!!\n=====================================\n\n\n\n");
       }
+
   }

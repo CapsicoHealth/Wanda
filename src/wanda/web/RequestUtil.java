@@ -82,6 +82,11 @@ public class RequestUtil
         return _Req.getParameterMap();
       }
 
+    public HttpServletRequest getHttpServletRequest()
+      {
+        return _Req;
+      }
+
 
     public String getParamString(String Name, boolean Mandatory, String DefaultValue, String[] ValidValues, boolean CaseInsensitive)
       {

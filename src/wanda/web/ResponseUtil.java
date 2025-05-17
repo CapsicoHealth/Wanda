@@ -24,6 +24,7 @@ import java.util.List;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
@@ -51,6 +52,13 @@ public class ResponseUtil
 
     protected HttpServletResponse _Res;
     protected PrintWriter         _Out;
+    
+    public HttpServletResponse getHttpServletResponse()
+      {
+        return _Res;
+      }
+
+    
 
     public enum ContentType
       {
