@@ -29,9 +29,10 @@ public class SAMLServlet extends HttpServlet
             ConfigSAML.LOG.info("\n\n\n");
             ConfigSAML.LOG.info(SessionFilter.getRequestHeaderLogStr(req, null, true, true));
             String ssoId = req.getParameter("ssoId");
+            String returnUrl = req.getParameter("returnUrl");
             if (TextUtil.isNullOrEmpty(ssoId) == true)
-              throw new ServletException("Missing ssoId or idp parameter");
-            ConfigSAML.processRedirect(req, res, ssoId);
+              throw new ServletException("Missing ssoId parameter");
+            ConfigSAML.processRedirect(req, res, ssoId, returnUrl);
           }
         catch (HttpAction action)
           {

@@ -146,115 +146,121 @@ public class LoginSystem
       {
         Set<String> ids = new HashSet<String>();
         Set<String> files = new HashSet<String>();
-        for (SSOConfig conf : _ssoConfigs)
-          if (conf != null)
-            {
-              if (TextUtil.isNullOrEmpty(conf._id) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig without an id value.");
-                  OK = false;
-                }
-              else if (ids.add(conf._id) == false)
-                {
-                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' multiple times.");
-                  OK = false;
-                }
+        if (_ssoConfigs.size() > 1)
+          {
+            Wanda.LOG.error("Currently, only one SSO subsystem can be configured at any given time.");
+            OK = false;
+          }
+        else
+          for (SSOConfig conf : _ssoConfigs)
+            if (conf != null)
+              {
+                if (TextUtil.isNullOrEmpty(conf._id) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig without an id value.");
+                    OK = false;
+                  }
+                else if (ids.add(conf._id) == false)
+                  {
+                    Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' multiple times.");
+                    OK = false;
+                  }
 
-              // saml IP config file
-              if (TextUtil.isNullOrEmpty(conf._identityProviderConfigFile) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an identityProviderConfigFile value.");
-                  OK = false;
-                }
-              else if (files.add(conf._identityProviderConfigFile) == false)
-                {
-                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with identityProviderConfigFile '" + conf._identityProviderConfigFile + "' which is being used multiple times.");
-                  OK = false;
-                }
-              else
-                {
-                  File f = new File(conf._identityProviderConfigFile);
-                  if (f.exists() == false)
-                    {
-                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with identityProviderConfigFile '" + conf._identityProviderConfigFile + "' which cannot be found.");
-                      OK = false;
-                    }
-                }
+                // saml IP config file
+                if (TextUtil.isNullOrEmpty(conf._identityProviderConfigFile) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an identityProviderConfigFile value.");
+                    OK = false;
+                  }
+                else if (files.add(conf._identityProviderConfigFile) == false)
+                  {
+                    Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with identityProviderConfigFile '" + conf._identityProviderConfigFile + "' which is being used multiple times.");
+                    OK = false;
+                  }
+                else
+                  {
+                    File f = new File(conf._identityProviderConfigFile);
+                    if (f.exists() == false)
+                      {
+                        Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with identityProviderConfigFile '" + conf._identityProviderConfigFile + "' which cannot be found.");
+                        OK = false;
+                      }
+                  }
 
-              // saml SP config file
-              if (TextUtil.isNullOrEmpty(conf._serviceProviderConfigFile) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a serviceProviderConfigFile value.");
-                  OK = false;
-                }
-              else if (files.add(conf._serviceProviderConfigFile) == false)
-                {
-                  Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with serviceProviderConfigFile '" + conf._identityProviderConfigFile + "' which is being used multiple times.");
-                  OK = false;
-                }
-              else
-                {
-                  File f = new File(conf._serviceProviderConfigFile);
-                  if (f.exists() == false)
-                    {
-                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with serviceProviderConfigFile '" + conf._identityProviderConfigFile + "' which cannot be found.");
-                      OK = false;
-                    }
-                }
-              
-              if (TextUtil.isNullOrEmpty(conf._identityProviderEntityId) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an ipEntityId value.");
-                  OK = false;
-                }
+                // saml SP config file
+                if (TextUtil.isNullOrEmpty(conf._serviceProviderConfigFile) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a serviceProviderConfigFile value.");
+                    OK = false;
+                  }
+                else if (files.add(conf._serviceProviderConfigFile) == false)
+                  {
+                    Wanda.LOG.error("The loginSystem entry defines an ssoConfig '" + conf._id + "' with serviceProviderConfigFile '" + conf._identityProviderConfigFile + "' which is being used multiple times.");
+                    OK = false;
+                  }
+                else
+                  {
+                    File f = new File(conf._serviceProviderConfigFile);
+                    if (f.exists() == false)
+                      {
+                        Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with serviceProviderConfigFile '" + conf._identityProviderConfigFile + "' which cannot be found.");
+                        OK = false;
+                      }
+                  }
 
-              if (TextUtil.isNullOrEmpty(conf._redirectUrl) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a redirectUrl value.");
-                  OK = false;
-                }
-              else if (conf._redirectUrl.indexOf("${partnerId}") < 0)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' a redirectUrl value that is missing the partner replacement marker '${partnerId}'.");
-                  OK = false;
-                }
-              else
-                conf._redirectUrl = conf._redirectUrl.replace("${partnerId}", conf._id);
+                if (TextUtil.isNullOrEmpty(conf._identityProviderEntityId) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without an ipEntityId value.");
+                    OK = false;
+                  }
 
-              // Keystore path
-              if (TextUtil.isNullOrEmpty(conf._keyStorePath) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a keyStorePath value.");
-                  OK = false;
-                }
-              else
-                {
-                  File f = new File(conf._keyStorePath);
-                  if (f.exists() == false)
-                    {
-                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a keystore file '" + conf._keyStorePath + "' which cannot be found.");
-                      OK = false;
-                    }
-                  else if (EncryptionUtil.isKeystorePasswordValid(conf._keyStorePath, conf._keyStorePswd) == false)
-                    {
-                      Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a keystore file '" + conf._keyStorePath + "' and a password which is invalid.");
-                      OK = false;
-                    }
-                }
+                if (TextUtil.isNullOrEmpty(conf._redirectUrl) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a redirectUrl value.");
+                    OK = false;
+                  }
+                else if (conf._redirectUrl.indexOf("${ssoId}") < 0)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' a redirectUrl value that is missing the partner replacement marker '${ssoId}'.");
+                    OK = false;
+                  }
+                else
+                  conf._redirectUrl = conf._redirectUrl.replace("${ssoId}", conf._id);
 
-              if (TextUtil.isNullOrEmpty(conf._keyStorePswd) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a keyStorePswd value.");
-                  OK = false;
-                }
-              
-              // defaut promo code
-              if (TextUtil.isNullOrEmpty(conf._defaultPromoCode) == true)
-                {
-                  Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a defaultPromoCode value.");
-                  OK = false;
-                }
-            }
+                // Keystore path
+                if (TextUtil.isNullOrEmpty(conf._keyStorePath) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a keyStorePath value.");
+                    OK = false;
+                  }
+                else
+                  {
+                    File f = new File(conf._keyStorePath);
+                    if (f.exists() == false)
+                      {
+                        Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a keystore file '" + conf._keyStorePath + "' which cannot be found.");
+                        OK = false;
+                      }
+                    else if (EncryptionUtil.isKeystorePasswordValid(conf._keyStorePath, conf._keyStorePswd) == false)
+                      {
+                        Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' with a keystore file '" + conf._keyStorePath + "' and a password which is invalid.");
+                        OK = false;
+                      }
+                  }
+
+                if (TextUtil.isNullOrEmpty(conf._keyStorePswd) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a keyStorePswd value.");
+                    OK = false;
+                  }
+
+                // defaut promo code
+                if (TextUtil.isNullOrEmpty(conf._defaultPromoCode) == true)
+                  {
+                    Wanda.LOG.error("The loginSystem entry has an ssoConfig '" + conf._id + "' without a defaultPromoCode value.");
+                    OK = false;
+                  }
+              }
         return OK;
       }
 
@@ -263,21 +269,26 @@ public class LoginSystem
         return _userSyncServiceClasses;
       }
 
-    public SSOConfig getSsoConfig(String id)
+    public SSOConfig getSsoConfig(String ssoId)
     throws CloneNotSupportedException
       {
         if (_ssoConfigs != null)
           for (SSOConfig conf : _ssoConfigs)
-            if (conf != null && conf._id.equals(id) == true)
+            if (conf != null && conf._id.equals(ssoId) == true)
               return conf.clone();
         return null;
       }
 
-    public String[] checkApiKeyAllowedSourceIps(String id, String key)
+    public String getDefaultSsoConfigId()
+      {
+        return _ssoConfigs == null || _ssoConfigs.isEmpty() == true ? null : _ssoConfigs.get(0)._id;
+      }
+
+    public String[] checkApiKeyAllowedSourceIps(String ssoId, String key)
       {
         if (_apiKeys != null)
           for (ApiKey apiKey : _apiKeys)
-            if (apiKey != null && apiKey._id.equals(id) == true && apiKey._key.equals(key) == true)
+            if (apiKey != null && apiKey._id.equals(ssoId) == true && apiKey._key.equals(key) == true)
               return apiKey._sourceIps;
         return null;
       }

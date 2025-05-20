@@ -133,7 +133,7 @@
          }
        ]
      ,"outputMaps": [
-           { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
+           { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue", "loginType", "loginDomain"] }
        ]
      ,"indices":[ 
           { "name":"Id"          , "columns":["id"]    , "db": true }
@@ -174,6 +174,7 @@
          ,{ "name":"religion"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Religion" }
          ,{ "name":"languages"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Languages spoken" }
          ,{ "name":"marital"      , "type"  :"STRING"   ,                    "size":  64,             "description":"Marital status" }
+         ,{ "name":"orgId"        , "type"  :"STRING"   ,                    "size":  64,             "description":"Company" }
          ,{ "name":"company"      , "type"  :"STRING"   ,                    "size":  64,             "description":"Company" }
          ,{ "name":"industry"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Industry" }
          ,{ "name":"profTitle"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Professional title" }
@@ -1595,7 +1596,7 @@
          ,{ "name": "UserLastAccessed"
            ,"description": "TBD"
            ,"wheres": [
-               { "db": "*", "clause": "userId=?() and lastAccessDt=?()" }
+               { "db": "*", "clause": "userId=?() and lastAccessDt>=?()" }
              ]
            ,"orderBy":["lastAccessDt"]
           }

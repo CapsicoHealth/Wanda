@@ -51,7 +51,7 @@ public class TourLearnerStatus extends SimpleServlet
     throws Exception
       {
         ZonedDateTime lastDateTime = req.getParamZonedDateTime("lastDateTime", true);
-        String userId = req.getParamString("userId", false);
+        String userId = req.getParamString("userId", false, U.getId());
 
         req.throwIfErrors();
 

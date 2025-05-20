@@ -69,6 +69,7 @@ public class Login extends SimpleServlet
     public void init(ServletConfig Conf)
       {
         SessionFilter.addMaskedUrlNvp("pswd");
+        SessionFilter.addMaskedUrlNvp("SAMLResponse");
       }
 
     private static void login(Connection C, String username, String password, LoginCallbackInterface loginCallback)
@@ -165,6 +166,7 @@ public class Login extends SimpleServlet
           }
         else if (TextUtil.isNullOrEmpty(ssoId) == false) // SSO
           {
+            LOG.debug("SSO login!");
             SAMLUserProfile userProfile = ConfigSAML.processCallback(req.getHttpServletRequest(), res.getHttpServletResponse(), C, ssoId);
             if (userProfile == null)
               return;
@@ -176,8 +178,10 @@ public class Login extends SimpleServlet
             if (ssoConfig._eula == false)
              req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
             LoginHelper.onBasicLoginSuccess(req, C, U);
-            U.syncUpApps(C, U, ssoConfig._defaultPromoCode, ssoId);            
-            res.sendRedirect("/web/apps/learning-ai/main.jsp");
+            U.syncUpApps(C, U, ssoConfig._defaultPromoCode, ssoId);
+            String returnUrl = userProfile._returnUrl != null ? userProfile._returnUrl : Wanda.getUrlRedirectPostLogin();
+            LOG.debug("SSO login successful. Redirecting to " + returnUrl);
+            res.sendRedirect(returnUrl);
           }
         else // User trying to login
           {

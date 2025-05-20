@@ -102,7 +102,7 @@ public class AccountCreate extends SimpleServlet
         newUser.setProfRoles(roles);
         newUser.setLockedNow();
         newUser.setLoginType(User_Data._loginTypeSSO);
-        newUser.setLoginDomain(orgId);
+        newUser.setLoginDomain(req.getApiCallSsoId());
         newUser.setLastipaddress(req.getRemoteAddr());
 
         newPerson.setNameFirst(nameFirst);
@@ -110,6 +110,7 @@ public class AccountCreate extends SimpleServlet
         newPerson.setNameMiddle(nameMiddle);
         newPerson.setProfTitle(title);
         newPerson.setCompany(company);
+        newPerson.setOrgId(orgId);
         newPerson.setIndustry(industry);
         newPerson.setCity(city);
         newPerson.setStateProv(stateProv);

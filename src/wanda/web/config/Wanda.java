@@ -366,10 +366,16 @@ public class Wanda
       {
         return _Config._loginSystem;
       }
-    
-    public static SSOConfig getSsoConfig(String configId) throws CloneNotSupportedException
+
+    public static String getDefaultSsoConfigId()
       {
-        return _Config._loginSystem == null ? null : _Config._loginSystem.getSsoConfig(configId);
+        return _Config._loginSystem == null == true ? null : _Config._loginSystem.getDefaultSsoConfigId();
+      }
+
+    public static SSOConfig getSsoConfig(String ssoId)
+    throws CloneNotSupportedException
+      {
+        return _Config._loginSystem == null ? null : _Config._loginSystem.getSsoConfig(ssoId);
       }
 
     public static Map<String, String> getExtra(String configName)

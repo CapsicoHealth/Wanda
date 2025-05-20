@@ -69,6 +69,8 @@ public class ConfigServlet extends SimpleServlet
         Out.println();
         JSONUtil.print(Out, "isMultiTenant", false, ConnectionPool.isMultiTenant());
         Out.println();
+        JSONUtil.print(Out, "defaultSsoId", false, Wanda.getDefaultSsoConfigId());
+        Out.println();
         JSONUtil.print(Out, "appPath", false, Wanda.getAppPath());
         Out.println();
         JSONUtil.print(Out, "homePagePath", false, Wanda.getHomePagePath());

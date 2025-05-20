@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.pac4j.core.exception.http.HttpAction;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -53,6 +54,7 @@ import tilda.utils.DateTimeUtil;
 import tilda.utils.DurationUtil;
 import tilda.utils.HttpStatus;
 import tilda.utils.SystemValues;
+import tilda.utils.TextUtil;
 import wanda.LoadAppsConfig;
 import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
@@ -67,6 +69,7 @@ import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.data._Tilda.TILDA__APP.ServiceDefinition;
+import wanda.saml.ConfigSAML;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -162,13 +165,37 @@ public class SessionFilter implements jakarta.servlet.Filter
                     if (isApiKeyAccessEnabled(Request) == false)
                       {
                         LOG.info("Anonymous access without apiKey set up.");
-                        Response.sendError(HttpStatus.BadRequest._Code, "Unauthenticated session");
-                        throw new ServletException("Unauthenticated session");
+                        Response.sendError(HttpStatus.BadRequest._Code, "Invalid API Key");
+                        throw new ServletException("Invalid API Key");
                       }
                     LOG.info("Anonymous access with apiKey-enabled service.");
                   }
                 else if (isAuthPassthrough == false)
                   {
+                    // If we are in SSO mode, we need to redirect to login.
+                    String defaultSsoId = Wanda.getDefaultSsoConfigId();
+                    if (TextUtil.isNullOrEmpty(defaultSsoId) == false)
+                      {
+                        try
+                          {
+                            String returnUrl = Request.getRequestURL().toString() + (Request.getQueryString() == null ? "" : "?" + Request.getQueryString());
+                            LOG.debug("Unauthenticated user in SSO environment: redirecting to SSO and then '"+returnUrl+"'.");
+                            ConfigSAML.processRedirect(Request, Response, defaultSsoId, returnUrl);
+                          }
+                        catch (HttpAction action)
+                          {
+                            action.getCode(); // e.g., 302 for redirect — pac4j has already handled the response
+                            ConfigSAML.LOG.debug("Error during SAML authentication with action code: " + action.getCode());
+                          }
+                        catch (Exception e)
+                          {
+                            ConfigSAML.LOG.debug("Error during SAML processing: " + e.getMessage() + "\n", e);
+                            Response.sendError(HttpStatus.InternalServerError._Code, "Internal Server Error Setting Up SAML SSO Connection");
+                            throw new ServletException("Error during SAML processing", e);
+                          }
+
+                        return;
+                      }
                     Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                     throw new ServletException("Unauthenticated session");
                   }
@@ -267,6 +294,13 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
                   {
+                    // There is a conflict here between 404's and non-authorized guest requests.
+                    if (Req.isResourceMapped() == false)
+                      {
+                        Response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                        throw new ServletException("Unauthorized Application Access 404");
+                      }
+
                     LOG.info("User is a guest and is not cleared for this url (" + Request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
                     Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
                     throw new ServletException("Unauthorized guest access as per app service configuration");
@@ -449,7 +483,7 @@ public class SessionFilter implements jakarta.servlet.Filter
         LOG.info(getRequestHeaderLogStr(Request, AL, true, dataMasking));
         return AL;
       }
-    
+
     protected static Pattern _AUTH = Pattern.compile("Bearer\\s+([\\w-]+)\\s+[\\w-]+");
 
     public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking)

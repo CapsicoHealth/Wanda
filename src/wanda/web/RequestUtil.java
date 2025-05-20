@@ -18,6 +18,7 @@ package wanda.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.http.HttpRequest;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.http.Cookie;
@@ -60,7 +62,7 @@ public class RequestUtil
 
     protected HttpServletRequest     _Req;
     protected List<StringStringPair> _Errors          = new ArrayList<StringStringPair>();
-    protected String                 _apiCallParnerId = null;
+    protected String                 _apiCallSsoId = null;
 
     public void addError(String ParamName, String Error)
       {
@@ -497,13 +499,30 @@ public class RequestUtil
         return null;
       }
 
-    public void setApiCall(String partnerId)
+    public void setApiCall(String ssoId)
       {
-        _apiCallParnerId = partnerId;
+        _apiCallSsoId = ssoId;
       }
 
-    public String getApiCallParnerId()
+    public String getApiCallSsoId()
       {
-        return _apiCallParnerId;
+        return _apiCallSsoId;
       }
+
+    public boolean isResourceMapped() {
+        return isResourceMapped(_Req.getServletContext(), _Req.getServletPath());
+    }
+    
+    public static boolean isResourceMapped(HttpServletRequest req) {
+        return isResourceMapped(req.getServletContext(), req.getServletPath());
+    }
+
+    public static boolean isResourceMapped(ServletContext context, String resourcePath) {
+        try {
+            return context.getResource(resourcePath) != null;
+        } catch (Exception e) {
+            return false; // Handle invalid paths or other exceptions
+        }
+    }
+    
   }
