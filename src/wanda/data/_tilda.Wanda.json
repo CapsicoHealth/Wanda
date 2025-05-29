@@ -174,12 +174,12 @@
          ,{ "name":"religion"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Religion" }
          ,{ "name":"languages"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Languages spoken" }
          ,{ "name":"marital"      , "type"  :"STRING"   ,                    "size":  64,             "description":"Marital status" }
-         ,{ "name":"orgId"        , "type"  :"STRING"   ,                    "size":  64,             "description":"Company" }
-         ,{ "name":"company"      , "type"  :"STRING"   ,                    "size":  64,             "description":"Company" }
+         ,{ "name":"orgId"        , "type"  :"STRING"   ,                    "size": 128,             "description":"Company" }
+         ,{ "name":"company"      , "type"  :"STRING"   ,                    "size": 128,             "description":"Company" }
          ,{ "name":"industry"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Industry" }
          ,{ "name":"profTitle"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Professional title" }
          ,{ "name":"picture"      , "type"  :"BOOLEAN"  ,                                             "description":"Whether a picture is available for this user" }
-         ,{ "name":"address1"     , "type"  : "STRING"  ,                    "size": 100,             "description":"The first line of the address" }
+         ,{ "name":"address1"     , "type"  : "STRING"  ,                    "size": 256,             "description":"The first line of the address" }
          ,{ "name":"address2"     , "sameas":"address1" ,                                             "description":"The second line of the address" }
          ,{ "name":"city"         , "type"  : "STRING"  ,                    "size":  50,             "description":"The city" }
          ,{ "name":"zipPostal"    , "type"  : "STRING"  ,                    "size":  12,             "description":"The zip or postal code" }
@@ -205,7 +205,7 @@
      ,"queries": [
        ]
      ,"json":[
-          { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
+          { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "company", "orgId", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
        ]
      ,"masks":[
          { "columns":["name*", "address*", "zipPostal", "telMobile","telOffice", "telFax", "emailHome", "emailOffice"], "mask":"******" }
@@ -215,10 +215,15 @@
     ,{ "name":"Assessment"
       ,"description":"User Assessments/Surveys"
       ,"columns":[
-          { "name":"creatorRefnum" , "sameAs":"User.refnum", "nullable": false                         , "description":"The refnum of the User who created this assessment" }
-         ,{ "name":"topic"         , "type":"STRING(128)"  , "nullable": false, "protection":"ABSOLUTE", "description":"The topic of this assessment"}
-         ,{ "name":"type"          , "type":"STRING(128)"  , "nullable": false, "protection":"ABSOLUTE", "description":"The type of this assessment"}
-         ,{ "name":"data"          , "type":"JSON"         , "nullable": false                         , "description":"The contents for this assessment (from a json form submission)"}
+          { "name":"creatorRefnum" , "sameAs":"User.refnum", "nullable":false                         , "description":"The refnum of the User who created this assessment" }
+         ,{ "name":"topic"         , "type":"STRING(128)"  , "nullable":false, "protection":"ABSOLUTE", "description":"The topic of this assessment"}
+         ,{ "name":"type"          , "type":"STRING(128)"  , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this assessment"}
+         ,{ "name":"data"          , "type":"JSON"         , "nullable":true                          , "description":"The contents for this assessment (from a json form submission)"}
+         ,{ "name":"qTotal"        , "type":"SHORT"        , "nullable":true                          , "description":"The total number of questions"}
+         ,{ "name":"qCompleted"    , "type":"SHORT"        , "nullable":true                          , "description":"The completed number of questions"}
+         ,{ "name":"qCorrect"      , "type":"SHORT"        , "nullable":true                          , "description":"The correct number of questions"}
+         ,{ "name":"startDt"       , "type":"DATETIME"     , "nullable":true , "description":"The datetime this assessment was started." }
+         ,{ "name":"completionDt"  , "type":"DATETIME"     , "nullable":true , "description":"The datetime this assessment was completed." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -235,7 +240,8 @@
          }
         ]
       ,"outputMaps": [
-          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+          { "name":""      , "outTypes":["JSON"], "columns": ["*"] }
+         ,{ "name":"status", "outTypes":["JSON"], "columns": ["*"], "exclude":["data"] }
         ]
       ,"history": {
           "postfix":"_Hist"
@@ -772,7 +778,7 @@
 
      ,{ "name": "TourUserClick"
        ,"lc":"WORM"
-       ,"description": "Represents a step in a tour that a user took"
+       ,"description": "Represents a step in a tour that a user took, maybe multiple times"
        ,"columns": [
            { "name":"userRefnum", "sameas":"User.refnum", "nullable" : false, "description":"The user PK"}
           ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable" : false, "description":"The context/project/app for this tour"}
@@ -785,9 +791,9 @@
            { "name":"User",  "srcColumns":["userRefnum"], "destObject":"User" }
          ]
        ,"indices":[ 
-           { "name":"TourId"   , "columns":["tourId"    ], "orderBy":["created desc"], "db": true }
-          ,{ "name":"User"     , "columns":["userRefnum"], "orderBy":["created desc"], "db": true }
-          ,{ "name":"ContextId", "columns":["contextId" ], "orderBy":["created desc"], "db": true }
+          { "name":"User"     , "columns":["userRefnum"], "orderBy":["created desc"], "db": true }
+//          ,{ "name":"TourId"   , "columns":["tourId"    ], "orderBy":["created desc"], "db": true }
+//          ,{ "name":"ContextId", "columns":["contextId" ], "orderBy":["created desc"], "db": true }
           ,{ "name":"Created"  , "columns":[]            , "orderBy":["created desc"], "db": true }
          ]
       }     
@@ -1493,10 +1499,16 @@
          }
        ]
      ,"queries":[
-         { "name": "Tour"
+         { "name": "TourRefnum"
           ,"description": "TBD"
           ,"wheres": [
               { "db": "*", "clause": "tourRefnum=?()" }
+            ]
+         }
+        ,{ "name": "TourId"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourId=?()" }
             ]
          }
        ]
@@ -1530,6 +1542,34 @@
         ]
      }
 
+     ,{ "name":"TourUserDetailsView"
+       ,"description":"Tour user stats"
+       ,"columns":[
+           { "sameAs":"TourUserClick.userRefnum", "name":"userRefnum"          }
+          ,{ "sameAs":"TourUserClick.tourId"    , "name":"tourId"              }
+          ,{ "sameAs":"TourUserClick.contextId" , "name":"contextId"           }
+          ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps", "aggregate":"ARRAY", "distinct":true }
+         ]
+       ,"queries":[
+           { "name": "User"
+            ,"description": "TBD"
+            ,"wheres": [
+                { "db": "*", "clause": "userRefnum=?()" }
+              ]
+            ,"orderBy":["tourId", "contextId"]
+           }
+          ,{ "name": "UserTour"
+            ,"description": "TBD"
+            ,"wheres": [
+                { "db": "*", "clause": "userRefnum=?() and tourId=?() and contextId=?()" }
+              ]
+           }
+         ]
+       ,"json": [
+           { "name": "", "columns": [ "*" ] }
+         ]
+      }
+     
     ,{ "name":"TourUserStatusView"
       ,"description":"Tour user status"
       ,"columns":[
@@ -1554,6 +1594,15 @@
                        ,"     when takenSteps < totalSteps/4 then 10"
                        ,"     else 25*FLOOR((100.0*takenSteps/totalSteps)/25)"
                        ,"end"
+                      ]
+           ,"title": "Progress Status"
+           ,"description":[
+               "The percentage of steps completed, in 25% increments, with an easing curve at the begining to 1%, then 10%."
+             ]
+          }
+         ,{ "name": "completionDt"
+           ,"type": "DATE"
+           ,"formula":[ "case when takenSteps=totalSteps then lastAccessDt end"
                       ]
            ,"title": "Progress Status"
            ,"description":[
@@ -1624,7 +1673,6 @@
         ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
        ]
    }
-
 }    
 
 

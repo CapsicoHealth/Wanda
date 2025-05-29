@@ -51,21 +51,27 @@ public class TourLearnerStatus extends SimpleServlet
     throws Exception
       {
         ZonedDateTime lastDateTime = req.getParamZonedDateTime("lastDateTime", true);
-        String userId = req.getParamString("userId", false, U.getId());
+        String userId = req.getParamString("userId", false);
 
         req.throwIfErrors();
 
         List<TourUserStatusView_Data> L;
 
-        if (TextUtil.isNullOrEmpty(userId) == false)
+        // API Call
+        if (req.getApiCallSsoId() != null)
+          L = TourUserStatusView_Factory.lookupWhereLastAccessed(C, lastDateTime, 0, 10_000);
+        else // Regular user call
           {
-            if (U.isGuest() == true && U.getId().equalsIgnoreCase(userId) == false)
-              throw new AccessForbiddenException("User", userId);
+            if (U.isSuperAdmin() == false) // regular users must only call for themselves
+              {
+                if (TextUtil.isNullOrEmpty(userId) == true)
+                  userId = U.getId();
+                else if (U.getId().equalsIgnoreCase(userId) == false)
+                  throw new AccessForbiddenException("User", userId);
+              }
 
             L = TourUserStatusView_Factory.lookupWhereUserLastAccessed(C, userId, lastDateTime, 0, 10_000);
           }
-        else
-          L = TourUserStatusView_Factory.lookupWhereLastAccessed(C, lastDateTime, 0, 10_000);
 
         res.successJson("export", L);
 
