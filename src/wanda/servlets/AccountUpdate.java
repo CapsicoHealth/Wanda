@@ -34,6 +34,8 @@ import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.Wanda;
+import wanda.web.exceptions.NotFoundException;
+import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 @WebServlet("/svc/user/account/update")
 public class AccountUpdate extends SimpleServlet
@@ -58,6 +60,13 @@ public class AccountUpdate extends SimpleServlet
       {
         String currentPassword = req.getParamString("currentPassword", true);
         req.throwIfErrors();
+
+        if (U.isLoginTypeLocal() == false)
+          {
+            LOG.error("User '"+U.getId()+"' is not a local user and cannot be updated via this service.");
+            throw new NotFoundException("User", U.getEmail(), "This account cannot be updated");
+          }
+
         long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
         if (EncryptionUtil.hash(currentPassword, U.getPswdSalt()).equals(U.getPswd()) == false)
           {
