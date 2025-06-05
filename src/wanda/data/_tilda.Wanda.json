@@ -212,41 +212,6 @@
        ]
     }
 
-    ,{ "name":"Assessment"
-      ,"description":"User Assessments/Surveys"
-      ,"columns":[
-          { "name":"creatorRefnum" , "sameAs":"User.refnum", "nullable":false                         , "description":"The refnum of the User who created this assessment" }
-         ,{ "name":"topic"         , "type":"STRING(128)"  , "nullable":false, "protection":"ABSOLUTE", "description":"The topic of this assessment"}
-         ,{ "name":"type"          , "type":"STRING(128)"  , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this assessment"}
-         ,{ "name":"data"          , "type":"JSON"         , "nullable":true                          , "description":"The contents for this assessment (from a json form submission)"}
-         ,{ "name":"qTotal"        , "type":"SHORT"        , "nullable":true                          , "description":"The total number of questions"}
-         ,{ "name":"qCompleted"    , "type":"SHORT"        , "nullable":true                          , "description":"The completed number of questions"}
-         ,{ "name":"qCorrect"      , "type":"SHORT"        , "nullable":true                          , "description":"The correct number of questions"}
-         ,{ "name":"startDt"       , "type":"DATETIME"     , "nullable":true , "description":"The datetime this assessment was started." }
-         ,{ "name":"completionDt"  , "type":"DATETIME"     , "nullable":true , "description":"The datetime this assessment was completed." }
-        ]
-      ,"primary": { "autogen": true }
-      ,"indices":[ 
-          { "name":"Creator", "columns":["creatorRefnum"], "orderBy":["lastUpdated desc"], "db": true }
-         ,{ "name":"All"                                 , "orderBy":["lastUpdated desc"], "db": true }
-        ]
-      ,"queries": [
-         { "name": "TopicTypeCreator"
-          ,"description": "Active tenants"
-          ,"wheres": [
-              { "db": "*", "clause": "topic=?() AND type=?() AND creatorRefnum=?()" }
-            ]
-          ,"orderBy":["lastUpdated asc"]
-         }
-        ]
-      ,"outputMaps": [
-          { "name":""      , "outTypes":["JSON"], "columns": ["*"] }
-         ,{ "name":"status", "outTypes":["JSON"], "columns": ["*"], "exclude":["data"] }
-        ]
-      ,"history": {
-          "postfix":"_Hist"
-        }
-     }
     
    ,{ "name":"Ticket"
      ,"description":"Tickets"
@@ -780,11 +745,12 @@
        ,"lc":"WORM"
        ,"description": "Represents a step in a tour that a user took, maybe multiple times"
        ,"columns": [
-           { "name":"userRefnum", "sameas":"User.refnum", "nullable" : false, "description":"The user PK"}
-          ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable" : false, "description":"The context/project/app for this tour"}
-          ,{ "name":"tourId"    , "sameas":"Tour.id"    , "nullable" : false, "description":"The tour id"}
-          ,{ "name":"partId"    , "sameAs":"TourPart.id", "nullable" : false, "description":"The tour part id" }
-          ,{ "name":"stepId"    , "sameAs":"TourStep.id", "nullable" : false, "description":"List tour part step id" }
+           { "name":"userRefnum", "sameas":"User.refnum", "nullable":false,                          "description":"The user PK"}
+          ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable":false,                          "description":"The context/project/app for this tour"}
+          ,{ "name":"type"      , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example." }
+          ,{ "name":"tourId"    , "sameas":"Tour.id"    , "nullable":false,                          "description":"The tour id"}
+          ,{ "name":"partId"    , "sameAs":"TourPart.id", "nullable":false,                          "description":"The tour part id" }
+          ,{ "name":"stepId"    , "sameAs":"TourStep.id", "nullable":false,                          "description":"List tour part step id" }
          ]
        ,"primary": { "autogen": true, "keyBatch": 5000 }
        ,"foreign": [
@@ -797,7 +763,7 @@
           ,{ "name":"Created"  , "columns":[]            , "orderBy":["created desc"], "db": true }
          ]
       }     
-     
+
  ]
   
  ,"views":[
@@ -1520,10 +1486,11 @@
     ,{ "name":"TourUserInfoView"
       ,"description":"Tour user stats"
       ,"columns":[
-          { "sameAs":"TourUserClick.userRefnum", "name":"userRefnum"          }
+          { "sameAs":"TourUserClick.userRefnum"  }
          ,{ "sameAs":"User.id"                 , "name":"userId"              }
-         ,{ "sameAs":"TourUserClick.tourId"    , "name":"tourId"              }
-         ,{ "sameAs":"TourUserClick.contextId" , "name":"contextId"           }
+         ,{ "sameAs":"TourUserClick.tourId"      }
+         ,{ "sameAs":"TourUserClick.contextId"   }
+         ,{ "sameAs":"TourUserClick.type"        }
          ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps"  , "expression":"TourUserClick.partId||'|'||TourUserClick.stepId", "type":"STRING(1024)", "aggregate":"COUNT", "distinct":true   }
          ,{ "sameAs":"TourUserClick.created"   , "name":"startDt"     , "aggregate":"MIN" }
          ,{ "sameAs":"TourUserClick.created"   , "name":"lastAccessDt", "aggregate":"MAX" }
@@ -1545,9 +1512,10 @@
      ,{ "name":"TourUserDetailsView"
        ,"description":"Tour user stats"
        ,"columns":[
-           { "sameAs":"TourUserClick.userRefnum", "name":"userRefnum"          }
-          ,{ "sameAs":"TourUserClick.tourId"    , "name":"tourId"              }
-          ,{ "sameAs":"TourUserClick.contextId" , "name":"contextId"           }
+           { "sameAs":"TourUserClick.userRefnum"  }
+          ,{ "sameAs":"TourUserClick.tourId"      }
+          ,{ "sameAs":"TourUserClick.contextId"   }
+          ,{ "sameAs":"TourUserClick.type"        }
           ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps", "aggregate":"ARRAY", "distinct":true }
          ]
        ,"queries":[
@@ -1655,22 +1623,22 @@
          ,{ "name": "export", "outTypes":["JSON"]      , "columns": [ "*" ], "exclude":["userRefnum", "tourId", "takenSteps", "totalSteps"] }
         ]
      }
-     
   ]
 
  ,"migrations":{
       "renames":[
-           { "object":"User", "column":"contentIds", "oldNames":["programs"] }
+         { "object":"User", "column":"contentIds", "oldNames":["programs"] }
        ]
      ,"moves":[
-         { "schema":"ADMIN", "objects":["SystemEmail"]
-         }
+         { "schema":"ADMIN", "objects":["SystemEmail"] }
        ]
      ,"notNulls":[
          { "object":"User" , "columns":["pswdSalt"], "default":""   }
         ,{ "object":"Ticket" , "columns":["creatorId"], "default":"N/A"   }
         ,{ "object":"TicketAnswer" , "columns":["creatorId"], "default":"N/A"   }
         ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
+        ,{ "object":"TourUserClick", "columns":["contextId"], "default":"_base" }
+        ,{ "object":"TourUserClick", "columns":["type"], "default":"_generic" }
        ]
    }
 }    
