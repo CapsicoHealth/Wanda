@@ -31,10 +31,14 @@ import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
+import wanda.servlets.helpers.LoginHelper;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.config.SSOConfig;
+import wanda.web.config.Wanda;
 
 @WebServlet("/svc/user/account/create")
 public class AccountCreate extends SimpleServlet
@@ -105,6 +109,10 @@ public class AccountCreate extends SimpleServlet
         newUser.setLoginType(User_Data._loginTypeSSO);
         newUser.setLoginDomain(req.getApiCallSsoId());
         newUser.setLastipaddress(req.getRemoteAddr());
+        
+        SSOConfig ssoConfig = Wanda.getSsoConfig(req.getApiCallSsoId());
+        if (ssoConfig != null)
+          newUser.setPromoCode(ssoConfig._defaultPromoCode);
 
         newPerson.setNameFirst(nameFirst);
         newPerson.setNameLast(nameLast);

@@ -27,6 +27,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionUtil;
 import wanda.web.config.Eula;
+import wanda.web.config.SSOConfig;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.AccessForbiddenException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -56,6 +57,11 @@ public class LoginHelper
         U.setNullFailFirst();
         U.setNullLocked();
         U.write(C);
+
+        // If the user has a promo code, we want to update their app mapping.
+        if (TextUtil.isNullOrEmpty(U.getPromoCode()) == false)
+         U.syncUpApps(C, U, U.getPromoCode(), U.getLoginDomain());
+        
         req.setSessionUser(U);
         req.setSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name(), SessionUtil.FORCE_RELOAD_USER);
       }
