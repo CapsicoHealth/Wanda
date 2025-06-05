@@ -47,9 +47,9 @@ public class TourLearnerSteps extends SimpleServlet
 
         TourUserDetailsView_Data tourDetails = TourUserDetailsView_Factory.lookupByUserTour(U.getRefnum(), tourId, contextId);
         if (tourDetails.read(C) == false)
-          throw new NotFoundException("Tour", tourId+"/"+contextId);
-        
-        res.successJson("", tourDetails);
+         res.success();
+        else
+         res.successJson("", tourDetails);
 
       }
   }

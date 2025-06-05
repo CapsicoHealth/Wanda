@@ -43,4 +43,10 @@ ALTER TABLE WANDA.App drop COLUMN IF EXISTS "active";
 EXCEPTION WHEN OTHERS THEN
 
 END; $$
+;
+
+
+update wanda.TourUserClick set type='LLMs'      where type='X' and "tourId" = 'health-buddy-docs';
+update wanda.TourUserClick set type='Cohorts'   where type='X' and "tourId" = 'cohort-insights';
+update wanda.TourUserClick set type='Textbooks' where type='X' and "tourId" like 'textbooks-CARDIOLOGY%';
 

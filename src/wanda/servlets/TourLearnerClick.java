@@ -40,13 +40,14 @@ public class TourLearnerClick extends SimpleServlet
     throws Exception
       {
         String contextId = req.getParamString("contextId", true);
+        String type = req.getParamString("type", true);
         String tourId = req.getParamString("tourId", true);
         String partId = req.getParamString("partId", true);
         String stepId = req.getParamString("stepId", true);
         
         req.throwIfErrors();
         
-        TourUserClick_Data utc = TourUserClick_Factory.create(U.getRefnum(), contextId, tourId, partId, stepId);
+        TourUserClick_Data utc = TourUserClick_Factory.create(U.getRefnum(), contextId, type, tourId, partId, stepId);
         if (utc.write(C) == false)
          throw new Exception("Database error writing a udser tour click record.");
         
