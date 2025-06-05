@@ -1,21 +1,26 @@
 package wanda.web;
 
 import tilda.db.Connection;
-import wanda.data.UserView_Data;
-import wanda.data.UserView_Factory;
+import wanda.data.UserDetail_Data;
+import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 
 public interface LoginSyncService
   {
-    default void syncUser(Connection C, User_Data U)
+    public default void syncUser(Connection C, User_Data U)
     throws Exception
       {
-        UserView_Data u = UserView_Factory.lookupByRefnum(U.getRefnum());
-        if (u.read(C) == false)
-          throw new Exception("Cannot lookup UserView by refnum " + U.getRefnum());
-        syncUser(C, u);
+        if (U.getUserDetails() == null)
+          {
+            UserDetail_Data ud = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
+            if (ud.read(C) == false)
+              throw new Exception("Cannot load UserDetail for user '" + U.getRefnum() + "' from the database.");
+            U.setUserDetail(ud);
+          }
+        syncUser(U);
       }
 
-    public void syncUser(Connection C, UserView_Data U) throws Exception;
+    public void syncUser(User_Data U)
+    throws Exception;
 
   }
