@@ -24,7 +24,6 @@ import wanda.data.User_Data;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.exceptions.NotFoundException;
 
 @WebServlet("/svc/tour/learner/steps")
 public class TourLearnerSteps extends SimpleServlet
@@ -42,10 +41,12 @@ public class TourLearnerSteps extends SimpleServlet
       {
         String tourId = req.getParamString("tourId", true);
         String contextId = req.getParamString("contextId", true);
+        String type = req.getParamString("type", true); // General type such as 'Cohorts', 'LLMs'...
+        String topic = req.getParamString("topic", true); // Topic such as CARDIOLOGY, ONGOLOGY etc...
         
         req.throwIfErrors();
 
-        TourUserDetailsView_Data tourDetails = TourUserDetailsView_Factory.lookupByUserTour(U.getRefnum(), tourId, contextId);
+        TourUserDetailsView_Data tourDetails = TourUserDetailsView_Factory.lookupByUserContextTypeTopicTour(U.getRefnum(), contextId, type, topic, tourId);
         if (tourDetails.read(C) == false)
          res.success();
         else

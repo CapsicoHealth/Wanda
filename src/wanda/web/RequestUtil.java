@@ -61,7 +61,7 @@ public class RequestUtil
       }
 
     protected HttpServletRequest     _Req;
-    protected List<StringStringPair> _Errors          = new ArrayList<StringStringPair>();
+    protected List<StringStringPair> _Errors       = new ArrayList<StringStringPair>();
     protected String                 _apiCallSsoId = null;
 
     public void addError(String ParamName, String Error)
@@ -509,20 +509,53 @@ public class RequestUtil
         return _apiCallSsoId;
       }
 
-    public boolean isResourceMapped() {
+    public boolean isResourceMapped()
+      {
         return isResourceMapped(_Req.getServletContext(), _Req.getServletPath());
-    }
-    
-    public static boolean isResourceMapped(HttpServletRequest req) {
-        return isResourceMapped(req.getServletContext(), req.getServletPath());
-    }
+      }
 
-    public static boolean isResourceMapped(ServletContext context, String resourcePath) {
-        try {
+    public static boolean isResourceMapped(HttpServletRequest req)
+      {
+        return isResourceMapped(req.getServletContext(), req.getServletPath());
+      }
+
+    public static boolean isResourceMapped(ServletContext context, String resourcePath)
+      {
+        try
+          {
             return context.getResource(resourcePath) != null;
-        } catch (Exception e) {
+          }
+        catch (Exception e)
+          {
             return false; // Handle invalid paths or other exceptions
-        }
-    }
-    
+          }
+      }
+
+    public ServletContext getServletContext()
+      {
+        return _Req.getServletContext();
+      }
+
+    public String getReferrerFolder(ServletContext context)
+      {
+        String referrer = _Req.getHeader("Referer");
+        if (TextUtil.isNullOrEmpty(referrer) == true)
+          return null;
+
+        int i = referrer.lastIndexOf('?');
+        if (i != -1)
+          referrer = referrer.substring(0, i);
+        i = referrer.lastIndexOf('/');
+        if (i != -1)
+          referrer = referrer.substring(0, i);
+        String contextPath = _Req.getContextPath() + "/";
+        i = referrer.indexOf(contextPath);
+        if (File.separator.equals("\\") == true)
+          referrer = referrer.replace("/", File.separator);
+        if (i != -1)
+          return context.getRealPath("/") + referrer.substring(i + contextPath.length()) + File.separator;
+
+        return null;
+      }
+
   }

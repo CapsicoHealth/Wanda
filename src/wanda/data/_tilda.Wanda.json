@@ -746,8 +746,9 @@
        ,"description": "Represents a step in a tour that a user took, maybe multiple times"
        ,"columns": [
            { "name":"userRefnum", "sameas":"User.refnum", "nullable":false,                          "description":"The user PK"}
-          ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable":false,                          "description":"The context/project/app for this tour"}
-          ,{ "name":"type"      , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example." }
+          ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The context/project/app for this tour"}
+          ,{ "name":"type"      , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
+          ,{ "name":"topic"     , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The topic of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
           ,{ "name":"tourId"    , "sameas":"Tour.id"    , "nullable":false,                          "description":"The tour id"}
           ,{ "name":"partId"    , "sameAs":"TourPart.id", "nullable":false,                          "description":"The tour part id" }
           ,{ "name":"stepId"    , "sameAs":"TourStep.id", "nullable":false,                          "description":"List tour part step id" }
@@ -1491,7 +1492,8 @@
          ,{ "sameAs":"TourUserClick.tourId"      }
          ,{ "sameAs":"TourUserClick.contextId"   }
          ,{ "sameAs":"TourUserClick.type"        }
-         ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps"  , "expression":"TourUserClick.partId||'|'||TourUserClick.stepId", "type":"STRING(1024)", "aggregate":"COUNT", "distinct":true   }
+         ,{ "sameAs":"TourUserClick.topic"        }
+         ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps"  , "expression":"TourUserClick.partId||'|'||TourUserClick.stepId", "type":"SHORT", "aggregate":"COUNT", "distinct":true   }
          ,{ "sameAs":"TourUserClick.created"   , "name":"startDt"     , "aggregate":"MIN" }
          ,{ "sameAs":"TourUserClick.created"   , "name":"lastAccessDt", "aggregate":"MAX" }
         ]
@@ -1502,6 +1504,12 @@
                { "db": "*", "clause": "userRefnum=?()" }
              ]
            ,"orderBy":["tourId", "contextId"]
+          }
+         ,{ "name": "UserContextTypeTopicTour"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "userRefnum=?() AND contextId=?() AND type=?() and topic=?() AND tourId=?()" }
+             ]
           }
         ]
       ,"json": [
@@ -1516,6 +1524,7 @@
           ,{ "sameAs":"TourUserClick.tourId"      }
           ,{ "sameAs":"TourUserClick.contextId"   }
           ,{ "sameAs":"TourUserClick.type"        }
+          ,{ "sameAs":"TourUserClick.topic"        }
           ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps", "aggregate":"ARRAY", "distinct":true }
          ]
        ,"queries":[
@@ -1526,10 +1535,10 @@
               ]
             ,"orderBy":["tourId", "contextId"]
            }
-          ,{ "name": "UserTour"
+          ,{ "name": "UserContextTypeTopicTour"
             ,"description": "TBD"
             ,"wheres": [
-                { "db": "*", "clause": "userRefnum=?() and tourId=?() and contextId=?()" }
+                { "db": "*", "clause": "userRefnum=?() AND contextId=?() AND type=?() and topic=?() AND tourId=?()" }
               ]
            }
          ]
@@ -1570,28 +1579,11 @@
           }
          ,{ "name": "completionDt"
            ,"type": "DATE"
-           ,"formula":[ "case when takenSteps=totalSteps then lastAccessDt end"
+           ,"formula":[ "case when takenSteps>=totalSteps then lastAccessDt end"
                       ]
            ,"title": "Progress Status"
            ,"description":[
                "The percentage of steps completed, in 25% increments, with an easing curve at the begining to 1%, then 10%."
-             ]
-          }
-         ,{ "name": "progressType"
-           ,"type": "STRING(32)"
-           ,"formula":[ "case when takenSteps <= 1 then 'Not Started' "
-                       ,"     when takenSteps=totalSteps then 'Completed' "
-                       ,"     else 'In Progress' "
-                       ,"end"
-                      ]
-           ,"title": "Progress Type"
-           ,"description":[
-               "A label for the progress status."
-             ]
-           ,"values":[
-               { "value":"Not Started", "description":"The project wasn't started yet (i.e., progress is at 0%)." }
-              ,{ "value":"In Progress", "description":"The project is in progress (i.e., progress is between 1% and 99%)." }
-              ,{ "value":"Completed"  , "description":"The project is completed (i.e., progress is at 100%" }
              ]
           }
         ]
@@ -1638,7 +1630,7 @@
         ,{ "object":"TicketAnswer" , "columns":["creatorId"], "default":"N/A"   }
         ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
         ,{ "object":"TourUserClick", "columns":["contextId"], "default":"_base" }
-        ,{ "object":"TourUserClick", "columns":["type"], "default":"_generic" }
+        ,{ "object":"TourUserClick", "columns":["type", "topic"], "default":"_generic" }
        ]
    }
 }    
