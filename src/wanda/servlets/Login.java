@@ -82,13 +82,15 @@ public class Login extends SimpleServlet
         if (u.read(C) == false || u.getDeleted() != null || u.isLocked() == true || u.getInviteCancelled() == true)
           {
             LOG.error("User '" + username + "' not found in the local DB or not in a state where they can log in.");
-            loginCallback.onLoginFailure(u);
+            loginCallback.onLoginFailure(u); // will throw
+            return;
           }
 
         if (EncryptionUtil.hash(password, u.getPswdSalt()).equals(u.getPswd()) == false)
           {
             LOG.error("Invalid password for User '" + username + "' in the local DB");
-            loginCallback.onLoginFailure(u);
+            loginCallback.onLoginFailure(u); // will throw
+            return;
           }
 
         if (Wanda.validatePassword(password).size() > 0)

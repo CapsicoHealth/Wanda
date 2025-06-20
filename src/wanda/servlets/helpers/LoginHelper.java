@@ -27,7 +27,6 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionUtil;
 import wanda.web.config.Eula;
-import wanda.web.config.SSOConfig;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.AccessForbiddenException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -119,7 +118,7 @@ public class LoginHelper
     public static void onLoginFailure(Connection C, User_Data U)
     throws Exception
       {
-        String ErrorMessage;
+        String ErrorMessage = null;
         // Failure logging handled in session filter.
         if (U == null || U.getDeleted() != null || U.isLocked() == true || U.getInviteCancelled() == true)
           {
@@ -150,7 +149,7 @@ public class LoginHelper
             else
               ErrorMessage = "Invalid Login Id or Password.\nYou have " + FailCount + " attempt(s) remaining";
           }
-
+         throw new ResourceNotAuthorizedException("User", U.getEmail(), ErrorMessage);
       }
 
     protected static void doUserSyncServices(Connection C, User_Data U)
