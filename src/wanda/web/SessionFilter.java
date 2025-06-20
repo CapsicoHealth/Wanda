@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
@@ -112,15 +111,17 @@ public class SessionFilter implements jakarta.servlet.Filter
     public void destroy()
       {
       }
+    
+    protected final static String _BEARER = "Bearer ";    
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+    public void doFilter(ServletRequest servletReq, ServletResponse servletRes, FilterChain chain)
     throws IOException, ServletException
       {
         long T0 = System.nanoTime();
-        HttpServletRequest Request = (HttpServletRequest) req;
-        HttpServletResponse Response = (HttpServletResponse) res;
-        RequestUtil Req = new RequestUtil(Request);
+        HttpServletRequest request = (HttpServletRequest) servletReq;
+        HttpServletResponse response = (HttpServletResponse) servletRes;
+        RequestUtil req = new RequestUtil(request);
 
         Connection MasterConnection = null;
         User_Data MasterDbUser = null;
@@ -131,11 +132,11 @@ public class SessionFilter implements jakarta.servlet.Filter
         // Multi Tenant
         Connection TenantConnection = null;
         boolean isMultiTenant = false;
-        boolean isMasterPath = isMasterPath(Request);
-        boolean isAuthPassthrough = isAuthPassthrough(Request);
+        boolean isMasterPath = isMasterPath(request);
+        boolean isAuthPassthrough = isAuthPassthrough(request);
 
         // Masking
-        HttpSession S = SessionUtil.getSession(Request);
+        HttpSession S = SessionUtil.getSession(request);
         Boolean maskedMode = (Boolean) S.getAttribute(SessionUtil.Attributes.MASKING_MODE.name());
         if (maskedMode == null)
           maskedMode = false;
@@ -143,32 +144,31 @@ public class SessionFilter implements jakarta.servlet.Filter
 
         try
           {
-            AL = LogRequestHeader(Request, maskedMode);
+            AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
+            AL = LogRequestHeader(request, maskedMode, apiToken);
             MasterConnection = ConnectionPool.get("MAIN");
-            MasterDbUser = getUser(Request, MasterConnection);
+            MasterDbUser = getUser(request, MasterConnection);
 
             isMultiTenant = ConnectionPool.isMultiTenant();
 
-            String apiKey = Request.getHeader("Authorization"); // "Bearer <apiKey>"
-            boolean isApiKeyRequest = apiKey != null && apiKey.startsWith(SimpleServlet._BEARER) == true;
-
-            if (Request.getScheme().equals("https") == false)
+            if (request.getScheme().equals("https") == false)
               {
                 LOG.error("The server only accepts HTTPS requests.");
                 throw new ServletException("The server only accepts HTTPS requests.");
               }
 
-            if (MasterDbUser == null)
+            if (MasterDbUser == null) // anonymous
               {
-                if (isApiKeyRequest == true)
+                if (apiToken != null) // API call
                   {
-                    if (isApiKeyAccessEnabled(Request) == false)
+                    if (isApiKeyAccessEnabled(request) == false) // Is this request endpoint API-enabled?
                       {
-                        LOG.info("Anonymous access without apiKey set up.");
-                        Response.sendError(HttpStatus.BadRequest._Code, "Invalid API Key");
-                        throw new ServletException("Invalid API Key");
+                        LOG.info("API call for an endpoint that is not api-enabled in its wanda configuration file.");
+                        response.sendError(HttpStatus.BadRequest._Code, "Invalid API Key for requested endpoint");
+                        throw new ServletException("Invalid API Key for requested endpoint");
                       }
                     LOG.info("Anonymous access with apiKey-enabled service.");
+                    MasterDbUser = User_Factory.createAPiUser(request, MasterConnection, apiToken._partnerId);
                   }
                 else if (isAuthPassthrough == false)
                   {
@@ -178,9 +178,9 @@ public class SessionFilter implements jakarta.servlet.Filter
                       {
                         try
                           {
-                            String returnUrl = Request.getRequestURL().toString() + (Request.getQueryString() == null ? "" : "?" + Request.getQueryString());
-                            LOG.debug("Unauthenticated user in SSO environment: redirecting to SSO and then '"+returnUrl+"'.");
-                            ConfigSAML.processRedirect(Request, Response, defaultSsoId, returnUrl);
+                            String returnUrl = request.getRequestURL().toString() + (request.getQueryString() == null ? "" : "?" + request.getQueryString());
+                            LOG.debug("Unauthenticated user in SSO environment: redirecting to SSO and then '" + returnUrl + "'.");
+                            ConfigSAML.processRedirect(request, response, defaultSsoId, returnUrl);
                           }
                         catch (HttpAction action)
                           {
@@ -190,13 +190,13 @@ public class SessionFilter implements jakarta.servlet.Filter
                         catch (Exception e)
                           {
                             ConfigSAML.LOG.debug("Error during SAML processing: " + e.getMessage() + "\n", e);
-                            Response.sendError(HttpStatus.InternalServerError._Code, "Internal Server Error Setting Up SAML SSO Connection");
+                            response.sendError(HttpStatus.InternalServerError._Code, "Internal Server Error Setting Up SAML SSO Connection");
                             throw new ServletException("Error during SAML processing", e);
                           }
 
                         return;
                       }
-                    Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                     throw new ServletException("Unauthenticated session");
                   }
               }
@@ -205,17 +205,17 @@ public class SessionFilter implements jakarta.servlet.Filter
                 // Is user locked?
                 if (isUserLocked(MasterDbUser))
                   {
-                    Req.removeSessionUser();
-                    Response.sendError(HttpStatus.Unauthorized._Code, "Unauthorized User");
+                    req.removeSessionUser();
+                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthorized User");
                     throw new ServletException("Unauthorized User");
                   }
-                UserDetail_Data UD = getUserDetail(MasterConnection, MasterDbUser, Response);
+                UserDetail_Data UD = getUserDetail(MasterConnection, MasterDbUser, response);
                 MasterDbUser.setUserDetail(UD);
               }
 
-            if (isAuthPassthrough == false && isAppAuthorized(Request, MasterConnection, MasterDbUser) == false)
+            if (isAuthPassthrough == false && isAppAuthorized(request, MasterConnection, MasterDbUser) == false)
               {
-                Response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
                 throw new ServletException("Unauthorized Application Access");
               }
 
@@ -226,7 +226,7 @@ public class SessionFilter implements jakarta.servlet.Filter
 
             if (isMultiTenant)
               {
-                TenantUser = getTenantUser(Request, MasterConnection);
+                TenantUser = getTenantUser(request, MasterConnection);
                 if (TenantUser == null)
                   {
                     if (isAuthPassthrough == false)
@@ -234,8 +234,8 @@ public class SessionFilter implements jakarta.servlet.Filter
                         if (MasterDbUser != null && !MasterDbUser.hasRoles(RoleHelper.SUPERADMIN))
                           {
                             LOG.info("Unable to load TenantUser from Session.");
-                            SessionUtil.InvalidateSession(Request);
-                            Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                            SessionUtil.InvalidateSession(request);
+                            response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                             throw new ServletException("Unauthenticated session");
                           }
                       }
@@ -245,7 +245,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                     Tenant = TenantUser.getTenant(MasterConnection);
                     if (Tenant.getActive() == false)
                       {
-                        Req.removeSessionUser();
+                        req.removeSessionUser();
                         throw new ResourceNotAuthorizedException("Tenant", Tenant.getRefnum() + "", "Tenant '" + Tenant.getName() + "' is inactive. Please contact your administrator");
                       }
                     TenantConnection = ConnectionPool.get(Tenant.getConnectionId());
@@ -253,23 +253,23 @@ public class SessionFilter implements jakarta.servlet.Filter
                     LOG.debug("USERREFNUM: " + (Long) S.getAttribute(SessionUtil.Attributes.USERREFNUM.toString()));
                     LOG.debug("TENANTUSERREFNUM: " + (Long) S.getAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString()));
 
-                    TenantDbUser = getUser(Request, TenantConnection);
+                    TenantDbUser = getUser(request, TenantConnection);
                     // SimpleServlet Subclasses use U.getPerson()
-                    UserDetail_Data TenantDbPerson = getUserDetail(TenantConnection, TenantDbUser, Response);
+                    UserDetail_Data TenantDbPerson = getUserDetail(TenantConnection, TenantDbUser, response);
                     TenantDbUser.setUserDetail(TenantDbPerson);
                     // NOTE: Assuming TenantDbUser will not be null
                     // Why?: Because we sync User_Data to TenantConnection in Login Servlet
                   }
               }
 
-            int EulaClear = Req.getSessionInt(SessionUtil.Attributes.EULA_CLEAR.name());
+            int EulaClear = req.getSessionInt(SessionUtil.Attributes.EULA_CLEAR.name());
             if (EulaClear == SystemValues.EVIL_VALUE)
               {
-                if (isApiKeyRequest == false && isAuthPassthrough == false)
+                if (apiToken == null && isAuthPassthrough == false)
                   {
                     LOG.info("User not cleared for EULA.");
-                    SessionUtil.InvalidateSession(Request);
-                    Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                    SessionUtil.InvalidateSession(request);
+                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                     throw new ServletException("Unauthenticated session");
                   }
               }
@@ -278,31 +278,31 @@ public class SessionFilter implements jakarta.servlet.Filter
             // Skip for SuperAdmin
             if (MasterDbUser != null && MasterDbUser.hasRoles(RoleHelper.SUPERADMIN))
               {
-                Request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(), MasterConnection);
+                request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(), MasterConnection);
                 mainUser = MasterDbUser;
               }
             else
               {
-                Request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(),
+                request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(),
                 isMultiTenant ? (isMasterPath ? MasterConnection : TenantConnection) : MasterConnection);
                 mainUser = isMultiTenant ? (isMasterPath ? MasterDbUser : TenantDbUser) : MasterDbUser;
               }
-            Request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
+            request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
 
             // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path or an apikey service
             if (isAuthPassthrough == false && isMasterPath == false && mainUser != null)
               {
-                if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
+                if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, request) == false)
                   {
                     // There is a conflict here between 404's and non-authorized guest requests.
-                    if (Req.isResourceMapped() == false)
+                    if (req.isResourceMapped() == false)
                       {
-                        Response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                        response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
                         throw new ServletException("Unauthorized Application Access 404");
                       }
 
-                    LOG.info("User is a guest and is not cleared for this url (" + Request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
-                    Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
+                    LOG.info("User is a guest and is not cleared for this url (" + request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
+                    response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
                     throw new ServletException("Unauthorized guest access as per app service configuration");
                   }
                 else
@@ -312,37 +312,37 @@ public class SessionFilter implements jakarta.servlet.Filter
                     if (roles == null || roles.length == 0)
                       {
                         LOG.info("User is role-less.");
-                        Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
+                        response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
                         throw new ServletException("Unauthorized access as user is role-less");
                       }
                   }
               }
 
             // LOG.info("********************************************************************************************************************************************\n");
-            Response.setHeader("X-Frame-Options", "SAMEORIGIN");
-            chain.doFilter(req, res);
-            if (Response.getStatus() != 200 && Response.getStatus() != 302)
-              throw new Exception("Servlet error " + Response.getStatus());
+            response.setHeader("X-Frame-Options", "SAMEORIGIN");
+            chain.doFilter(servletReq, servletRes);
+            if (response.getStatus() != 200 && response.getStatus() != 302)
+              throw new Exception("Servlet error " + response.getStatus());
             // Clear flag from Session, after Success Request
             // So that subsequent requests are not affected
-            skipRollback = isSkipRollback(Req);
-            boolean forceReloadUser = Req.getSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name()) == SessionUtil.FORCE_RELOAD_USER;
+            skipRollback = isSkipRollback(req);
+            boolean forceReloadUser = req.getSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name()) == SessionUtil.FORCE_RELOAD_USER;
             if (forceReloadUser)
               {
-                Req.removeSessionAttribute(SessionUtil.Attributes.FORCE_RELOAD_USER.name());
-                MasterDbUser = getUser(Request, MasterConnection);
+                req.removeSessionAttribute(SessionUtil.Attributes.FORCE_RELOAD_USER.name());
+                MasterDbUser = getUser(request, MasterConnection);
               }
-            if (Req.getServletPath().equals("/svc/Login") == true)
+            if (req.getServletPath().equals("/svc/Login") == true)
               AL.setLogin(true);
             AL.setDurationNanos(System.nanoTime() - T0);
-            writeAccessLogs(MasterConnection, MasterDbUser, AL, Response);
+            writeAccessLogs(MasterConnection, MasterDbUser, AL, response);
             if (TenantConnection != null)
               TenantConnection.commit();
             if (MasterConnection != null)
               MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
             LOG.info("\n"
             + "   ********************************************************************************************************************************************\n"
-            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(AL.getDurationNanos()) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
+            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(AL.getDurationNanos()) + AnsiUtil.NEGATIVE_OFF + ": " + request.getRequestURL() + "\n"
             + "   ********************************************************************************************************************************************");
           }
         catch (
@@ -354,12 +354,12 @@ public class SessionFilter implements jakarta.servlet.Filter
             LOG.catching(T);
             if (T.getCause() != null)
               LOG.catching(T.getCause());
-            skipRollback = isSkipRollback(Req);
+            skipRollback = isSkipRollback(req);
             try
               {
-                if (Req.getServletPath().equals("/svc/Login") == true)
+                if (req.getServletPath().equals("/svc/Login") == true)
                   AL.setLogin(false);
-                writeAccessLogs(MasterConnection, MasterDbUser, AL, Response, T, skipRollback);
+                writeAccessLogs(MasterConnection, MasterDbUser, AL, response, T, skipRollback);
                 if (MasterConnection != null)
                   MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
                 if (TenantConnection != null && skipRollback == false)
@@ -416,6 +416,11 @@ public class SessionFilter implements jakarta.servlet.Filter
           }
       }
 
+    /**
+     * Checks if the endpoint path has been declared in a wanda.app.*.json file and apiKey was set to true.
+     * @param request
+     * @return
+     */
     private static boolean isApiKeyAccessEnabled(HttpServletRequest request)
       {
         String servletPath = request.getServletPath();
@@ -473,20 +478,18 @@ public class SessionFilter implements jakarta.servlet.Filter
           throw new Exception("Cannot create a AccessLog record in the database");
       }
 
-    private static AccessLog_Data LogRequestHeader(HttpServletRequest Request, boolean dataMasking)
+    private static AccessLog_Data LogRequestHeader(HttpServletRequest Request, boolean dataMasking, AuthApiToken apiToken)
     throws Exception
       {
         AccessLog_Data AL = AccessLog_Factory.create(SessionUtil.getSession(Request).getId());
         AL.setIpAddress(Request.getRemoteAddr() + ":" + Request.getRemotePort());
         AL.setUrl(Request.getRequestURL().toString());
         AL.setServlet(Request.getServletPath());
-        LOG.info(getRequestHeaderLogStr(Request, AL, true, dataMasking));
+        LOG.info(getRequestHeaderLogStr(Request, AL, true, dataMasking, apiToken));
         return AL;
       }
 
-    protected static Pattern _AUTH = Pattern.compile("Bearer\\s+([\\w-]+)\\s+[\\w-]+");
-
-    public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking)
+    public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking, AuthApiToken apiToken)
     throws UnsupportedEncodingException, Exception
       {
         StringBuilder Str = new StringBuilder();
@@ -512,13 +515,7 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 String val = Headers.nextElement();
                 if (Name.equalsIgnoreCase("authorization") == true)
-                  {
-                    Matcher m = _AUTH.matcher(val);
-                    if (m.matches() == false)
-                      val = "*******************************";
-                    else
-                      val = m.replaceAll("Bearer $1 ********");
-                  }
+                 val = apiToken == null ? "*******************************" : "Bearer "+apiToken._partnerId+" ********";
                 Str.append("   ***    " + Name + ": " + val + "\n");
               }
           }

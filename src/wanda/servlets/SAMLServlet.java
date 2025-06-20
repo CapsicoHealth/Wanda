@@ -9,9 +9,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import tilda.utils.TextUtil;
 import wanda.saml.ConfigSAML;
+import wanda.web.AuthApiToken;
 import wanda.web.SessionFilter;
 
-@WebServlet("/saml-sso")
+@WebServlet("/svcx/saml-sso")
 public class SAMLServlet extends HttpServlet
   {
     @Override
@@ -26,8 +27,9 @@ public class SAMLServlet extends HttpServlet
       {
         try
           {
+            AuthApiToken apiToken = AuthApiToken.getAuthToken(req);
             ConfigSAML.LOG.info("\n\n\n");
-            ConfigSAML.LOG.info(SessionFilter.getRequestHeaderLogStr(req, null, true, true));
+            ConfigSAML.LOG.info(SessionFilter.getRequestHeaderLogStr(req, null, true, true, apiToken));
             String ssoId = req.getParameter("ssoId");
             String returnUrl = req.getParameter("returnUrl");
             if (TextUtil.isNullOrEmpty(ssoId) == true)
@@ -46,7 +48,7 @@ public class SAMLServlet extends HttpServlet
           }
         finally
           {
-            ConfigSAML.LOG.info("\n\n\n");
+            ConfigSAML.LOG.info("\n\n");
           }
       }
   }

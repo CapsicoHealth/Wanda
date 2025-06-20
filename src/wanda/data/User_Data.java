@@ -662,10 +662,10 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         Promo_Data p = Promo_Factory.lookupByCode(defaultPromoCode);
         if (p.read(C) == false)
-         {
-           LOG.error("The promo code '"+defaultPromoCode+"' defined for ssoId '" + ssoId + "' cannot be found in the database.");
-           throw new Exception("No applications found for this user.");
-         }
+          {
+            LOG.error("The promo code '" + defaultPromoCode + "' defined for ssoId '" + ssoId + "' cannot be found in the database.");
+            throw new Exception("No applications found for this user.");
+          }
         updateAppAccess(C, U, CollectionUtil.toPrimitiveArray(p.getAppsAsArray()));
       }
   }

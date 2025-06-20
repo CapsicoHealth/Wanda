@@ -20,7 +20,6 @@ import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
-
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
@@ -35,7 +34,6 @@ import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.NotFoundException;
-import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 @WebServlet("/svc/user/account/update")
 public class AccountUpdate extends SimpleServlet

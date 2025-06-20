@@ -20,6 +20,7 @@ insert into WANDA.ROLE ( "id", "value", "label", "created", "lastUpdated")
                        ,('Creator', 'Creator'      , 'Creator'            , statement_timestamp(), statement_timestamp())
                        ,('FU'     , 'File Uploader', 'File Uploader'      , statement_timestamp(), statement_timestamp())
                        ,('GST'    , 'Guest'        , 'Guest'              , statement_timestamp(), statement_timestamp())
+                       ,('API'    , 'API'          , 'API'                , statement_timestamp(), statement_timestamp())
     on conflict("id") do update set
         "label" = EXCLUDED."label"
        ,"value" = EXCLUDED."value"

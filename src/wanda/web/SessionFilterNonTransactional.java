@@ -59,39 +59,39 @@ public class SessionFilterNonTransactional implements jakarta.servlet.Filter
       }
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+    public void doFilter(ServletRequest servletReq, ServletResponse servletRes, FilterChain chain)
     throws IOException, ServletException
       {
         long T0 = System.nanoTime();
-        HttpServletRequest Request = (HttpServletRequest) req;
-        HttpServletResponse Response = (HttpServletResponse) res;
+        HttpServletRequest request = (HttpServletRequest) servletReq;
+        HttpServletResponse response = (HttpServletResponse) servletRes;
 
         try
           {
-            
-            HttpSession S = SessionUtil.getSession(Request);
+            HttpSession S = SessionUtil.getSession(request);
             Boolean maskedMode = (Boolean) S.getAttribute(SessionUtil.Attributes.MASKING_MODE.name());
             if (maskedMode == null)
               maskedMode = false;
             QueryDetails.setThreadMaskMode_DO_NOT_USE_IN_GENERAL_APP_CODE(maskedMode);
+            AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
             
-            LOG.info(SessionFilter.getRequestHeaderLogStr(Request, null, true, maskedMode));
-            if (Request.getScheme().equals("https") == false)
+            LOG.info(SessionFilter.getRequestHeaderLogStr(request, null, true, maskedMode, apiToken));
+            if (request.getScheme().equals("https") == false)
               {
                 LOG.error("The server only accepts HTTPS requests.");
                 throw new ServletException("The server only accepts HTTPS requests.");
               }
 
             // LOG.info("********************************************************************************************************************************************\n");
-            Response.setHeader("X-Frame-Options", "SAMEORIGIN");
-            chain.doFilter(req, res);
-            if (Response.getStatus() != 200 && Response.getStatus() != 302)
-              throw new Exception("Servlet error " + Response.getStatus());
+            response.setHeader("X-Frame-Options", "SAMEORIGIN");
+            chain.doFilter(servletReq, servletRes);
+            if (response.getStatus() != 200 && response.getStatus() != 302)
+              throw new Exception("Servlet error " + response.getStatus());
             // Clear flag from Session, after Success Request
             // So that subsequent requests are not affected
             LOG.info("\n"
             + "   ********************************************************************************************************************************************\n"
-            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T   S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime() - T0) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
+            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T   S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime() - T0) + AnsiUtil.NEGATIVE_OFF + ": " + request.getRequestURL() + "\n"
             + "   ********************************************************************************************************************************************");
           }
         catch (Throwable T)

@@ -16,9 +16,6 @@
 
 package wanda.web;
 
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,7 +23,6 @@ import tilda.db.Connection;
 import tilda.utils.HttpStatus;
 import wanda.data.User_Data;
 import wanda.servlets.helpers.RoleHelper;
-import wanda.web.config.Wanda;
 import wanda.web.exceptions.SimpleServletException;
 
 /**
@@ -104,45 +100,41 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
     protected final boolean       _guestAllowed;
     protected final APIKeyEnum    _apiKey;
 
-    protected final static String _BEARER = "Bearer ";
-
     @Override
     protected void justDo(RequestUtil request, ResponseUtil response)
     throws Exception
       {
-        User_Data U = null;
         Connection C = (Connection) request.getAttribute(RequestUtil.Attributes.CONNECTION.toString());
         if (C == null)
           throw new SimpleServletException(HttpStatus.InternalServerError, "No DB connection found in the request's attributes!");
 
-        U = (User_Data) request.getAttribute(RequestUtil.Attributes.USER.toString());
-
-        if (_apiKey == APIKeyEnum.EXCLUSIVELY && U != null)
-          throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request: this API is only accessible via a formal API call.");
+        User_Data U = (User_Data) request.getAttribute(RequestUtil.Attributes.USER.toString());
         
-        if (U == null && _apiKey != null)
+        if (U == null) // anonymous session
           {
-            String apiKey = request.getHeader("Authorization"); // "Bearer <partnerId> <apiKey>"
-            if (apiKey == null || apiKey.startsWith(_BEARER) == false)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid Authorization header format: expecting 'Bearer <partnerId> <apiKey>'.");
-            String[] parts = apiKey.substring(_BEARER.length()).trim().split("\\s+");
-            if (parts.length != 2)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid Authorization header format: expecting 'Bearer <partnerId> <apiKey>'.");
-            if (Wanda.validateApiKey(request, parts[0], parts[1]) == false)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request with an invalid partner ID and/or API Key");
-            request.setApiCall(parts[0]);
+            if (_mustAuth == true)
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
           }
-        else if (U == null && _mustAuth == true)
-          throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
-        else if (U != null && _mustAuth == true && U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
-          throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per servlet configuration");
+        else if (U.isLoginTypeAPI() == true) // API Call
+          {
+            if (_apiKey == null) // no API access declared for this servlet
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request: this endpoint is not accessible via an API call.");
+            request.setApiCall(U.getLoginDomain());
+          }
+        else // regular user call
+          {
+            if (_apiKey == APIKeyEnum.EXCLUSIVELY)
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request: this endpoint is only accessible via a formal API call.");
+            if (U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
+              throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per endpoint code configuration");
+          }
 
         justDo(request, response, C, U);
       }
 
+
     protected abstract void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception;
-
 
 
     /**

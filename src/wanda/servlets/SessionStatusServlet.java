@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import tilda.db.QueryDetails;
 import tilda.utils.json.JSONUtil;
 import tilda.utils.pairs.StringIntPair;
+import wanda.web.AuthApiToken;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -73,9 +74,10 @@ public class SessionStatusServlet extends jakarta.servlet.http.HttpServlet imple
         
         try
           {
+            AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
             LOG.info("\n"
             + " ============================================================================================================================================================================\n"
-            + SessionFilter.getRequestHeaderLogStr(request, null, false, maskedMode) + "\n"
+            + SessionFilter.getRequestHeaderLogStr(request, null, false, maskedMode, apiToken) + "\n"
             + "   ***  Session status for '" + servletPath + "': " + SIP._V + "% -> " + SIP._N + "\n"
             + " ============================================================================================================================================================================\n"
             );

@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import jakarta.servlet.http.HttpServletRequest;
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.utils.DateTimeUtil;
@@ -42,7 +43,6 @@ import wanda.data.AppView_Data;
 import wanda.data.AppView_Factory;
 import wanda.data.Config_Data;
 import wanda.data.Config_Factory;
-import wanda.web.RequestUtil;
 
 
 public class Wanda
@@ -428,7 +428,7 @@ public class Wanda
         return false;
       }
 
-    public static boolean validateApiKey(RequestUtil request, String clientId, String apiKey)
+    public static boolean validateApiKey(HttpServletRequest request, String clientId, String apiKey)
     throws Exception
       {
         if (TextUtil.isNullOrEmpty(clientId) == true || TextUtil.isNullOrEmpty(apiKey) == true)

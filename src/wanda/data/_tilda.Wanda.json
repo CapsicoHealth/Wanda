@@ -90,6 +90,7 @@
                                           {"name":"Local", "value":"LO", "description":"Local Login", "label":"Local Logn", "default":"CREATE" } 
                                          ,{"name":"Ldap" , "value":"LD", "description":"LDAP Login" , "label":"LDAP Login"  }
                                          ,{"name":"SSO"  , "value":"SO", "description":"SSO Login"  , "label":"SSO Login"  }
+                                         ,{"name":"API"  , "value":"AP", "description":"API Login"  , "label":"API Login"  }
                                        ]
            }
           ,{ "name":"loginDomain"          , "type"  :"STRING(254)", "nullable": true, "description":"The login domain for SSO or LDAP"    }
