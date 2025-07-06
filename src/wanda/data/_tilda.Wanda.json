@@ -858,17 +858,21 @@
         ,{ "sameas": "User.invitedUser"                                      }
         ,{ "sameas": "User.locked"                                           }
         ,{ "sameas": "User.roles"                                            }
+        ,{ "sameas": "User.profRoles"                                        }
         ,{ "sameas": "User.promoCode"                                        }
         ,{ "sameas": "User.inviteCancelled"                                  }
         ,{ "sameas": "User.loginCount"                                       }
+        ,{ "sameas": "User.loginType"                                        }
+        ,{ "sameas": "User.loginDomain"                                      }
         ,{ "sameas": "User.lastLogin"                                        }
+        ,{ "sameas": "User.lastEula"                                              }
         ,{ "sameas": "UserDetail.nameTitle"                                  }
         ,{ "sameas": "UserDetail.nameLast"                                   }
         ,{ "sameas": "UserDetail.nameFirst"                                  }
         ,{ "sameas": "UserDetail.nameMiddle"                                 }
         ,{ "sameas": "UserDetail.telMobile"                                  }
        ]
-     ,"subWhere": "User.deleted is null and User.refnum <> -666"
+     ,"subWhere": "User.deleted is null and User.refnum <> -666 and User.loginType <> 'AP'"
      ,"queries": [
          { "name": "AllButExceptRefnum"
           ,"description": "TBD"
@@ -879,8 +883,8 @@
          }
        ]
      ,"outputMaps": [
-         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"], "outTypes":["JSON"] }
-        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "lastLogin", "lastEula"] }
+        ,{ "name": "Simple", "outTypes":["CSV" ], "columns": [                "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "profRoles", "loginCount", "lastLogin", "loginDomain", "lastEula", "locked"] }
        ]       
     }
     
@@ -893,10 +897,14 @@
          ,{ "sameas": "User.invitedUser"                                           }
          ,{ "sameas": "User.locked"                                                }
          ,{ "sameas": "User.roles"                                                 }
+         ,{ "sameas": "User.profRoles"                                             }
          ,{ "sameas": "User.promoCode"                                             }
          ,{ "sameas": "User.inviteCancelled"                                       }
          ,{ "sameas": "User.loginCount"                                            }
+         ,{ "sameas": "User.loginType"                                             }
+         ,{ "sameas": "User.loginDomain"                                           }
          ,{ "sameas": "User.lastLogin"                                             }
+         ,{ "sameas": "User.lastEula"                                              }
          ,{ "sameas": "TenantUser.refnum"      , "name": "tenantUserRefnum"        }
          ,{ "sameas": "TenantUser.tenantRefnum", "name": "tenantRefnum"            }
          ,{ "sameas": "TenantUser.active"      , "name": "tenantUserActive"        }
@@ -910,7 +918,7 @@
      ,"joins": [
         { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
       ]
-     ,"subWhere": "User.deleted is null and User.refnum <> -666"
+     ,"subWhere": "User.deleted is null and User.refnum <> -666 and User.loginType <> 'AP'"
      ,"queries": [
          { "name": "AllButExceptRefnum"
           ,"description": "TBD"
@@ -921,8 +929,8 @@
          }
        ]
      ,"outputMaps": [
-         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"], "outTypes":["JSON"] }
-        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "lastLogin", "lastEula", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"] }
+        ,{ "name": "Simple", "outTypes":["CSV" ], "columns": [                "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "profRoles", "loginCount", "lastLogin", "loginDomain", "lastEula", "locked"] }
        ]       
     }
    ,{ "name": "TenantView",

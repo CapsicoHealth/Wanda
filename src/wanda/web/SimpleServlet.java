@@ -125,8 +125,11 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
           {
             if (_apiKey == APIKeyEnum.EXCLUSIVELY)
               throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request: this endpoint is only accessible via a formal API call.");
-            if (U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
-              throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per endpoint code configuration");
+            if (_mustAuth == true)
+              {
+                if (U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
+                 throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per endpoint code configuration");
+              }
           }
 
         justDo(request, response, C, U);
