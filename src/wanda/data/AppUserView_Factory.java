@@ -85,7 +85,8 @@ public class AppUserView_Factory extends wanda.data._Tilda.TILDA__APPUSERVIEW_Fa
         SelectQuery Q = newWhereQuery(C);
         
         Q.equals(COLS.APPREFNUM, A.getRefnum())
-        .and().notEquals(COLS.USERREFNUM, U.getRefnum());
+        .and().notEquals(COLS.USERREFNUM, U.getRefnum())
+        .and().notEquals(COLS.USERLOGINTYPE, AppUserView_Data._userLoginTypeAPI);
         
         if (enabledOnly == true)
          Q.equals(COLS.ENABLED, true);

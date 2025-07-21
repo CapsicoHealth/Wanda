@@ -1075,6 +1075,8 @@
          ,{ "sameas":"User.id"             , "name":"userId"        }
          ,{ "sameas":"User.email"          , "name":"userEmail"     }
          ,{ "sameas":"User.promoCode"      , "name":"userPromoCode" }
+         ,{ "sameas":"User.loginType"      , "name":"userLoginType" }
+         ,{ "sameas":"User.loginDomain"    , "name":"userLoginDomain" }
          ,{ "sameas":"UserDetail.nameLast" , "name":"userNameLast"  }
          ,{ "sameas":"UserDetail.nameFirst", "name":"userNameFirst" }
          ,{ "sameas":"AppUser.userRefnum"  , "name":"enabled", "expression":"? is not null", "type":"BOOLEAN" }
@@ -1083,7 +1085,7 @@
           { "object": "User"   , "joinType": "INNER", "on": [ { "db":"*", "clause":"1=1" } ] }
          ,{ "object": "AppUser", "joinType": "LEFT" , "on": [ { "db":"*", "clause":"AppUser.\"appRefnum\" = App.refnum and AppUser.\"userRefnum\" = WANDA.User.refnum" } ] }
        ]
-     ,"subWhere": "App.deleted is null and User.deleted is null and User.refnum <> -666"
+     ,"subWhere": "App.deleted is null and AppConfig.deleted is null and User.deleted is null and User.refnum <> -666"
      ,"queries": [
           { "name"  :"UserAppId"
            ,"description":"Get the specific record for a given user by appId."

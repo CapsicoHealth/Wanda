@@ -143,25 +143,25 @@ public class LoadAppsConfig
               for (int i = 0; i < Apps._apps.size(); ++i)
                 {
                   AppDef ad  = Apps._apps.get(i);
-                if (ad != null)
-                  {
-                    String srcFile = "wanda.app." + ad._id + ".json";
-                    In = FileUtil.getResourceAsStream(srcFile);
-                    if (In == null)
-                      throw new Exception("The file " + srcFile + " cannot be found.");
-                    R = new BufferedReader(new InputStreamReader(In));
-                    ad._AppDefDetail = gson.fromJson(R, AppDefDetails.class);
-                    if (ad._AppDefDetail.validate(srcFile) == false)
-                      throw new Exception("The file " + srcFile + " is invalid.");
-                    if (TextUtil.isNullOrEmpty(ad._label) == false)
-                      ad._AppDefDetail._label = ad._label;
-                    if (ad._AppDefDetail._subApps != null)
-                     for (SubApp sa : ad._AppDefDetail._subApps)
-                       {
-                         AppDef subApp = ad.createSubApp(sa);
-                         Apps._apps.add(++i, subApp);
-                       }
-                  }
+                  if (ad != null)
+                    {
+                      String srcFile = "wanda.app." + ad._id + ".json";
+                      In = FileUtil.getResourceAsStream(srcFile);
+                      if (In == null)
+                        throw new Exception("The file " + srcFile + " cannot be found.");
+                      R = new BufferedReader(new InputStreamReader(In));
+                      ad._AppDefDetail = gson.fromJson(R, AppDefDetails.class);
+                      if (ad._AppDefDetail.validate(srcFile) == false)
+                        throw new Exception("The file " + srcFile + " is invalid.");
+                      if (TextUtil.isNullOrEmpty(ad._label) == false)
+                        ad._AppDefDetail._label = ad._label;
+                      if (ad._AppDefDetail._subApps != null)
+                       for (SubApp sa : ad._AppDefDetail._subApps)
+                         {
+                           AppDef subApp = ad.createSubApp(sa);
+                           Apps._apps.add(++i, subApp);
+                         }
+                    }
                 }
 
             if (Apps.validate() == false)
