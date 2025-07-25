@@ -25,15 +25,18 @@
      { "name":"Promo"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"code"    , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
-         ,{ "name":"descr"   , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
-         ,{ "name":"start"   , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"end"     , "type":"DATE"    , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"active"  , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
-         ,{ "name":"system"  , "type":"BOOLEAN" , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
-         ,{ "name":"roles"   , "type":"STRING[]", "nullable": false                   , "description":"The default roles for users registering with this promo." }
-         ,{ "name":"apps"    , "type":"LONG[]"  , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
-         ,{ "name":"contents", "type":"STRING[]", "nullable": true                    , "description":"The default content codes for users registering with this promo." }
+          { "name":"code"          , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
+         ,{ "name":"descr"         , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start"         , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"           , "type":"DATE"    , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"        , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+         ,{ "name":"system"        , "type":"BOOLEAN" , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
+         ,{ "name":"roles"         , "type":"STRING[]", "nullable": false                   , "description":"The default roles for users registering with this promo." }
+         ,{ "name":"apps"          , "type":"LONG[]"  , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
+         ,{ "name":"contents"      , "type":"STRING[]", "nullable": true                    , "description":"The default content codes for users registering with this promo." }
+         ,{ "name":"plans"         , "type":"STRING[]", "nullable": true                    , "description":"The plans available for users registering with this promo." }
+         ,{ "name":"discountPct"   , "type":"SHORT"   , "nullable": true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100%." }
+         ,{ "name":"discountMonths", "type":"SHORT"   , "nullable": true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -45,6 +48,45 @@
           { "name":"", "outTypes":["JSON"], "columns": ["*"] }
         ]
      }
+     
+    ,{ "name":"Plan"
+      ,"description":"Promo codes used for invitations or guest sign-ups"
+      ,"columns":[
+          { "name":"code"    , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The code for this Plan"}
+         ,{ "name":"label"   , "type":"STRING"  , "nullable": false, "size": 255      , "protection":"ABSOLUTE", "description":"The label for this Plan"}
+         ,{ "name":"descr"   , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Plan"}
+         ,{ "name":"start"   , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"     , "type":"DATE"    , "nullable": true                    , "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"  , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this plan is active or not. Note that a plan with a valid date might be marked as inactive, so always check both dates and active flag." }
+        ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Code", "columns":["code"], "db": true }
+        ]
+      ,"queries": [
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+    ,{ "name":"PlanPricing"
+      ,"description":"Promo codes used for invitations or guest sign-ups"
+      ,"columns":[
+          { "name":"planRefnum", "sameAs":"Plan.refnum", "nullable": false, "description":"The plan this pricing is applicable to"}
+         ,{ "name":"currency"  , "type":"STRING(255)"  , "nullable": false, "description":"The currency"}
+         ,{ "name":"monthly"   , "type":"FLOAT"        , "nullable": false, "description":"The monthly rate"}
+         ,{ "name":"yearly"    , "type":"FLOAT"        , "nullable": false, "description":"The yearly rate." }
+        ]
+      ,"indices":[ 
+          { "name":"Pricing", "columns":["planRefnum", "currency"], "db": true }
+        ]
+      ,"queries": [
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+     
 
    ,{ "name":"User"
      ,"description":"blah blah"
