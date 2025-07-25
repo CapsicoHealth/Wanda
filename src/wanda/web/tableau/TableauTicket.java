@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger;
 
 import tilda.utils.FileUtil;
 import tilda.utils.TextUtil;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 public class TableauTicket
   {
@@ -34,9 +34,9 @@ public class TableauTicket
     final static public String getTrustedUrl(String subConfigName)
     throws Exception
       {
-        String url = WebBasics.getExtra("tableau-" + subConfigName, "url");
-        String user = WebBasics.getExtra("tableau-" + subConfigName, "user");
-        String targetSite = WebBasics.getExtra("tableau-" + subConfigName, "targetSite");
+        String url = Wanda.getExtra("tableau-" + subConfigName, "url");
+        String user = Wanda.getExtra("tableau-" + subConfigName, "user");
+        String targetSite = Wanda.getExtra("tableau-" + subConfigName, "targetSite");
 
         return get(url, user, targetSite);
       }
@@ -44,7 +44,7 @@ public class TableauTicket
     final static public String getSite(String subConfigName)
     throws Exception
       {
-        return WebBasics.getExtra("tableau-" + subConfigName, "site");
+        return Wanda.getExtra("tableau-" + subConfigName, "site");
       }
 
     final static protected String get(String url, String userName, String targetSite)

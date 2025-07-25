@@ -18,9 +18,8 @@ package wanda.servlets;
 
 import java.util.List;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.annotation.WebServlet;
-
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
@@ -33,17 +32,18 @@ import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
+import wanda.web.exceptions.NotFoundException;
 
-@WebServlet("/svc/user/account")
-public class Account extends SimpleServlet
+@WebServlet("/svc/user/account/update")
+public class AccountUpdate extends SimpleServlet
   {
 
     private static final long serialVersionUID = 988554219257979935L;
 
-    public Account()
+    public AccountUpdate()
       {
-        super(true, false);
+        super(true, false, true);
       }
     
     @Override
@@ -58,6 +58,13 @@ public class Account extends SimpleServlet
       {
         String currentPassword = req.getParamString("currentPassword", true);
         req.throwIfErrors();
+
+        if (U.isLoginTypeLocal() == false)
+          {
+            LOG.error("User '"+U.getId()+"' is not a local user and cannot be updated via this service.");
+            throw new NotFoundException("User", U.getEmail(), "This account cannot be updated");
+          }
+
         long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
         if (EncryptionUtil.hash(currentPassword, U.getPswdSalt()).equals(U.getPswd()) == false)
           {
@@ -78,7 +85,7 @@ public class Account extends SimpleServlet
         if (TextUtil.isNullOrEmpty(password) == false)
           {
             String hashedPassword = null;
-            List<String> errors = WebBasics.validatePassword(password);
+            List<String> errors = Wanda.validatePassword(password);
             if (!errors.isEmpty())
               {
                 for (String error : errors)

@@ -16,14 +16,15 @@
 
 package wanda.servlets;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tilda.db.Connection;
+import tilda.utils.TextUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
-
+import wanda.web.config.Wanda;
 import wanda.data.User_Data;
 
 /**
@@ -32,9 +33,9 @@ import wanda.data.User_Data;
 @WebServlet("/svc/Logout")
 public class Logout extends SimpleServlet
   {
-    protected static final Logger LOG = LogManager.getLogger(Logout.class.getName());
+    protected static final Logger LOG              = LogManager.getLogger(Logout.class.getName());
 
-    private static final long serialVersionUID = 7833614578489016882L;
+    private static final long     serialVersionUID = 7833614578489016882L;
 
     /**
      * Default constructor.
@@ -44,12 +45,26 @@ public class Logout extends SimpleServlet
         super(false);
       }
 
+    protected static String _DEFAULT_REDIRECT_URL = Wanda.getHostName() + Wanda.getAppPath() + Wanda.getHomePagePath();
+
     @Override
-    protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
-      throws Exception
+    protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
+    throws Exception
       {
-        Req.removeSessionUser();
-        Res.success();        
+        boolean redirect = req.getParamBoolean("redirect", false);
+        String redirectUrl = req.getParamString("redirectUrl", false);
+        
+        if (redirect == false && TextUtil.isNullOrEmpty(redirectUrl) == false)
+          req.addError("redirect", "Parameter redirect cannot be false if a redirectUrl is supplied.");
+        
+        req.throwIfErrors();
+
+        req.removeSessionUser();
+
+        if (redirect == true)
+          res.sendRedirect(TextUtil.isNullOrEmpty(redirectUrl) == true ? _DEFAULT_REDIRECT_URL : redirectUrl);
+        else
+          res.success();
       }
 
   }

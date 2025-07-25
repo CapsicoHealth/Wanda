@@ -1,5 +1,5 @@
 package wanda.servlets.admin;
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import wanda.data.SystemEmail_Data;
 import wanda.data.SystemEmail_Factory;

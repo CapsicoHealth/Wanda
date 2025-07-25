@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.io.output.StringBuilderWriter;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,6 +39,8 @@ import tilda.utils.FileUtil;
 import tilda.utils.LogUtil;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
+import wanda.data.AppConfig_Data;
+import wanda.data.AppConfig_Factory;
 import wanda.data.AppUser_Data;
 import wanda.data.AppUser_Factory;
 import wanda.data.App_Data;
@@ -51,7 +52,9 @@ import wanda.data.Role_Factory;
 import wanda.web.config.AppDef;
 import wanda.web.config.AppDefDetails;
 import wanda.web.config.AppDefService;
-import wanda.web.config.WebBasicsDefApps;
+import wanda.web.config.SubApp;
+import wanda.web.config.Wanda;
+import wanda.web.config.WandaDefApps;
 
 public class LoadAppsConfig
   {
@@ -65,7 +68,7 @@ public class LoadAppsConfig
           {
             LOG.info("");
             LOG.info("Wanda App Definition Configuration Loader");
-            LOG.info("  - This utility will load /WebBasics.apps.json and its /WebBasics.app.Xyz.json ");
+            LOG.info("  - This utility will load /wanda.apps.json and its /wanda.app.Xyz.json ");
             LOG.info("   dependencies in the classpath.");
             LOG.info("  - The information will be loaded into the " + App_Factory.SCHEMA_TABLENAME_LABEL + " and ");
             LOG.info("   " + Config_Factory.SCHEMA_TABLENAME_LABEL + " tables");
@@ -90,8 +93,6 @@ public class LoadAppsConfig
           }
         catch (Exception E)
           {
-            if (_COMMAND_LINE_RUN == false)
-              return;
             LOG.error("An exception occurred\n", E);
             LOG.error("\n"
             + "          ======================================================================================\n"
@@ -99,6 +100,8 @@ public class LoadAppsConfig
             + "\n"
             + "                      Cannot load Wanda application configuration data to the database.\n"
             + "          ======================================================================================\n", E);
+            if (_COMMAND_LINE_RUN == false)
+              return;
             System.exit(-1);
           }
         finally
@@ -128,31 +131,41 @@ public class LoadAppsConfig
         Reader R = null;
         try
           {
+            LOG.info("Loading wanda.apps.json...");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            InputStream In = FileUtil.getResourceAsStream("WebBasics.apps.json");
+            InputStream In = FileUtil.getResourceAsStream("wanda.apps.json");
             if (In == null)
-              throw new Exception("Cannot find 'WebBasics.apps.json' initialization file in classpath");
+              throw new Exception("Cannot find 'wanda.apps.json' initialization file in classpath");
             R = new BufferedReader(new InputStreamReader(In));
-            WebBasicsDefApps Apps = gson.fromJson(R, WebBasicsDefApps.class);
+            WandaDefApps Apps = gson.fromJson(R, WandaDefApps.class);
 
             if (Apps._apps != null)
-              for (AppDef ad : Apps._apps)
-                if (ad != null)
-                  {
-                    String srcFile = "WebBasics.app." + ad._id + ".json";
-                    In = FileUtil.getResourceAsStream(srcFile);
-                    if (In == null)
-                      throw new Exception("The file " + srcFile + " cannot be found.");
-                    R = new BufferedReader(new InputStreamReader(In));
-                    ad._AppDefDetail = gson.fromJson(R, AppDefDetails.class);
-                    if (ad._AppDefDetail.validate(srcFile) == false)
-                      throw new Exception("The file " + srcFile + " is invalid.");
-                    if (TextUtil.isNullOrEmpty(ad._label) == false)
-                      ad._AppDefDetail._label = ad._label;
-                  }
+              for (int i = 0; i < Apps._apps.size(); ++i)
+                {
+                  AppDef ad  = Apps._apps.get(i);
+                  if (ad != null)
+                    {
+                      String srcFile = "wanda.app." + ad._id + ".json";
+                      In = FileUtil.getResourceAsStream(srcFile);
+                      if (In == null)
+                        throw new Exception("The file " + srcFile + " cannot be found.");
+                      R = new BufferedReader(new InputStreamReader(In));
+                      ad._AppDefDetail = gson.fromJson(R, AppDefDetails.class);
+                      if (ad._AppDefDetail.validate(srcFile) == false)
+                        throw new Exception("The file " + srcFile + " is invalid.");
+                      if (TextUtil.isNullOrEmpty(ad._label) == false)
+                        ad._AppDefDetail._label = ad._label;
+                      if (ad._AppDefDetail._subApps != null)
+                       for (SubApp sa : ad._AppDefDetail._subApps)
+                         {
+                           AppDef subApp = ad.createSubApp(sa);
+                           Apps._apps.add(++i, subApp);
+                         }
+                    }
+                }
 
             if (Apps.validate() == false)
-              throw new Exception("The WebBasics apps file is invalid.");
+              throw new Exception("The Wanda apps file is invalid.");
 
             process(C, Apps);
           }
@@ -171,50 +184,67 @@ public class LoadAppsConfig
         return SBW.getBuilder().toString();
       }
 
-    public static void process(Connection C, WebBasicsDefApps DA)
+    public static void process(Connection C, WandaDefApps DA)
     throws Exception
       {
         ZonedDateTime ZDT = C.getCurrentTimestamp();
 
         int i = -1;
         LOG.debug("Updating App configurations...");
-        LogUtil.setLogLevel(Level.ERROR);
+        // LogUtil.setLogLevel(Level.ERROR);
         for (AppDef ad : DA._apps)
           if (ad != null)
             {
               App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home); // search by path and home
-              A.setLabel(ad._AppDefDetail._label);
-              A.setSeq(++i);
               A.setId(ad._id);
+              if (ad._subAppOfId != null)
+               A.setSubOfId(ad._subAppOfId);
               A.setAdmin(ad._AppDefDetail._admin);
               A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-              A.setId(ad._id);
               A.setNullDeleted();
               if (A.write(C) == false) // not existing
                 {
-                  A = App_Factory.lookupByLabel(ad._AppDefDetail._label); // search by label
+                  A = App_Factory.lookupById(ad._id); // search by id
                   A.setPath(ad._path);
                   A.setHome(ad._AppDefDetail._home);
+                  A.setTour(ad._AppDefDetail._tour);
                   A.setAdmin(ad._AppDefDetail._admin);
-                  A.setSeq(i);
-                  A.setId(ad._id);
                   A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-                  A.setId(ad._id);
                   A.setNullDeleted();
-                  if (A.write(C) == false)
+                  if (A.write(C) == false) // not existing, need to create new
                     {
-                      A = App_Factory.create(ad._path, ad._AppDefDetail._home, ad._AppDefDetail._label, i);
-                      A.setId(ad._id);
+                      A = App_Factory.create(ad._id, ad._path, ad._AppDefDetail._home);
                       A.setAdmin(ad._AppDefDetail._admin);
                       A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                       if (A.write(C) == false)
                         {
-                          LogUtil.resetLogLevel();
+                          // LogUtil.resetLogLevel();
                           throw new Exception("Cannot insert/update App record");
                         }
                     }
                 }
               A.refresh(C);
+
+              ++i; // sequence increment.
+              // Looking up the app config for this host.
+              AppConfig_Data AC = AppConfig_Factory.lookupByAppHost(A.getRefnum(), Wanda.getHostName());
+              if (AC.read(C) == false) // cannot find.
+                {
+                  // Need migration support: Looking up the app config for the default "" hostName value.
+                  AC = AppConfig_Factory.lookupByAppHost(A.getRefnum(), "");
+                  if (AC.read(C) == false)
+                    AC = AppConfig_Factory.create(A.getRefnum(), Wanda.getHostName(), ad._AppDefDetail._label, i);
+                }
+              AC.setHostName(Wanda.getHostName());
+              AC.setLabel(ad._AppDefDetail._label);
+              AC.setSeq(i);
+              AC.setNullDeleted();
+              if (AC.write(C) == false)
+                {
+                  LogUtil.resetLogLevel();
+                  throw new Exception("Cannot insert/update AppConfig record");
+                }
+
               AppUser_Data AU = AppUser_Factory.lookupByUnassignedApp(A.getRefnum());
               if (AU.read(C) == false)
                 {
@@ -228,21 +258,21 @@ public class LoadAppsConfig
               // Create Administrator role for the application
               if (TextUtil.isNullOrEmpty(A.getAdmin()) == false)
                 {
-                  Role_Data R = Role_Factory.create("Admin" + A.getId(), "Admin" + A.getId(), "Administrator for application " + A.getLabel());
+                  Role_Data R = Role_Factory.create("Admin" + A.getId(), "Admin" + A.getId(), "Administrator for application " + AC.getLabel());
                   if (R.write(C) == false)
                     {
                       R = Role_Factory.lookupById("Admin" + A.getId());
-                      R.setLabel("Administrator for application " + A.getLabel()); // In case the label changed for the app
+                      R.setLabel("Administrator for application " + AC.getLabel()); // In case the label changed for the app
                       R.write(C);
                     }
                 }
             }
         LogUtil.resetLogLevel();
-        LOG.debug("   --> Updated "+i+" App configurations.");
+        LOG.debug("   --> Updated " + i + " App configurations.");
 
         // App not updated in this round, i.e., lastUpdated < ZDT, have likely been removed, so they should be marked as deleted.
-        List<App_Data> L = App_Factory.lookupWhereLastUpdated(C, ZDT, 0, -1);
-        for (App_Data A : L)
+        List<AppConfig_Data> L = AppConfig_Factory.lookupWhereLastUpdated(C, Wanda.getHostName(), ZDT, 0, -1);
+        for (AppConfig_Data A : L)
           {
             A.setDeletedNow();
             if (A.write(C) == false)
@@ -252,7 +282,7 @@ public class LoadAppsConfig
         Config_Data Conf = Config_Factory.create("MAIN");
         Conf.setAuthPassthroughs(DA._authPassthroughs);
         Conf.setMasterPaths(DA._masterPaths);
-        if (Conf.upsert(C, true) == false)
+        if (Conf.upsert(C) == false)
           throw new Exception("Cannot insert/update Config record");
       }
   }

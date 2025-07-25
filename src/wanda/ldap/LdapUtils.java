@@ -26,7 +26,6 @@ import org.apache.logging.log4j.Logger;
 
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
-import tilda.utils.RandomUtil;
 import tilda.utils.TextUtil;
 import wanda.data.LDAPDomain_Data;
 import wanda.data.LDAPDomain_Factory;

@@ -33,8 +33,10 @@ public class AppDefDetails implements JSONable
     /*@formatter:off*/
     @SerializedName("label"        ) public String              _label         = null;
     @SerializedName("home"         ) public String              _home          = null;
-    @SerializedName("services"     ) public List<AppDefService> _services      = null;
     @SerializedName("admin"        ) public String              _admin         = null;
+    @SerializedName("tour"         ) public boolean             _tour          = false;
+    @SerializedName("subApps"      ) public List<SubApp>        _subApps       = null;    
+    @SerializedName("services"     ) public List<AppDefService> _services      = null;
     @SerializedName("policies"     ) public List<AppDefPolicy>  _policies      = null;
     @SerializedName("requiredRoles") public List<String>        _requiredRoles = null; // Still to be worked on
     /*@formatter:on*/
@@ -54,7 +56,9 @@ public class AppDefDetails implements JSONable
         JSONUtil.print(Out, "label", true, this._label);
         JSONUtil.print(Out, "home", false, this._home);
         JSONUtil.print(Out, "admin", false, this._admin);
-        JSONUtil.print(Out, "services", "", false, _services, "  ");
+        JSONUtil.print(Out, "tour", false, this._tour);
+        JSONUtil.print(Out, "subApps" , "", false, this._subApps, "  ");
+        JSONUtil.print(Out, "services", "", false, this._services, "  ");
         Out.write("}");
       }
 
@@ -71,13 +75,13 @@ public class AppDefDetails implements JSONable
 
         if (TextUtil.isNullOrEmpty(_label) == true)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " didn't define any 'label' property");
+            Wanda.LOG.error("The Wanda app configuration file " + srcFile + " didn't define any 'label' property");
             OK = false;
           }
 
         if (TextUtil.isNullOrEmpty(_home) == true)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " didn't define any 'home' property");
+            Wanda.LOG.error("The Wanda app configuration file " + srcFile + " didn't define any 'home' property");
             OK = false;
           }
         
@@ -89,7 +93,7 @@ public class AppDefDetails implements JSONable
              OK = false;
             else if (values.add(s._path) == false)
               {
-                WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " defined the service '"+s._path+"' more than once.");
+                Wanda.LOG.error("The Wanda app configuration file " + srcFile + " defined the service '"+s._path+"' more than once.");
                 OK = false;
               }
           }
@@ -102,7 +106,7 @@ public class AppDefDetails implements JSONable
               OK = false;
              else if (values.add(p._name) == false)
                {
-                 WebBasics.LOG.error("The WebBasics app configuration file " + srcFile + " defined the policy '"+p._name+"' more than once.");
+                 Wanda.LOG.error("The Wanda app configuration file " + srcFile + " defined the policy '"+p._name+"' more than once.");
                  OK = false;
                }
            }

@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
 import wanda.data.User_Data;
 import wanda.web.config.PasswordRule;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
@@ -53,14 +53,14 @@ public class ConfigServlet extends SimpleServlet
       {
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         List<String> authPassthroughs = new ArrayList<String>();
-        Iterator<String> IAuthPassthroughs = WebBasics.getAuthPassthroughs();
+        Iterator<String> IAuthPassthroughs = Wanda.getAuthPassthroughs();
         while (IAuthPassthroughs.hasNext())
           {
             authPassthroughs.add(IAuthPassthroughs.next());
           }
         String[] authPassthroughsArr = new String[authPassthroughs.size()];
         authPassthroughs.toArray(authPassthroughsArr);
-        List<PasswordRule> passwordRules = WebBasics.getPasswordRules();
+        List<PasswordRule> passwordRules = Wanda.getPasswordRules();
         List<AppUserView_Data> AUVL = U == null ? null : AppUserView_Factory.getUserApps(C, U, U.getRefnum(), 0, -1);
 
         JSONUtil.startOK(Out, '{');
@@ -69,9 +69,11 @@ public class ConfigServlet extends SimpleServlet
         Out.println();
         JSONUtil.print(Out, "isMultiTenant", false, ConnectionPool.isMultiTenant());
         Out.println();
-        JSONUtil.print(Out, "appPath", false, WebBasics.getAppPath());
+        JSONUtil.print(Out, "defaultSsoId", false, Wanda.getDefaultSsoConfigId());
         Out.println();
-        JSONUtil.print(Out, "homePagePath", false, WebBasics.getHomePagePath());
+        JSONUtil.print(Out, "appPath", false, Wanda.getAppPath());
+        Out.println();
+        JSONUtil.print(Out, "homePagePath", false, Wanda.getHomePagePath());
         Out.println();
         JSONUtil.print(Out, "apps", "", false, AUVL, " ");
         Out.println();

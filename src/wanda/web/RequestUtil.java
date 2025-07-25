@@ -26,16 +26,16 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.Part;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 import tilda.utils.ParseUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
@@ -59,12 +59,14 @@ public class RequestUtil
       }
 
     protected HttpServletRequest     _Req;
-    protected List<StringStringPair> _Errors = new ArrayList<StringStringPair>();
+    protected List<StringStringPair> _Errors       = new ArrayList<StringStringPair>();
+    protected String                 _apiCallSsoId = null;
 
     public void addError(String ParamName, String Error)
       {
         _Errors.add(new StringStringPair(ParamName, Error));
       }
+
     public void addErrors(List<StringStringPair> errs)
       {
         _Errors.addAll(errs);
@@ -78,6 +80,11 @@ public class RequestUtil
     public Map<String, String[]> getParameterMap()
       {
         return _Req.getParameterMap();
+      }
+
+    public HttpServletRequest getHttpServletRequest()
+      {
+        return _Req;
       }
 
 
@@ -430,6 +437,10 @@ public class RequestUtil
         return _Req.getRequestedSessionId();
       }
 
+    public String getHeader(String header)
+      {
+        return _Req.getHeader(header);
+      }
 
     public Collection<Part> getParts()
     throws IOException, ServletException
@@ -485,4 +496,64 @@ public class RequestUtil
               return c;
         return null;
       }
+
+    public void setApiCall(String ssoId)
+      {
+        _apiCallSsoId = ssoId;
+      }
+
+    public String getApiCallSsoId()
+      {
+        return _apiCallSsoId;
+      }
+
+    public boolean isResourceMapped()
+      {
+        return isResourceMapped(_Req.getServletContext(), _Req.getServletPath());
+      }
+
+    public static boolean isResourceMapped(HttpServletRequest req)
+      {
+        return isResourceMapped(req.getServletContext(), req.getServletPath());
+      }
+
+    public static boolean isResourceMapped(ServletContext context, String resourcePath)
+      {
+        try
+          {
+            return context.getResource(resourcePath) != null;
+          }
+        catch (Exception e)
+          {
+            return false; // Handle invalid paths or other exceptions
+          }
+      }
+
+    public ServletContext getServletContext()
+      {
+        return _Req.getServletContext();
+      }
+
+    public String getReferrerFolder(ServletContext context)
+      {
+        String referrer = _Req.getHeader("Referer");
+        if (TextUtil.isNullOrEmpty(referrer) == true)
+          return null;
+
+        int i = referrer.lastIndexOf('?');
+        if (i != -1)
+          referrer = referrer.substring(0, i);
+        i = referrer.lastIndexOf('/');
+        if (i != -1)
+          referrer = referrer.substring(0, i);
+        String contextPath = _Req.getContextPath() + "/";
+        i = referrer.indexOf(contextPath);
+        if (File.separator.equals("\\") == true)
+          referrer = referrer.replace("/", File.separator);
+        if (i != -1)
+          return context.getRealPath("/") + referrer.substring(i + contextPath.length()) + File.separator;
+
+        return null;
+      }
+
   }

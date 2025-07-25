@@ -40,7 +40,7 @@ public class RootImporter implements Importer
         for (Role_Data obj : _Roles)
           {
             ++Count;
-            if (obj.upsert(C, true) == false)
+            if (obj.upsert(C) == false)
               throw new Exception("Cannot upsert Role record");
           }
         Role_Factory.initMappings(C);

@@ -19,7 +19,7 @@ package wanda.servlets.admin.apps;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +32,7 @@ import wanda.data.User_Data;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionFilter;
 import wanda.web.SimpleServlet;
 
 @WebServlet("/svc/admin/app/users/update")
@@ -85,6 +86,7 @@ public class AppUserUpdate extends SimpleServlet
               usersEnabled.add(Long.parseLong(parts[0]));
             else
               usersDisabled.add(Long.parseLong(parts[0]));
+            SessionFilter.evictUserFromAppCache(Long.parseLong(parts[0]));
           }
 
         if (usersEnabled.isEmpty() == false)

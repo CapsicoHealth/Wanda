@@ -19,11 +19,11 @@ package wanda.servlets;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import tilda.db.QueryDetails;
 import tilda.utils.json.JSONUtil;
 import tilda.utils.pairs.StringIntPair;
+import wanda.web.AuthApiToken;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -45,7 +46,7 @@ import wanda.web.SessionUtil;
  *
  */
 @WebServlet("/svcx/session/status")
-public class SessionStatusServlet extends javax.servlet.http.HttpServlet implements javax.servlet.Servlet
+public class SessionStatusServlet extends jakarta.servlet.http.HttpServlet implements jakarta.servlet.Servlet
   {
     private static final long     serialVersionUID = 1018123535563202342L;
     protected static final Logger LOG              = LogManager.getLogger(SessionStatusServlet.class.getName());
@@ -73,9 +74,10 @@ public class SessionStatusServlet extends javax.servlet.http.HttpServlet impleme
         
         try
           {
+            AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
             LOG.info("\n"
             + " ============================================================================================================================================================================\n"
-            + SessionFilter.getRequestHeaderLogStr(request, null, false, maskedMode) + "\n"
+            + SessionFilter.getRequestHeaderLogStr(request, null, false, maskedMode, apiToken) + "\n"
             + "   ***  Session status for '" + servletPath + "': " + SIP._V + "% -> " + SIP._N + "\n"
             + " ============================================================================================================================================================================\n"
             );

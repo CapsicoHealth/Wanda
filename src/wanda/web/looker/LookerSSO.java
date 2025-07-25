@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.TextUtil;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 
 /**
  * Inspired by https://github.com/looker/looker_embed_sso_examples/blob/master/LookerEmbedClientExample.java and
@@ -37,10 +37,10 @@ public class LookerSSO
     final static public String get(String embedURL, String subConfigName)
     throws Exception
       {
-        String url = WebBasics.getExtra("looker-"+subConfigName, "url");
-        String secret = WebBasics.getExtra("looker-"+subConfigName, "secret");
-        String embed = WebBasics.getExtra("looker-"+subConfigName, "embed");
-        String models = WebBasics.getExtra("looker-"+subConfigName, "models");
+        String url = Wanda.getExtra("looker-"+subConfigName, "url");
+        String secret = Wanda.getExtra("looker-"+subConfigName, "secret");
+        String embed = Wanda.getExtra("looker-"+subConfigName, "embed");
+        String models = Wanda.getExtra("looker-"+subConfigName, "models");
 
         return get(url, secret, embed, models, embedURL);
       }

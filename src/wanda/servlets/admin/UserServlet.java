@@ -16,7 +16,7 @@
 
 package wanda.servlets.admin;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
@@ -69,7 +69,7 @@ public class UserServlet extends SimpleServlet
           }
         if (cancelInvite)
           {
-            user.setPswdResetCode(EncryptionUtil.getToken(16, true));
+            user.setPswdResetCode(EncryptionUtil.getToken(18, true));
             user.setInviteCancelled(true);
             user.setLockedNow();
           }

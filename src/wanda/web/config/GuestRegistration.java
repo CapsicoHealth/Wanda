@@ -20,14 +20,19 @@ import com.google.gson.annotations.SerializedName;
 
 public class GuestRegistration
   {
+    public static enum GuestType
+      {
+      NONE, PLAIN, PROMO
+      }
+
     /*@formatter:off*/
-    @SerializedName("allowed"  ) public boolean  _allowed   = false;
-    @SerializedName("promos"   ) public boolean  _promos    = false;
-    @SerializedName("apps"     ) public GuestRegistrationApp[] _apps = null;
-    @SerializedName("tenantIds") public String[] _tenantIds = null;
+    @SerializedName("type"       ) public GuestType              _type   = GuestType.NONE;
+    @SerializedName("buttonLabel") public String                 _buttonLabel = "Free Trial";
+    @SerializedName("defaultApps") public GuestRegistrationApp[] _defaultApps = null;
+    @SerializedName("tenantIds"  ) public String[]               _tenantIds = null;
     /*@formatter:on*/
 
-    public transient long[]       _appRefnums    = null;
-    public transient long[]       _tenantRefnums = null;
+    public transient long[]       _appRefnums             = null;
+    public transient long[]       _tenantRefnums          = null;
 
   }

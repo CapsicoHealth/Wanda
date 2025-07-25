@@ -30,21 +30,21 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.pac4j.core.exception.http.HttpAction;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.db.QueryDetails;
@@ -53,12 +53,13 @@ import tilda.utils.DateTimeUtil;
 import tilda.utils.DurationUtil;
 import tilda.utils.HttpStatus;
 import tilda.utils.SystemValues;
+import tilda.utils.TextUtil;
 import wanda.LoadAppsConfig;
 import wanda.data.AccessLog_Data;
 import wanda.data.AccessLog_Factory;
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
-import wanda.data.App_Data;
+import wanda.data.AppView_Data;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.Tenant_Data;
@@ -67,12 +68,13 @@ import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.data._Tilda.TILDA__APP.ServiceDefinition;
+import wanda.saml.ConfigSAML;
 import wanda.servlets.helpers.RoleHelper;
-import wanda.web.config.WebBasics;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 
-public class SessionFilter implements javax.servlet.Filter
+public class SessionFilter implements jakarta.servlet.Filter
   {
     protected static final Logger LOG = LogManager.getLogger(SessionFilter.class.getName());
 
@@ -81,47 +83,45 @@ public class SessionFilter implements javax.servlet.Filter
     throws ServletException
       {
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Starting web app initialization for '"+arg.getServletContext().getServletContextName()+"'\n"
-                +"***  Loading Tilda and Connections configurations"
-                );
+        + "*************************************************************************************************************************************\n"
+        + "***  Starting web app initialization for '" + arg.getServletContext().getServletContextName() + "'\n"
+        + "***  Loading Tilda and Connections configurations");
         ConnectionPool.autoInit();
 
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Loading Wanda app Config"
-                );
+        + "*************************************************************************************************************************************\n"
+        + "***  Loading Wanda app Config");
         // may fail in a sub-context where app config files are not available, i.e., an admin context vs a main-app context.
         LoadAppsConfig._COMMAND_LINE_RUN = false;
         LoadAppsConfig.main(null);
 
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Initializing Wanda environment"
-                );
-        WebBasics.autoInit();
-        
+        + "*************************************************************************************************************************************\n"
+        + "***  Initializing Wanda environment");
+        Wanda.autoInit();
+
         LOG.info("\n\n\n"
-                +"*************************************************************************************************************************************\n"
-                +"***  Completed web app initialization for '"+arg.getServletContext().getServletContextName()+"'\n"
-                +"*************************************************************************************************************************************\n"
-                +"\n\n\n\n\n\n"
-                );
+        + "*************************************************************************************************************************************\n"
+        + "***  Completed web app initialization for '" + arg.getServletContext().getServletContextName() + "'\n"
+        + "*************************************************************************************************************************************\n"
+        + "\n\n\n\n\n\n");
       }
 
     @Override
     public void destroy()
       {
       }
+    
+    protected final static String _BEARER = "Bearer ";    
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+    public void doFilter(ServletRequest servletReq, ServletResponse servletRes, FilterChain chain)
     throws IOException, ServletException
       {
         long T0 = System.nanoTime();
-        HttpServletRequest Request = (HttpServletRequest) req;
-        HttpServletResponse Response = (HttpServletResponse) res;
-        RequestUtil Req = new RequestUtil(Request);
+        HttpServletRequest request = (HttpServletRequest) servletReq;
+        HttpServletResponse response = (HttpServletResponse) servletRes;
+        RequestUtil req = new RequestUtil(request);
 
         Connection MasterConnection = null;
         User_Data MasterDbUser = null;
@@ -132,11 +132,11 @@ public class SessionFilter implements javax.servlet.Filter
         // Multi Tenant
         Connection TenantConnection = null;
         boolean isMultiTenant = false;
-        boolean isMasterPath = isMasterPath(Request);
-        boolean isAuthPassthrough = isAuthPassthrough(Request);
+        boolean isMasterPath = isMasterPath(request);
+        boolean isAuthPassthrough = isAuthPassthrough(request);
 
         // Masking
-        HttpSession S = SessionUtil.getSession(Request);
+        HttpSession S = SessionUtil.getSession(request);
         Boolean maskedMode = (Boolean) S.getAttribute(SessionUtil.Attributes.MASKING_MODE.name());
         if (maskedMode == null)
           maskedMode = false;
@@ -144,23 +144,59 @@ public class SessionFilter implements javax.servlet.Filter
 
         try
           {
-            AL = LogRequestHeader(Request, maskedMode);
+            AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
+            AL = LogRequestHeader(request, maskedMode, apiToken);
             MasterConnection = ConnectionPool.get("MAIN");
-            MasterDbUser = getUser(Request, MasterConnection);
+            MasterDbUser = getUser(request, MasterConnection);
 
             isMultiTenant = ConnectionPool.isMultiTenant();
 
-            if (Request.getScheme().equals("https") == false)
+            if (request.getScheme().equals("https") == false)
               {
                 LOG.error("The server only accepts HTTPS requests.");
                 throw new ServletException("The server only accepts HTTPS requests.");
               }
 
-            if (MasterDbUser == null)
+            if (MasterDbUser == null) // anonymous
               {
-                if (isAuthPassthrough == false)
+                if (apiToken != null) // API call
                   {
-                    Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                    if (isApiKeyAccessEnabled(request) == false) // Is this request endpoint API-enabled?
+                      {
+                        LOG.info("API call for an endpoint that is not api-enabled in its wanda configuration file.");
+                        response.sendError(HttpStatus.BadRequest._Code, "Invalid API Key for requested endpoint");
+                        throw new ServletException("Invalid API Key for requested endpoint");
+                      }
+                    LOG.info("Anonymous access with apiKey-enabled service.");
+                    MasterDbUser = User_Factory.createAPiUser(request, MasterConnection, apiToken._partnerId);
+                  }
+                else if (isAuthPassthrough == false)
+                  {
+                    // If we are in SSO mode, we need to redirect to login.
+                    String defaultSsoId = Wanda.getDefaultSsoConfigId();
+                    if (TextUtil.isNullOrEmpty(defaultSsoId) == false)
+                      {
+                        try
+                          {
+                            String returnUrl = request.getRequestURL().toString() + (request.getQueryString() == null ? "" : "?" + request.getQueryString());
+                            LOG.debug("Unauthenticated user in SSO environment: redirecting to SSO and then '" + returnUrl + "'.");
+                            ConfigSAML.processRedirect(request, response, defaultSsoId, returnUrl);
+                          }
+                        catch (HttpAction action)
+                          {
+                            action.getCode(); // e.g., 302 for redirect — pac4j has already handled the response
+                            ConfigSAML.LOG.debug("Error during SAML authentication with action code: " + action.getCode());
+                          }
+                        catch (Exception e)
+                          {
+                            ConfigSAML.LOG.debug("Error during SAML processing: " + e.getMessage() + "\n", e);
+                            response.sendError(HttpStatus.InternalServerError._Code, "Internal Server Error Setting Up SAML SSO Connection");
+                            throw new ServletException("Error during SAML processing", e);
+                          }
+
+                        return;
+                      }
+                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                     throw new ServletException("Unauthenticated session");
                   }
               }
@@ -169,17 +205,17 @@ public class SessionFilter implements javax.servlet.Filter
                 // Is user locked?
                 if (isUserLocked(MasterDbUser))
                   {
-                    Req.removeSessionUser();
-                    Response.sendError(HttpStatus.Unauthorized._Code, "Unauthorized User");
+                    req.removeSessionUser();
+                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthorized User");
                     throw new ServletException("Unauthorized User");
                   }
-                UserDetail_Data UD = getUserDetail(MasterConnection, MasterDbUser, Response);
+                UserDetail_Data UD = getUserDetail(MasterConnection, MasterDbUser, response);
                 MasterDbUser.setUserDetail(UD);
               }
 
-            if (isAuthPassthrough == false && isAppAuthorized(Request, MasterConnection, MasterDbUser) == false)
+            if (isAuthPassthrough == false && isAppAuthorized(request, MasterConnection, MasterDbUser) == false)
               {
-                Response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
                 throw new ServletException("Unauthorized Application Access");
               }
 
@@ -190,7 +226,7 @@ public class SessionFilter implements javax.servlet.Filter
 
             if (isMultiTenant)
               {
-                TenantUser = getTenantUser(Request, MasterConnection);
+                TenantUser = getTenantUser(request, MasterConnection);
                 if (TenantUser == null)
                   {
                     if (isAuthPassthrough == false)
@@ -198,8 +234,8 @@ public class SessionFilter implements javax.servlet.Filter
                         if (MasterDbUser != null && !MasterDbUser.hasRoles(RoleHelper.SUPERADMIN))
                           {
                             LOG.info("Unable to load TenantUser from Session.");
-                            SessionUtil.InvalidateSession(Request);
-                            Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                            SessionUtil.InvalidateSession(request);
+                            response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                             throw new ServletException("Unauthenticated session");
                           }
                       }
@@ -209,7 +245,7 @@ public class SessionFilter implements javax.servlet.Filter
                     Tenant = TenantUser.getTenant(MasterConnection);
                     if (Tenant.getActive() == false)
                       {
-                        Req.removeSessionUser();
+                        req.removeSessionUser();
                         throw new ResourceNotAuthorizedException("Tenant", Tenant.getRefnum() + "", "Tenant '" + Tenant.getName() + "' is inactive. Please contact your administrator");
                       }
                     TenantConnection = ConnectionPool.get(Tenant.getConnectionId());
@@ -217,23 +253,23 @@ public class SessionFilter implements javax.servlet.Filter
                     LOG.debug("USERREFNUM: " + (Long) S.getAttribute(SessionUtil.Attributes.USERREFNUM.toString()));
                     LOG.debug("TENANTUSERREFNUM: " + (Long) S.getAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString()));
 
-                    TenantDbUser = getUser(Request, TenantConnection);
+                    TenantDbUser = getUser(request, TenantConnection);
                     // SimpleServlet Subclasses use U.getPerson()
-                    UserDetail_Data TenantDbPerson = getUserDetail(TenantConnection, TenantDbUser, Response);
+                    UserDetail_Data TenantDbPerson = getUserDetail(TenantConnection, TenantDbUser, response);
                     TenantDbUser.setUserDetail(TenantDbPerson);
                     // NOTE: Assuming TenantDbUser will not be null
                     // Why?: Because we sync User_Data to TenantConnection in Login Servlet
                   }
               }
 
-            int EulaClear = Req.getSessionInt(SessionUtil.Attributes.EULA_CLEAR.name());
+            int EulaClear = req.getSessionInt(SessionUtil.Attributes.EULA_CLEAR.name());
             if (EulaClear == SystemValues.EVIL_VALUE)
               {
-                if (isAuthPassthrough == false)
+                if (apiToken == null && isAuthPassthrough == false)
                   {
                     LOG.info("User not cleared for EULA.");
-                    SessionUtil.InvalidateSession(Request);
-                    Response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                    SessionUtil.InvalidateSession(request);
+                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
                     throw new ServletException("Unauthenticated session");
                   }
               }
@@ -242,63 +278,88 @@ public class SessionFilter implements javax.servlet.Filter
             // Skip for SuperAdmin
             if (MasterDbUser != null && MasterDbUser.hasRoles(RoleHelper.SUPERADMIN))
               {
-                Request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(), MasterConnection);
+                request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(), MasterConnection);
                 mainUser = MasterDbUser;
               }
             else
               {
-                Request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(),
+                request.setAttribute(RequestUtil.Attributes.CONNECTION.toString(),
                 isMultiTenant ? (isMasterPath ? MasterConnection : TenantConnection) : MasterConnection);
                 mainUser = isMultiTenant ? (isMasterPath ? MasterDbUser : TenantDbUser) : MasterDbUser;
               }
-            Request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
-            // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path.
-            if (isAuthPassthrough == false && isMasterPath == false && mainUser != null && mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, Request) == false)
+            request.setAttribute(RequestUtil.Attributes.USER.toString(), mainUser);
+
+            // If this is not a master path or an auth passthrough and the user is a guest, then it better be a guest path or an apikey service
+            if (isAuthPassthrough == false && isMasterPath == false && mainUser != null)
               {
-                LOG.info("User is a guest and is not cleared for this url or the url is not listed as guest-allowed in the application definition information.");
-                Response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
-                throw new ServletException("Unauthorized guest access as per app service configuration");
+                if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, request) == false)
+                  {
+                    // There is a conflict here between 404's and non-authorized guest requests.
+                    if (req.isResourceMapped() == false)
+                      {
+                        response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                        throw new ServletException("Unauthorized Application Access 404");
+                      }
+
+                    LOG.info("User is a guest and is not cleared for this url (" + request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
+                    response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
+                    throw new ServletException("Unauthorized guest access as per app service configuration");
+                  }
+                else
+                  {
+                    // Must have at least one ROLE
+                    String[] roles = mainUser.getRolesAsArray();
+                    if (roles == null || roles.length == 0)
+                      {
+                        LOG.info("User is role-less.");
+                        response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
+                        throw new ServletException("Unauthorized access as user is role-less");
+                      }
+                  }
               }
 
             // LOG.info("********************************************************************************************************************************************\n");
-            Response.setHeader("X-Frame-Options", "SAMEORIGIN");
-            chain.doFilter(req, res);
-            if (Response.getStatus() != 200 && Response.getStatus() != 302)
-              throw new Exception("Servlet error " + Response.getStatus());
+            response.setHeader("X-Frame-Options", "SAMEORIGIN");
+            chain.doFilter(servletReq, servletRes);
+            if (response.getStatus() != 200 && response.getStatus() != 302)
+              throw new Exception("Servlet error " + response.getStatus());
             // Clear flag from Session, after Success Request
             // So that subsequent requests are not affected
-            skipRollback = isSkipRollback(Req);
-            boolean forceReloadUser = Req.getSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name()) == SessionUtil.FORCE_RELOAD_USER;
+            skipRollback = isSkipRollback(req);
+            boolean forceReloadUser = req.getSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name()) == SessionUtil.FORCE_RELOAD_USER;
             if (forceReloadUser)
               {
-                Req.removeSessionAttribute(SessionUtil.Attributes.FORCE_RELOAD_USER.name());
-                MasterDbUser = getUser(Request, MasterConnection);
+                req.removeSessionAttribute(SessionUtil.Attributes.FORCE_RELOAD_USER.name());
+                MasterDbUser = getUser(request, MasterConnection);
               }
-            if (Req.getServletPath().equals("/svc/Login") == true)
+            if (req.getServletPath().equals("/svc/Login") == true)
               AL.setLogin(true);
-            writeAccessLogs(MasterConnection, MasterDbUser, AL, Response);
+            AL.setDurationNanos(System.nanoTime() - T0);
+            writeAccessLogs(MasterConnection, MasterDbUser, AL, response);
             if (TenantConnection != null)
               TenantConnection.commit();
             if (MasterConnection != null)
               MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
             LOG.info("\n"
             + "   ********************************************************************************************************************************************\n"
-            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(System.nanoTime() - T0) + AnsiUtil.NEGATIVE_OFF + ": " + Request.getRequestURL() + "\n"
+            + "   ** " + AnsiUtil.NEGATIVE + "R E Q U E S T  #" + AL.getRefnum() + "  S U C C E E D E D  I N  " + DurationUtil.printDurationMilliSeconds(AL.getDurationNanos()) + AnsiUtil.NEGATIVE_OFF + ": " + request.getRequestURL() + "\n"
             + "   ********************************************************************************************************************************************");
           }
-        catch (Throwable T)
+        catch (
+
+        Throwable T)
           {
             LOG.error(AnsiUtil.NEGATIVE + ">>>>>>>>>>>>>>>" + AnsiUtil.NEGATIVE_OFF + "  R E Q U E S T  #" + (AL == null ? "NULL" : AL.getRefnum()) + "  F A I L E D  " + AnsiUtil.NEGATIVE + "<<<<<<<<<<<<<<<" + AnsiUtil.NEGATIVE_OFF);
             LOG.error("**    in " + DurationUtil.printDurationMilliSeconds(System.nanoTime() - T0) + ".");
             LOG.catching(T);
             if (T.getCause() != null)
               LOG.catching(T.getCause());
-            skipRollback = isSkipRollback(Req);
+            skipRollback = isSkipRollback(req);
             try
               {
-                if (Req.getServletPath().equals("/svc/Login") == true)
+                if (req.getServletPath().equals("/svc/Login") == true)
                   AL.setLogin(false);
-                writeAccessLogs(MasterConnection, MasterDbUser, AL, Response, T, skipRollback);
+                writeAccessLogs(MasterConnection, MasterDbUser, AL, response, T, skipRollback);
                 if (MasterConnection != null)
                   MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
                 if (TenantConnection != null && skipRollback == false)
@@ -355,6 +416,22 @@ public class SessionFilter implements javax.servlet.Filter
           }
       }
 
+    /**
+     * Checks if the endpoint path has been declared in a wanda.app.*.json file and apiKey was set to true.
+     * @param request
+     * @return
+     */
+    private static boolean isApiKeyAccessEnabled(HttpServletRequest request)
+      {
+        String servletPath = request.getServletPath();
+        for (AppView_Data app : Wanda.getApps())
+          if (app.getAppServices() != null)
+            for (ServiceDefinition sd : app.getAppServices())
+              if (servletPath.equals(sd._path) == true && sd._apiKey == true)
+                return true;
+        return false;
+      }
+
     private static void writeAccessLogs(Connection MasterConnection, User_Data MasterDbUser, AccessLog_Data AL, HttpServletResponse Response, Throwable T, boolean skipRollback)
     throws Exception
       {
@@ -401,18 +478,18 @@ public class SessionFilter implements javax.servlet.Filter
           throw new Exception("Cannot create a AccessLog record in the database");
       }
 
-    private static AccessLog_Data LogRequestHeader(HttpServletRequest Request, boolean dataMasking)
+    private static AccessLog_Data LogRequestHeader(HttpServletRequest Request, boolean dataMasking, AuthApiToken apiToken)
     throws Exception
       {
         AccessLog_Data AL = AccessLog_Factory.create(SessionUtil.getSession(Request).getId());
         AL.setIpAddress(Request.getRemoteAddr() + ":" + Request.getRemotePort());
         AL.setUrl(Request.getRequestURL().toString());
         AL.setServlet(Request.getServletPath());
-        LOG.info(getRequestHeaderLogStr(Request, AL, true, dataMasking));
+        LOG.info(getRequestHeaderLogStr(Request, AL, true, dataMasking, apiToken));
         return AL;
       }
 
-    public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking)
+    public static String getRequestHeaderLogStr(HttpServletRequest Request, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking, AuthApiToken apiToken)
     throws UnsupportedEncodingException, Exception
       {
         StringBuilder Str = new StringBuilder();
@@ -434,8 +511,13 @@ public class SessionFilter implements javax.servlet.Filter
           {
             String Name = HeaderNames.nextElement();
             Enumeration<String> Headers = Request.getHeaders(Name);
-            while (Headers.hasMoreElements())
-              Str.append("   ***    " + Name + ": " + Headers.nextElement() + "\n");
+            while (Headers.hasMoreElements() == true)
+              {
+                String val = Headers.nextElement();
+                if (Name.equalsIgnoreCase("authorization") == true)
+                 val = apiToken == null ? "*******************************" : "Bearer "+apiToken._partnerId+" ********";
+                Str.append("   ***    " + Name + ": " + val + "\n");
+              }
           }
 
         StringBuilder Params = new StringBuilder();
@@ -482,7 +564,7 @@ public class SessionFilter implements javax.servlet.Filter
       {
         HttpSession S = SessionUtil.getSession(Request);
         double sessionDurationMinutes = DurationUtil.getDurationMinutes(DurationUtil.NANOSECS_PER_MILLISECOND * (System.currentTimeMillis() - S.getCreationTime()));
-        if (sessionDurationMinutes >= WebBasics.getForceReLoginMins())
+        if (sessionDurationMinutes >= Wanda.getForceReLoginMins())
           {
             SessionUtil.InvalidateSession(Request);
             S = SessionUtil.getSession(Request);
@@ -545,7 +627,7 @@ public class SessionFilter implements javax.servlet.Filter
     // Helpers
     private static boolean isAuthPassthrough(HttpServletRequest Request)
       {
-        Iterator<String> I = WebBasics.getAuthPassthroughs();
+        Iterator<String> I = Wanda.getAuthPassthroughs();
         while (I.hasNext() == true)
           {
             String u = I.next();
@@ -557,7 +639,7 @@ public class SessionFilter implements javax.servlet.Filter
 
     private static boolean isMasterPath(HttpServletRequest Request)
       {
-        Iterator<String> I = WebBasics.getMasterPaths();
+        Iterator<String> I = Wanda.getMasterPaths();
         while (I.hasNext() == true)
           {
             String u = I.next();
@@ -573,12 +655,12 @@ public class SessionFilter implements javax.servlet.Filter
           return false;
 
         String servletPath = Request.getServletPath();
-        for (App_Data app : WebBasics.getApps())
+        for (AppView_Data app : Wanda.getApps())
           {
             // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
             // doesn't have access to. This is a larger issue of app service access control which we are still developing!
-            if (app.getServices() != null)
-              for (ServiceDefinition sd : app.getServices())
+            if (app.getAppServices() != null)
+              for (ServiceDefinition sd : app.getAppServices())
                 {
                   if (servletPath.equals(sd._path) == true && "GST".equals(sd._access) == true)
                     return true;
@@ -591,6 +673,16 @@ public class SessionFilter implements javax.servlet.Filter
      * Cache list of app paths a user has access to
      */
     static private Cache<Long, String[]> _USER_APPS_CACHE = CacheBuilder.newBuilder().maximumSize(200).expireAfterWrite(5, TimeUnit.MINUTES).build();
+
+    public static void evictUserFromAppCache(long userRefnum)
+      {
+        _USER_APPS_CACHE.invalidate(userRefnum);
+      }
+
+    public static void clearAppCache()
+      {
+        _USER_APPS_CACHE.invalidateAll();
+      }
 
     /**
      * Checks whether an incoming .jsp URL is to an app authorized for the user
@@ -659,5 +751,14 @@ public class SessionFilter implements javax.servlet.Filter
     private static boolean isUserLocked(User_Data U)
       {
         return U.getLocked() != null && ChronoUnit.MILLIS.between(ZonedDateTime.now(), U.getLocked()) > 0;
+      }
+
+    public static boolean checkAppAccess(Connection C, User_Data U, String appName)
+    throws Exception
+      {
+        if (U.isSuperAdmin() == true)
+          return true;
+        AppUserView_Data AU = AppUserView_Factory.lookupByUserAppId(Wanda.getHostName(), U.getRefnum(), appName);
+        return AU.read(C) == true && AU.getAppActive() == true;
       }
   }

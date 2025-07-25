@@ -16,7 +16,7 @@
 
 package wanda.servlets;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
 import wanda.data.UserDetail_Data;

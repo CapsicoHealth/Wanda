@@ -24,5 +24,5 @@ import wanda.web.config.BeaconBitConfig.LookbackUnit;
 public interface BeaconBit
   {
     public String getTitle();
-    public void run(PrintWriter out, Connection C, int lookbackCount, LookbackUnit lookbackUnit) throws Exception;
+    public boolean run(PrintWriter out, Connection C, int lookbackCount, LookbackUnit lookbackUnit) throws Exception;
   }

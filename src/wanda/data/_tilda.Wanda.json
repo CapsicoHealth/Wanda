@@ -25,12 +25,18 @@
      { "name":"Promo"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"code"  , "type":"STRING" , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
-         ,{ "name":"descr" , "type":"STRING" , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
-         ,{ "name":"start" , "type":"DATE"   , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"end"   , "type":"DATE"   , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"active", "type":"BOOLEAN", "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
-         ,{ "name":"system", "type":"BOOLEAN", "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
+          { "name":"code"          , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
+         ,{ "name":"descr"         , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start"         , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"           , "type":"DATE"    , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"        , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+         ,{ "name":"system"        , "type":"BOOLEAN" , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
+         ,{ "name":"roles"         , "type":"STRING[]", "nullable": false                   , "description":"The default roles for users registering with this promo." }
+         ,{ "name":"apps"          , "type":"LONG[]"  , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
+         ,{ "name":"contents"      , "type":"STRING[]", "nullable": true                    , "description":"The default content codes for users registering with this promo." }
+         ,{ "name":"plans"         , "type":"STRING[]", "nullable": true                    , "description":"The plans available for users registering with this promo." }
+         ,{ "name":"discountPct"   , "type":"SHORT"   , "nullable": true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100%." }
+         ,{ "name":"discountMonths", "type":"SHORT"   , "nullable": true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -42,6 +48,45 @@
           { "name":"", "outTypes":["JSON"], "columns": ["*"] }
         ]
      }
+     
+    ,{ "name":"Plan"
+      ,"description":"Promo codes used for invitations or guest sign-ups"
+      ,"columns":[
+          { "name":"code"    , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The code for this Plan"}
+         ,{ "name":"label"   , "type":"STRING"  , "nullable": false, "size": 255      , "protection":"ABSOLUTE", "description":"The label for this Plan"}
+         ,{ "name":"descr"   , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Plan"}
+         ,{ "name":"start"   , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"     , "type":"DATE"    , "nullable": true                    , "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"  , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this plan is active or not. Note that a plan with a valid date might be marked as inactive, so always check both dates and active flag." }
+        ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Code", "columns":["code"], "db": true }
+        ]
+      ,"queries": [
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+    ,{ "name":"PlanPricing"
+      ,"description":"Promo codes used for invitations or guest sign-ups"
+      ,"columns":[
+          { "name":"planRefnum", "sameAs":"Plan.refnum", "nullable": false, "description":"The plan this pricing is applicable to"}
+         ,{ "name":"currency"  , "type":"STRING(255)"  , "nullable": false, "description":"The currency"}
+         ,{ "name":"monthly"   , "type":"FLOAT"        , "nullable": false, "description":"The monthly rate"}
+         ,{ "name":"yearly"    , "type":"FLOAT"        , "nullable": false, "description":"The yearly rate." }
+        ]
+      ,"indices":[ 
+          { "name":"Pricing", "columns":["planRefnum", "currency"], "db": true }
+        ]
+      ,"queries": [
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+     
 
    ,{ "name":"User"
      ,"description":"blah blah"
@@ -49,6 +94,7 @@
            { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
           ,{ "name":"id"             , "type"  :"STRING"   , "nullable": false, "size": 100, "protect":"ABSOLUTE", "description":"The first line of the address"}
           ,{ "name":"promoCode"      , "sameAs":"Promo.code", "nullable": true,                                    "description":"The promo code that the user may have used to register"}
+          ,{ "name":"contentIds"     , "type"  :"STRING[]"  , "nullable": true,                                    "description":"The content IDs (e.g., training, courses, application suites...) the user has access to"}
           ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
           ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
           ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
@@ -57,9 +103,10 @@
                                         { "name":"Create", "value":"0", "description":"Default Password Creation Time", "default":"CREATE" }
                                       ]
            }
-          ,{ "name":"roles"          , "sameas":"Role.id",                                                             "description":"The comma-separated role(s) for this user"
-                                      ,"enum": { "srcColumns": [], "destObject":"Role", "multi":"SET" }
+          ,{ "name":"roles"          , "sameas":"Role.id",                                                             "description":"The administrative role(s) for this user"
+                                     ,"enum": { "srcColumns": [], "destObject":"Role", "multi":"SET" }
            }
+          ,{ "name":"profRoles"      , "type":"STRING{}" , "nullable": true ,                                          "description":"The professional role(s) for this user" }
           ,{ "name":"pswd"           , "type":"STRING"   , "nullable": false, "size": 100,                             "description":"The hashed password"}
           ,{ "name":"pswdSalt"       , "type":"STRING"   , "nullable": false, "size":  12, "allowEmpty":true,          "description":"The salt, if any, for the hashed password"}
           ,{ "name":"pswdCreate"     , "type":"DATETIME" , "nullable": false,                                          "description":"The date/time the password was created"
@@ -84,13 +131,16 @@
                                        [ 
                                           {"name":"Local", "value":"LO", "description":"Local Login", "label":"Local Logn", "default":"CREATE" } 
                                          ,{"name":"Ldap" , "value":"LD", "description":"LDAP Login" , "label":"LDAP Login"  }
+                                         ,{"name":"SSO"  , "value":"SO", "description":"SSO Login"  , "label":"SSO Login"  }
+                                         ,{"name":"API"  , "value":"AP", "description":"API Login"  , "label":"API Login"  }
                                        ]
            }
-          ,{ "name":"inviteCancelled"      , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify cancelled invites" }
-          ,{ "name":"invitedUser"          , "type"  :"BOOLEAN" ,                                                             "description":"flag to identify if user is invited" }
-          ,{ "name":"emailUnverified"      , "type"  :"STRING"  ,                    "size": 255,                             "description":"Unverified Email Address" }
-          ,{ "name":"emailVerificationCode", "type"  :"STRING"  ,                    "size":  20,                             "description":"A one-time use randomly generated code to verify invitations or password resets."}
-          ,{ "name":"appData"              , "type"  :"JSON[]"  ,                    "nullable": true,                        "description":"Spoonful App Details"
+          ,{ "name":"loginDomain"          , "type"  :"STRING(254)", "nullable": true, "description":"The login domain for SSO or LDAP"    }
+          ,{ "name":"inviteCancelled"      , "type"  :"BOOLEAN"                      , "description":"flag to identify cancelled invites"  }
+          ,{ "name":"invitedUser"          , "type"  :"BOOLEAN"                      , "description":"flag to identify if user is invited" }
+          ,{ "name":"emailUnverified"      , "type"  :"STRING(254)"                  , "description":"Unverified Email Address"            }
+          ,{ "name":"emailVerificationCode", "type"  :"STRING( 20)"                  , "description":"A one-time use randomly generated code to verify invitations or password resets."}
+          ,{ "name":"appData"              , "type"  :"JSON[]"     , "nullable": true, "description":"Spoonful App Details"
             ,"jsonSchema": {
                "typeName": "AppData"
               ,"descr": "Spoonful App Details"
@@ -117,9 +167,16 @@
                { "db": "*", "clause": "emailVerificationCode = ?()" }
              ]
           }
+        ,{ "name": "ActiveAdminOrEmails"
+          ,"description": "Active Users who are admins OR by emails"
+          ,"wheres": [
+              { "db": "*", "clause": "locked is null and (TILDA.in(email, ?[]) = true or TILDA.in('SA', roles) = true)" }
+            ]
+          ,"orderBy":["email"]
+         }
        ]
      ,"outputMaps": [
-           { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue"] }
+           { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue", "loginType", "loginDomain"] }
        ]
      ,"indices":[ 
           { "name":"Id"          , "columns":["id"]    , "db": true }
@@ -145,28 +202,40 @@
          ,{ "name":"dob"          , "type":"DATETIME", "nullable": true ,                             "description":"The date of birth" }
          ,{ "name":"currentAge"   , "type":"INTEGER" , "nullable": false, "mode":"CALCULATED",        "description":"The age at this current time" }
          ,{ "name":"dod"          , "type":"DATETIME",                                                "description":"The date of death" }
-         ,{ "name":"gender"       , "type":"STRING"  , "nullable": true , "size":   2,                "description":"Gender" }
-         ,{ "name":"race"         , "type":"STRING"  ,                    "size":  64,                "description":"Race" }
-         ,{ "name":"ethnicity"    , "type":"STRING"  ,                    "size":  64,                "description":"Ethnicity" }
-         ,{ "name":"citizenship"  , "type":"STRING"  ,                    "size":  64,                "description":"Citizenship" }
-         ,{ "name":"religion"     , "type":"STRING"  ,                    "size":  64,                "description":"Religion" }
-         ,{ "name":"languages"    , "type":"STRING"  ,                    "size":  64,                "description":"Languages spoken" }
-         ,{ "name":"marital"      , "type":"STRING"  ,                    "size":  64,                "description":"Marital status" }
-         ,{ "name":"picture"      , "type":"BOOLEAN" ,                                                "description":"Whether a picture is available for this user" }
-         ,{ "name":"address1"     , "type"  : "STRING"  ,                  "size": 100,               "description":"The first line of the address" }
-         ,{ "name":"address2"     , "sameas":"address1",                                              "description":"The second line of the address" }
-         ,{ "name":"city"         , "type"  : "STRING"  ,                  "size":  50,               "description":"The city" }
-         ,{ "name":"zipPostal"    , "type"  : "STRING"  ,                  "size":  12,               "description":"The zip or postal code" }
-         ,{ "name":"county"       , "sameas":"city"    ,                                              "description":"The county" }
-         ,{ "name":"stateProv"    , "sameas":"city"    ,                                              "description":"The state, province, or whatever" }
-         ,{ "name":"country"      , "sameas":"city"    ,                                              "description":"The country" }
-         ,{ "name":"telHome"      , "type"  : "STRING"  ,                  "size":  20,               "description":"The home telephone number" }
-         ,{ "name":"telMobile"    , "sameas":"telHome",                                               "description":"The mobile telephone number" }
+         ,{ "name":"ageGroup"     , "type":"STRING(12)", "nullable": true ,                           "description":"Age group."
+                                  , "values": [ { "name":"Y80_ABOVE" , "value":"80-"      , "description":"80 & ABOVE" }
+                                               ,{ "name":"Y65_79"    , "value":"65-79"    , "description":"65-69Y"     }
+                                               ,{ "name":"Y50_64"    , "value":"50-64"    , "description":"50-64Y"     }
+                                               ,{ "name":"Y35_49"    , "value":"35-49"    , "description":"35-49Y"     }
+                                               ,{ "name":"Y18_34"    , "value":"18-34"    , "description":"18-34Y"     }
+                                              ]
+          }
+         ,{ "name":"gender"       , "type"  :"STRING"   , "nullable": true , "size":   2,             "description":"Gender" }
+         ,{ "name":"race"         , "type"  :"STRING"   ,                    "size":  64,             "description":"Race" }
+         ,{ "name":"ethnicity"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Ethnicity" }
+         ,{ "name":"citizenship"  , "type"  :"STRING"   ,                    "size":  64,             "description":"Citizenship" }
+         ,{ "name":"religion"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Religion" }
+         ,{ "name":"languages"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Languages spoken" }
+         ,{ "name":"marital"      , "type"  :"STRING"   ,                    "size":  64,             "description":"Marital status" }
+         ,{ "name":"orgId"        , "type"  :"STRING"   ,                    "size": 128,             "description":"Company" }
+         ,{ "name":"company"      , "type"  :"STRING"   ,                    "size": 128,             "description":"Company" }
+         ,{ "name":"industry"     , "type"  :"STRING"   ,                    "size":  64,             "description":"Industry" }
+         ,{ "name":"profTitle"    , "type"  :"STRING"   ,                    "size":  64,             "description":"Professional title" }
+         ,{ "name":"picture"      , "type"  :"BOOLEAN"  ,                                             "description":"Whether a picture is available for this user" }
+         ,{ "name":"address1"     , "type"  : "STRING"  ,                    "size": 256,             "description":"The first line of the address" }
+         ,{ "name":"address2"     , "sameas":"address1" ,                                             "description":"The second line of the address" }
+         ,{ "name":"city"         , "type"  : "STRING"  ,                    "size":  50,             "description":"The city" }
+         ,{ "name":"zipPostal"    , "type"  : "STRING"  ,                    "size":  12,             "description":"The zip or postal code" }
+         ,{ "name":"county"       , "sameas":"city"     ,                                             "description":"The county" }
+         ,{ "name":"stateProv"    , "sameas":"city"     ,                                             "description":"The state, province, or whatever" }
+         ,{ "name":"country"      , "sameas":"city"     ,                                             "description":"The country" }
+         ,{ "name":"telHome"      , "type"  : "STRING"  ,                    "size":  20,             "description":"The home telephone number" }
+         ,{ "name":"telMobile"    , "sameas":"telHome"  ,                                             "description":"The mobile telephone number" }
          ,{ "name":"telMobileText", "type"  : "BOOLEAN" ,                                             "description":"Whether the user can receive texts at the mobiler number or not" }
-         ,{ "name":"telOffice"    , "sameas":"telHome",                                               "description":"The office telephone number" }
-         ,{ "name":"telOfficeExt" , "sameas":"telHome",                                               "description":"The office telephone extension" }
-         ,{ "name":"telFax"       , "sameas":"telHome",                                               "description":"The Fax number"}
-         ,{ "name":"emailHome"    , "type"  : "STRING"  ,                  "size":  50,               "description":"The home email address" }
+         ,{ "name":"telOffice"    , "sameas":"telHome"  ,                                             "description":"The office telephone number" }
+         ,{ "name":"telOfficeExt" , "sameas":"telHome"  ,                                             "description":"The office telephone extension" }
+         ,{ "name":"telFax"       , "sameas":"telHome"  ,                                             "description":"The Fax number"}
+         ,{ "name":"emailHome"    , "type"  : "STRING"  ,                    "size":  50,             "description":"The home email address" }
          ,{ "name":"emailOffice"  , "sameas":"emailHome",                                             "description":"The office email address" }
          ,{ "name":"emailLevel"   , "type"  : "INTEGER" ,                                             "description":"The level of emails allowed" }
        ]
@@ -179,15 +248,57 @@
      ,"queries": [
        ]
      ,"json":[
-          { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
+          { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "company", "orgId", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
        ]
      ,"masks":[
          { "columns":["name*", "address*", "zipPostal", "telMobile","telOffice", "telFax", "emailHome", "emailOffice"], "mask":"******" }
        ]
-    },
-    
+    }
 
-    { "name": "Tenant"
+    
+   ,{ "name":"Ticket"
+     ,"description":"Tickets"
+     ,"columns":[
+         { "name":"creatorRefnum" , "sameAs":"User.refnum", "nullable": false                         , "description":"The refnum of the User who created this ticket" }
+        ,{ "name":"creatorId"     , "sameAs":"User.id"    , "nullable": false                         , "description":"The id of the User who created this ticket" }
+        ,{ "name":"topic"         , "type":"STRING(12)"   , "nullable": false, "protection":"ABSOLUTE", "description":"The type of ticket"}
+        ,{ "name":"subject"       , "type":"STRING(1024)" , "nullable": false, "protection":"ABSOLUTE", "description":"The title for this ticket"}
+        ,{ "name":"details"       , "type":"STRING(16384)", "nullable": false, "protection":"ABSOLUTE", "description":"The contents for this ticket"}
+       ]
+     ,"primary": { "autogen": true }
+     ,"indices":[ 
+         { "name":"Creator", "columns":["creatorRefnum"], "orderBy":["lastUpdated desc"], "db": true }
+        ,{ "name":"All"                                 , "orderBy":["lastUpdated desc"], "db": true }
+       ]
+     ,"queries": [
+       ]
+     ,"outputMaps": [
+         { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+       ]
+    }
+    ,{ "name":"TicketAnswer"
+      ,"description":"Ticket answers"
+      ,"columns":[
+          { "name":"ticketRefnum" , "sameAs":"Ticket.refnum", "nullable": false                         , "description":"The refnum of the ticket this answer is for" }
+         ,{ "name":"creatorRefnum", "sameAs":"User.refnum"  , "nullable": false                         , "description":"The refnum of the User who created this answer" }
+         ,{ "name":"creatorId"    , "sameAs":"User.id"      , "nullable": false                         , "description":"The id of the User who created this answer" }
+         ,{ "name":"answer"       , "type":"STRING(16384)"  , "nullable": false, "protection":"ABSOLUTE", "description":"The answer"}
+        ]
+      ,"primary": { "autogen": true }
+      ,"foreign": [
+           { "name":"TicketFK",  "srcColumns":["ticketRefnum"], "destObject":"Ticket" }
+        ]
+      ,"indices":[ 
+          { "name":"Ticket", "columns":["ticketRefnum"], "orderBy":["lastUpdated desc"], "db": true }
+        ]
+      ,"queries": [
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON"], "columns": ["*"] }
+        ]
+     }
+    
+   ,{ "name": "Tenant"
      ,"description": "Tenant Details"
      ,"columns": [
           {"name":"name"        ,  "type"  :"STRING",     "size": 50,                              "description": "Tenant Name"               }
@@ -263,23 +374,23 @@
 
 
    ,{ "name": "App"
-     ,"description": "App Details"
+     ,"description": "App Details, on a per-host basis"
      ,"columns": [
-         {"name":"path"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App web path"    }
-        ,{"name":"home"    , "type":"STRING"  , "size":250, "nullable":false, "description":"App home page"   }
-        ,{"name":"admin"   , "type":"STRING"  , "size":250, "nullable":true , "description":"App admin page"  }
-        ,{"name":"label"   , "type":"STRING"  , "size":250, "nullable":false, "description":"Label for the application header"                }
-        ,{"name":"id"      , "type":"STRING"  , "size":250, "nullable":true , "description":"App unique Id"   }
-        ,{"name":"seq"     , "type":"INTEGER" ,             "nullable":false, "description":"Sequence for the app in a list"                  }
-        ,{"name":"icon"    , "type":"STRING"  , "size":250,                   "description":"Icon for the application"                        }
-        ,{"name":"services", "type":"JSON[]"  ,             "nullable": true, "description":"Service definition"
+        ,{"name":"id"      , "type":"STRING(250)", "nullable":false, "description":"App unique Id"   }
+        ,{"name":"path"    , "type":"STRING(250)", "nullable":false, "description":"App web path"    }
+        ,{"name":"home"    , "type":"STRING(250)", "nullable":false, "description":"App home page"   }
+        ,{"name":"tour"    , "type":"BOOLEAN"    , "nullable":false, "default":"false", "description":"App home page"   }
+        ,{"name":"subOfId" , "type":"STRING(250)", "nullable":true , "description":"Is this a sub-app, and if so, of what app?"   }
+        ,{"name":"admin"   , "type":"STRING(250)", "nullable":true , "description":"App admin page"  }
+        ,{"name":"services", "type":"JSON[]"     , "nullable":true , "description":"Service definition"
           ,"jsonSchema": {
               "typeName": "ServiceDefinition"
              ,"descr": "Define the services that comprise this app"
              ,"fields": [
-                 {"name": "path"  , "type": "STRING", "description":"The path for the service" }
-                ,{"name": "access", "type": "STRING", "description":"The access level required for the servvice: 'AA' (for app admin), GST (for guest), 'A' (for authenticated) or null (for general access). Must match the implementation of the servlet for the service if applicable." }
-                ]
+                 {"name": "path"  , "type": "STRING" , "description":"The path for the service" }
+                ,{"name": "access", "type": "STRING" , "description":"The access level required for the service: 'AA' (for app admin), GST (for guest), 'A' (for authenticated) or null (for general access). Must match the implementation of the servlet for the service if applicable." }
+                ,{"name": "apiKey", "type": "BOOLEAN", "description":"Whether this service can be accessed with an API key." }
+               ]
              ,"validation": {
                  "rule": ["path IS NOT NOE and (access is null or access in ('AA', 'GST', 'A'))"
                          ]
@@ -287,54 +398,100 @@
                 }
              }
          }
-        ,{"name":"active"  , "type":"BOOLEAN" ,                               "description":"App's actioe status"                             }
        ]
      ,"primary": { "autogen": true }
-     ,"foreign": [
-       ]
      ,"indices": [
-         { "name":"PathHome", "columns":["path", "home"]}
-        ,{ "name":"Label"   , "columns":["label"]}
-        ,{ "name":"Id"      , "columns":["id"]}
+         { "name":"Id"      , "columns":["id"]}
+        ,{ "name":"PathHome", "columns":["path", "home"]}
        ]
      ,"queries": [
-         { "name"  :"LastUpdated",
-           "description":"Gets the apps last updated prior than the supplied timestamp and not deleted.",
-           "from"  :[], 
-           "wheres":[
+         { "name"  :"LastUpdated"
+          ,"description":"Gets the apps last updated prior than the supplied timestamp and not deleted."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"lastUpdated < ?() and deleted is null" }
-            ],
-           "orderBy":["lastUpdated desc"]
+            ]
+          ,"orderBy":["lastUpdated desc"]
          }
-        ,{ "name"  :"Active",
-           "description":"Gets the apps with an active flag and not deleted.",
-           "from"  :[], 
-           "wheres":[
+        ,{ "name"  :"Active"
+          ,"description":"Gets the apps with an active flag and not deleted."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"deleted is null and active=true" }
-            ],
-           "orderBy":["seq asc", "label asc"]
+            ]
+          ,"orderBy":["id asc"]
          }
-        ,{ "name"  :"All",
-           "description":"Gets the apps not deleted.",
-           "from"  :[],
-           "wheres":[
+        ,{ "name"  :"All"
+          ,"description":"Gets the apps not deleted."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"deleted is null" }
-            ],
-           "orderBy":["seq asc", "label asc"]
+            ]
+          ,"orderBy":["id asc"]
          }
-        ,{ "name"  :"Ids",
-           "description":"Get app list by IDs.",
-           "from"  :[],
-           "wheres":[
+        ,{ "name"  :"Ids"
+          ,"description":"Get app list by IDs."
+          ,"from"  :[]
+          ,"wheres":[
                { "db":"*", "clause":"TILDA.in(id, ?[])" }
-            ],
-           "orderBy":["label asc"]
+            ]
+          ,"orderBy":["id asc"]
          }
        ]
      ,"json": [
-         { "name":"", "columns":["refnum", "path", "home", "label", "seq", "icon", "active"] }
+         { "name":"", "columns":["refnum", "id", "path", "home", "admin"] }
        ]
     }
+
+    
+    ,{ "name": "AppConfig"
+      ,"description": "App Details, on a per-host basis"
+      ,"columns": [
+          {"name":"appRefnum", "sameas":"App.refnum", "nullable":false, "description":"App Foreign Key"                             }
+         ,{"name":"hostName" , "type":"STRING(250)" , "nullable":false, "description":"Web host name, e.g., https://xyz.myco.com.", "allowEmpty":true  }
+         ,{"name":"label"    , "type":"STRING(250)" , "nullable":false, "description":"Label for the application header"            }
+         ,{"name":"seq"      , "type":"INTEGER"     , "nullable":false, "description":"Sequence for the app in a list"              }
+         ,{"name":"icon"     , "type":"STRING(250)" ,                   "description":"Icon for the application"                    }
+         ,{"name":"active"   , "type":"BOOLEAN"     ,                   "description":"App's actioe status"                         }
+        ]
+      ,"foreign": [
+          { "name":"App" , "srcColumns":["appRefnum" ], "destObject":"App"  }
+        ]
+      ,"indices": [
+          { "name":"AppHost", "columns":["appRefnum", "hostName"]}
+         ,{ "name":"Label"  , "columns":["label", "hostName"]}
+        ]
+      ,"queries": [
+          { "name"  :"LastUpdated"
+           ,"description":"Gets the apps last updated prior than the supplied timestamp and not deleted."
+           ,"from"  :[]
+           ,"wheres":[
+                { "db":"*", "clause":"hostName=?() and lastUpdated < ?() and deleted is null" }
+             ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name"  :"App"
+           ,"description":"Gets the host names for the supplied app, that are not deleted."
+           ,"from"  :[]
+           ,"wheres":[
+                { "db":"*", "clause":"appRefnum=?() and deleted is null" }
+             ]
+           ,"orderBy":["hostName"]
+          }
+         ,{ "name"  :"HostName"
+           ,"description":"Gets all apps for the host name supplied, that are not deleted."
+           ,"from"  :[] 
+           ,"wheres":[
+               { "db":"*", "clause":"hostName=?() and deleted is null" }
+             ]
+           ,"orderBy":["label"]
+          }
+        ]
+      ,"json": [
+          { "name":"", "columns":["appRefnum", "hostName", "label", "seq", "icon", "active"] }
+        ]
+     }
+
 
    ,{ "name":"AppUser"
      ,"description":"App And User mapping table"
@@ -396,8 +553,7 @@
     }
 
     
-   ,{
-    	"name": "AccessLog",
+   ,{	"name": "AccessLog",
     	"description": "Logs HTTP URL, Params & Response",
     	"columns": [
            { "name": "requestUUID"   , "type": "STRING", "size": 50, "nullable": false, "description": "HTTP Request UUID" }
@@ -410,13 +566,15 @@
           ,{ "name": "responseStatus", "type": "STRING", "size": 2048                 , "description": "HTTP Response status" }
           ,{ "name": "parameters"    , "type": "STRING", "size": 262144               , "description": "parameters sent with http request" }
           ,{ "name": "login"         , "type": "BOOLEAN"                              , "description": "Login status: null=not login, true=successfull login, false=failed login" }
+          ,{ "name": "durationNanos" , "type": "LONG"                                 , "description": "Duration in nanoseconds for the request" }
     	],
       "primary": { "autogen": true },
         "foreign": [
             { "name":"user", "srcColumns":["user_rn"], "destObject":"User" }
         ]
       ,"indices":[ 
-         { "name":"user_rn", "columns":["user_rn"], "orderBy":["created desc"], "db": true }
+         { "name":"user_rn"    , "columns":["user_rn"    ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"requestUUID", "columns":["requestUUID"], "orderBy":["created"], "db": true }
        ]
      ,"masks":[
          { "columns":["userEmail", "ipAddress", "parameters"], "mask":"******" }
@@ -562,12 +720,151 @@
          { "name": ""    , "outTypes":["JSON"], "columns": ["*"] }
        ]
      }   
-    
+
+
+
+
+    ,{ "name": "Tour"
+      ,"description": "Represents a tour"
+      ,"columns": [
+           { "name": "id" , "type": "STRING(255)", "nullable": false, "description": "The name of the tour, which will map to the file <tourName>.tour.json" },
+         ]
+      ,"primary": { "autogen": true }
+      ,"indices":[ 
+          { "name":"Id", "columns":["id"], "db": true }
+        ]
+     }
+    ,{ "name": "TourPart"
+      ,"description": "Represents a tour part"
+      ,"columns": [
+          { "name": "tourRefnum", "sameAs": "Tour.refnum", "nullable": false, "description": "The tour this part belongs to" }
+         ,{ "name": "id"        , "type"  : "STRING(64)" , "nullable": false, "description": "The id of the tour part for class/folder names of assets" }
+         ,{ "name": "pos"       , "type"  : "SHORT"      , "nullable": false, "description": "The order of the step" }
+         ,{ "name": "title"     , "type"  : "STRING(255)", "nullable": false, "description": "The title of the tour" }
+        ]
+      ,"primary": { "autogen": true }
+      ,"foreign": [
+          { "name":"Tour",  "srcColumns":["tourRefnum"], "destObject":"Tour" }
+        ]
+      ,"indices":[ 
+          { "name":"TourId" , "columns":["tourRefnum", "id"], "db": true }
+         ,{ "name":"TourPos", "columns":["tourRefnum", "pos"], "db": true }
+        ]
+     }
+     
+    ,{ "name": "TourStep"
+      ,"description": "Represents a step in a tour"
+      ,"columns": [
+          { "name": "tourPartRefnum", "sameAs": "TourPart.refnum", "nullable": false, "description": "The tour part this step belongs to" }
+         ,{ "name": "id"            , "type"  : "STRING( 64)"    , "nullable": false, "description": "The id of the step, for class/folder names of assets" }
+         ,{ "name": "pos"           , "type"  : "SHORT"          , "nullable": false, "description": "The order of the step" }
+         ,{ "name": "title"         , "type"  : "STRING(255)"    , "nullable": false, "description": "The title of the step" }
+         ,{ "name": "actions"       , "type"  : "JSON[]"         , "nullable": true , "description": "List of actions"
+                                    , "jsonSchema": { "typeName": "TourStepAction" 
+                                                     ,"descr": "An action"
+                                                     ,"fields": [
+                                                         {"name": "elementId", "type": "STRING", "description":"The id of the target element" }
+                                                        ,{"name": "event"    , "type": "STRING", "description":"The event fired" }
+                                                        ,{"name": "timeout"  , "type": "STRING", "description":"The timeout before going to the next step" }
+                                                       ]
+                                                    }
+          }
+         ,{ "name": "actionsUndo", "type": "JSON[]"    , "nullable": true, "description": "List of undo actions"
+                                 , "jsonSchema": { "typeName": "TourStepAction" 
+                                                 }
+          }
+        ]
+      ,"primary": { "autogen": true }
+      ,"foreign": [
+          { "name":"TourPart",  "srcColumns":["tourPartRefnum"], "destObject":"TourPart" }
+        ]
+      ,"indices":[ 
+          { "name":"TourStepId" , "columns":["tourPartRefnum", "id"], "db": true }
+         ,{ "name":"TourStepPos", "columns":["tourPartRefnum", "pos"], "db": true }
+        ]
+     }
+
+     ,{ "name": "TourUserClick"
+       ,"lc":"WORM"
+       ,"description": "Represents a step in a tour that a user took, maybe multiple times"
+       ,"columns": [
+           { "name":"userRefnum", "sameas":"User.refnum", "nullable":false,                          "description":"The user PK"}
+          ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The context/project/app for this tour"}
+          ,{ "name":"type"      , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
+          ,{ "name":"topic"     , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The topic of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
+          ,{ "name":"tourId"    , "sameas":"Tour.id"    , "nullable":false,                          "description":"The tour id"}
+          ,{ "name":"partId"    , "sameAs":"TourPart.id", "nullable":false,                          "description":"The tour part id" }
+          ,{ "name":"stepId"    , "sameAs":"TourStep.id", "nullable":false,                          "description":"List tour part step id" }
+         ]
+       ,"primary": { "autogen": true, "keyBatch": 5000 }
+       ,"foreign": [
+           { "name":"User",  "srcColumns":["userRefnum"], "destObject":"User" }
+         ]
+       ,"indices":[ 
+          { "name":"User"     , "columns":["userRefnum"], "orderBy":["created desc"], "db": true }
+//          ,{ "name":"TourId"   , "columns":["tourId"    ], "orderBy":["created desc"], "db": true }
+//          ,{ "name":"ContextId", "columns":["contextId" ], "orderBy":["created desc"], "db": true }
+          ,{ "name":"Created"  , "columns":[]            , "orderBy":["created desc"], "db": true }
+         ]
+      }     
+
  ]
   
  ,"views":[
-    {
-      "name": "UserResetPasswordView",
+    { "name": "UserView"
+     ,"description": "View that has complete user info"
+     ,"columns": [
+          { "sameAs":"User.refnum"              }
+         ,{ "sameAs":"User.email"               }
+         ,{ "sameAs":"User.id"                  }
+         ,{ "sameAs":"User.pswdCreate"          }
+         ,{ "sameAs":"User.lastLogin"           }
+         ,{ "sameAs":"User.locked"              }
+         ,{ "sameAs":"User.loginCount"          }
+         ,{ "sameAs":"User.roles"               }
+         ,{ "sameAs":"User.promoCode"           }
+         ,{ "sameAs":"User.contentIds"          }
+         ,{ "sameAs":"User.created"             }
+         ,{ "sameAs":"User.lastUpdated"         }
+         ,{ "sameAs":"User.deleted"             }
+         ,{ "sameAs":"UserDetail.nameTitle"     }
+         ,{ "sameAs":"UserDetail.nameLast"      }
+         ,{ "sameAs":"UserDetail.nameFirst"     }
+         ,{ "sameAs":"UserDetail.nameMiddle"    }
+         ,{ "sameAs":"UserDetail.nameStandard"  }
+         ,{ "sameAs":"UserDetail.ageGroup"      }
+         ,{ "sameAs":"UserDetail.gender"        }
+         ,{ "sameAs":"UserDetail.company"       }
+         ,{ "sameAs":"UserDetail.industry"      }
+         ,{ "sameAs":"UserDetail.profTitle"     }
+         ,{ "sameAs":"UserDetail.country"       }
+         ,{ "sameAs":"UserDetail.stateProv"     }
+         ,{ "sameAs":"UserDetail.zipPostal"     }
+         ,{ "sameAs":"UserDetail.telOffice"     ,"name": "tel" }
+         ,{ "sameAs":"UserDetail.picture"       }
+       ]
+     ,"subWhere": "User.deleted is null AND UserDetail.deleted is null"
+     ,"queries": [
+         { "name": "Refnum"
+          ,"description": "User by refnum"
+          ,"wheres": [
+              { "db": "*", "clause": "refnum = ?()" }
+            ]
+         }
+        ,{ "name": "Id"
+          ,"description": "User by id"
+          ,"wheres": [
+              { "db": "*", "clause": "id = ?()" }
+            ]
+         }
+       ]
+     ,"json": [
+         { "name": "", "columns": ["*"], "exclude":["refnum"] }     
+        ,{ "name": "Mini", "columns": ["refnum", "id", "email", "nameFirst", "nameLast"] }     
+       ]
+    }
+    
+   ,{ "name": "UserResetPasswordView",
       "description": "View that has basic user details with pswdResetCode",
       "columns": [
         { "sameas":"User.refnum"               , "name":"userRefnum"  },
@@ -603,17 +900,21 @@
         ,{ "sameas": "User.invitedUser"                                      }
         ,{ "sameas": "User.locked"                                           }
         ,{ "sameas": "User.roles"                                            }
+        ,{ "sameas": "User.profRoles"                                        }
         ,{ "sameas": "User.promoCode"                                        }
         ,{ "sameas": "User.inviteCancelled"                                  }
         ,{ "sameas": "User.loginCount"                                       }
+        ,{ "sameas": "User.loginType"                                        }
+        ,{ "sameas": "User.loginDomain"                                      }
         ,{ "sameas": "User.lastLogin"                                        }
+        ,{ "sameas": "User.lastEula"                                              }
         ,{ "sameas": "UserDetail.nameTitle"                                  }
         ,{ "sameas": "UserDetail.nameLast"                                   }
         ,{ "sameas": "UserDetail.nameFirst"                                  }
         ,{ "sameas": "UserDetail.nameMiddle"                                 }
         ,{ "sameas": "UserDetail.telMobile"                                  }
        ]
-     ,"subWhere": "User.deleted is null and User.refnum <> -666"
+     ,"subWhere": "User.deleted is null and User.refnum <> -666 and User.loginType <> 'AP'"
      ,"queries": [
          { "name": "AllButExceptRefnum"
           ,"description": "TBD"
@@ -624,12 +925,12 @@
          }
        ]
      ,"outputMaps": [
-         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin"], "outTypes":["JSON"] }
-        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "lastLogin", "lastEula"] }
+        ,{ "name": "Simple", "outTypes":["CSV" ], "columns": [                "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "profRoles", "loginCount", "lastLogin", "loginDomain", "lastEula", "locked"] }
        ]       
-    },
+    }
     
-    {
+   ,{
       "name": "AdminUsersAndTenantsView",
       "description": "View that has basic user details",
       "columns": [
@@ -638,10 +939,14 @@
          ,{ "sameas": "User.invitedUser"                                           }
          ,{ "sameas": "User.locked"                                                }
          ,{ "sameas": "User.roles"                                                 }
+         ,{ "sameas": "User.profRoles"                                             }
          ,{ "sameas": "User.promoCode"                                             }
          ,{ "sameas": "User.inviteCancelled"                                       }
          ,{ "sameas": "User.loginCount"                                            }
+         ,{ "sameas": "User.loginType"                                             }
+         ,{ "sameas": "User.loginDomain"                                           }
          ,{ "sameas": "User.lastLogin"                                             }
+         ,{ "sameas": "User.lastEula"                                              }
          ,{ "sameas": "TenantUser.refnum"      , "name": "tenantUserRefnum"        }
          ,{ "sameas": "TenantUser.tenantRefnum", "name": "tenantRefnum"            }
          ,{ "sameas": "TenantUser.active"      , "name": "tenantUserActive"        }
@@ -655,7 +960,7 @@
      ,"joins": [
         { "object": "Tenant", "joinType": "LEFT", "on": [ { "db":"*", "clause":"TenantUser.\"tenantRefnum\" = Tenant.refnum" } ] }
       ]
-     ,"subWhere": "User.deleted is null and User.refnum <> -666"
+     ,"subWhere": "User.deleted is null and User.refnum <> -666 and User.loginType <> 'AP'"
      ,"queries": [
          { "name": "AllButExceptRefnum"
           ,"description": "TBD"
@@ -666,12 +971,11 @@
          }
        ]
      ,"outputMaps": [
-         { "name": "", "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "inviteCancelled", "invitedUser", "loginCount", "lastLogin", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"], "outTypes":["JSON"] }
-        ,{ "name": "Simple", "columns": ["personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "loginCount", "lastLogin", "locked"], "outTypes":["CSV"] }
+         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "lastLogin", "lastEula", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"] }
+        ,{ "name": "Simple", "outTypes":["CSV" ], "columns": [                "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "profRoles", "loginCount", "lastLogin", "loginDomain", "lastEula", "locked"] }
        ]       
-    },
-    {
-      "name": "TenantView",
+    }
+   ,{ "name": "TenantView",
       "description": "View that has Tenant + TenantUser",
       "columns": [
           { "sameas": "TenantUser.refnum"     , "name": "tenantUserRefnum"   }
@@ -691,74 +995,130 @@
          { "name": "tenantJson", "columns": ["refnum", "name", "description", "connectionId", "tenantUserActive"] }
         ,{ "name": "tenantUserJson", "columns": ["name", "tenantUserRefnum", "tenantUserActive"] }
       ]
-    },
+    }
     
-    {
-        "name": "TenantConnectionView",
-        "description": "Tenant + Connection",
-        "columns": [
-          { "sameas": "Tenant.refnum"                          },
-          { "sameas": "Tenant.name"                            },
-          { "sameas": "Tenant.description"                     },
-          { "sameas": "Tenant.loginMsg"                        },
-          { "sameas": "Tenant.connectionId"                    },
-          { "sameas": "Tenant.active"                          },
-          { "sameas": "tilda.data.tilda.connection.driver"     },
-          { "sameas": "tilda.data.tilda.connection.db"         },
-          { "sameas": "tilda.data.tilda.connection.user"       },
-          { "sameas": "tilda.data.tilda.connection.pswd"       },
-          { "sameas": "tilda.data.tilda.connection.initial"    },
-          { "sameas": "tilda.data.tilda.connection.max"        },
-          { "sameas": "tilda.data.tilda.connection.active", "name": "connectionActive"     }
-        ],
-        "json": [
-          { "name": "", "columns": [ "refnum", "name", "connectionId", "driver", "db", "user", "initial", "max", "active", "connectionActive" ] }
-        ]
+   ,{ "name": "TenantConnectionView"
+     ,"description": "Tenant + Connection"
+     ,"columns": [
+         { "sameas": "Tenant.refnum"                          }
+        ,{ "sameas": "Tenant.name"                            }
+        ,{ "sameas": "Tenant.description"                     }
+        ,{ "sameas": "Tenant.loginMsg"                        }
+        ,{ "sameas": "Tenant.connectionId"                    }
+        ,{ "sameas": "Tenant.active"                          }
+        ,{ "sameas": "tilda.data.tilda.connection.driver"     }
+        ,{ "sameas": "tilda.data.tilda.connection.db"         }
+        ,{ "sameas": "tilda.data.tilda.connection.user"       }
+        ,{ "sameas": "tilda.data.tilda.connection.pswd"       }
+        ,{ "sameas": "tilda.data.tilda.connection.initial"    }
+        ,{ "sameas": "tilda.data.tilda.connection.max"        }
+        ,{ "sameas": "tilda.data.tilda.connection.active", "name": "connectionActive"     }
+       ]
+     ,"json": [
+         { "name": "", "columns": [ "refnum", "name", "connectionId", "driver", "db", "user", "initial", "max", "active", "connectionActive" ] }
+       ]
     }
 
+    
+   ,{ "name":"RoleView",
+      "description":"View of roles that have not been deleted",
+      "columns":[
+          { "sameas":"Role.*"      }
+         ,{ "sameas":"Role.value"  , "name":"roleAdmin", "expression":"LOWER(value||' '||label) LIKE '%admin%'", "type":"BOOLEAN" }
+       ]
+     ,"json":[
+          { "name": "", "columns": ["*" ] }
+       ]
+     ,"queries": [
+          { "name"  :"All",
+            "description":"Get all Roles.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"1=1" }
+             ],
+            "orderBy": ["value"]
+          }
+         ,{ "name"  :"Admin",
+            "description":"Get all Roles admin or not.",
+            "from"  : [], 
+            "wheres": [
+               { "db":"*", "clause":"roleAdmin=?()" }
+             ],
+            "orderBy": ["value"]
+          }
+       ]
+    }    
+    
+    
    ,{ "name":"AppView",
       "description":"View of apps that have not been deleted",
       "columns":[
-          { "sameas":"App.refnum"        , "name":"appRefnum" }
-         ,{ "sameas":"App.seq"           , "name":"appSeq"    }
-         ,{ "sameas":"App.label"         , "name":"appLabel"  }
-         ,{ "sameas":"App.home"          , "name":"appHome"   }
-         ,{ "sameas":"App.id"            , "name":"appId"     }
-         ,{ "sameas":"App.admin"         , "name":"appAdmin"  }
-         ,{ "sameas":"App.path"          , "name":"appPath"   }
-         ,{ "sameas":"App.active"        , "name":"appActive" }
+          { "sameas":"App.refnum"        , "name":"appRefnum"   }
+         ,{ "sameas":"App.home"          , "name":"appHome"     }
+         ,{ "sameas":"App.id"            , "name":"appId"       }
+         ,{ "sameas":"App.tour"          , "name":"appTour"     }
+         ,{ "sameas":"App.subOfId"       , "name":"appSubOfId"  }
+         ,{ "sameas":"App.admin"         , "name":"appAdmin"    }
+         ,{ "sameas":"App.path"          , "name":"appPath"     }
+         ,{ "sameas":"App.services"      , "name":"appServices" }
+         ,{ "sameas":"AppConfig.hostName", "name":"appHostName" }
+         ,{ "sameas":"AppConfig.seq"     , "name":"appSeq"      }
+         ,{ "sameas":"AppConfig.label"   , "name":"appLabel"    }
+         ,{ "sameas":"AppConfig.active"  , "name":"appActive"   }
        ]
-     ,"subWhere": "App.deleted is null"
+     ,"subWhere": "App.deleted is null and AppConfig.deleted is null"
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appPath", "appActive" ] }
+          { "name": "", "columns": ["appRefnum", "appHostName", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appTour", "appSubOfId", "appPath", "appActive" ] }
        ]
      ,"queries": [
           { "name"  :"All",
             "description":"Get all Apps.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"1=1" }
+                { "db":"*", "clause":"appHostName=?()" }
              ],
             "orderBy": ["appSeq"]
           }
+         ,{ "name"  :"Active",
+            "description":"Get all Apps.",
+            "from"  : [], 
+            "wheres": [
+               { "db":"*", "clause":"appHostName=?() and appActive=?()" }
+             ],
+            "orderBy": ["appSeq"]
+          }
+         ,{ "name"  :"Ids"
+           ,"description":"Get app list by IDs for the host name supplied, that are not deleted."
+           ,"from"  :[]
+           ,"wheres":[
+               { "db":"*", "clause":"appHostName=?() and TILDA.in(appId, ?[])" }
+             ]
+           ,"orderBy":["appId asc"]
+          }
+
        ]
     }
 
    ,{ "name":"AppUserView",
-      "description":"View that has Tenant + TenantUser",
+      "description":"View that has all apps and all users",
       "columns":[
           { "sameas":"App.refnum"          , "name":"appRefnum"     }
-         ,{ "sameas":"App.seq"             , "name":"appSeq"        }
-         ,{ "sameas":"App.label"           , "name":"appLabel"      }
          ,{ "sameas":"App.home"            , "name":"appHome"       }
          ,{ "sameas":"App.id"              , "name":"appId"         }
+         ,{ "sameas":"App.tour"            , "name":"appTour"       }
+         ,{ "sameas":"App.subOfId"         , "name":"appSubOfId"    }
          ,{ "sameas":"App.admin"           , "name":"appAdmin"      }
          ,{ "sameas":"App.path"            , "name":"appPath"       }
-         ,{ "sameas":"App.active"          , "name":"appActive"     }
+         ,{ "sameas":"AppConfig.hostName"  , "name":"appHostName"   }
+         ,{ "sameas":"AppConfig.seq"       , "name":"appSeq"        }
+         ,{ "sameas":"AppConfig.label"     , "name":"appLabel"      }
+         ,{ "sameas":"AppConfig.active"    , "name":"appActive"     }
          ,{ "sameas":"User.refnum"         , "name":"userRefnum"    }
          ,{ "sameas":"User.id"             , "name":"userId"        }
          ,{ "sameas":"User.email"          , "name":"userEmail"     }
          ,{ "sameas":"User.promoCode"      , "name":"userPromoCode" }
+         ,{ "sameas":"User.loginType"      , "name":"userLoginType" }
+         ,{ "sameas":"User.loginDomain"    , "name":"userLoginDomain" }
          ,{ "sameas":"UserDetail.nameLast" , "name":"userNameLast"  }
          ,{ "sameas":"UserDetail.nameFirst", "name":"userNameFirst" }
          ,{ "sameas":"AppUser.userRefnum"  , "name":"enabled", "expression":"? is not null", "type":"BOOLEAN" }
@@ -767,13 +1127,20 @@
           { "object": "User"   , "joinType": "INNER", "on": [ { "db":"*", "clause":"1=1" } ] }
          ,{ "object": "AppUser", "joinType": "LEFT" , "on": [ { "db":"*", "clause":"AppUser.\"appRefnum\" = App.refnum and AppUser.\"userRefnum\" = WANDA.User.refnum" } ] }
        ]
-     ,"subWhere": "App.deleted is null and User.deleted is null and User.refnum <> -666"
+     ,"subWhere": "App.deleted is null and AppConfig.deleted is null and User.deleted is null and User.refnum <> -666"
      ,"queries": [
-          { "name"  :"AppByUserAll",
+          { "name"  :"UserAppId"
+           ,"description":"Get the specific record for a given user by appId."
+           ,"from"  : []
+           ,"wheres": [
+                { "db":"*", "clause":"appHostName=?() and userRefnum=?() and appId=?()" }
+             ]
+          }
+         ,{ "name"  :"AppByUserAll",
             "description":"Get all users irrespective of app access.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?()" }
+                { "db":"*", "clause":"appHostName=?() and appRefnum=?()" }
              ],
             "orderBy": ["userId"]
           }
@@ -781,7 +1148,7 @@
             "description":"Get only enabled users for app.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=true" }
+                { "db":"*", "clause":"appHostName=?() and appRefnum=?() and enabled=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -789,7 +1156,7 @@
             "description":"Get users for app.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"appRefnum=?() and enabled=true and appActive=true" }
+                { "db":"*", "clause":"appHostName=?() and appRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["userId"]
           }
@@ -797,7 +1164,7 @@
             "description":"Get apps for a user.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"userRefnum=?() and enabled=true and appActive=true" }
+                { "db":"*", "clause":"appHostName=?() and userRefnum=?() and enabled=true and appActive=true" }
              ],
             "orderBy": ["appSeq"]
           }
@@ -805,49 +1172,49 @@
             "description":"Get all apps, including inactive or unthorized ones, with a user.",
             "from"  : [], 
             "wheres": [
-                { "db":"*", "clause":"userRefnum=?()" }
+                { "db":"*", "clause":"appHostName=?() and userRefnum=?()" }
              ],
             "orderBy": ["appSeq"]
           }
        ]
      ,"outputMaps":[
           { "name": ""      , "outTypes":["JSON"], "columns": ["*"] }
-         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appLabel", "appId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
+         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appId", "appTour", "appSubOfId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
        ]       
     }
 
     
     
-    ,{ "name":"AccessLogMonthlyView",
-       "description":"View that has Tenant + TenantUser",
-       "columns":[
-           { "sameAs":"AccessLog.created"    , "name":"month"                 , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
-          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
-          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
-          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
-        ]
-      ,"queries": [
-           { "name"  :"Month",
-             "description":"Get the logs info by month from >= start and < end.",
-             "from"  : [], 
-             "wheres": [
-                 { "db":"*", "clause":"month >= ?(Start) and month < ?(End)" }
-              ],
-             "orderBy": ["month desc"]
-           }
-        ]
-      ,"outputMaps":[
-           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
-        ]       
-     }
+   ,{ "name":"AccessLogMonthlyView",
+      "description":"View that has Tenant + TenantUser",
+      "columns":[
+         { "sameAs":"AccessLog.created"    , "name":"month"                 , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
+        ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
+        ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+       ]
+     ,"queries": [
+         { "name"  :"Month",
+           "description":"Get the logs info by month from >= start and < end.",
+           "from"  : [], 
+           "wheres": [
+               { "db":"*", "clause":"month >= ?(Start) and month < ?(End)" }
+            ],
+           "orderBy": ["month desc"]
+         }
+       ]
+     ,"outputMaps":[
+          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
    ,{ "name":"AccessLogDailyView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
@@ -879,9 +1246,9 @@
           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
        ]       
     }
-   ,{ "name":"AccessLogHourlyView",
-      "description":"View that has Tenant + TenantUser",
-      "columns":[
+   ,{ "name":"AccessLogHourlyView"
+     ,"description":"View that has Tenant + TenantUser"
+     ,"columns":[
           { "sameAs":"AccessLog.created"    , "name":"hour"                  , "expression":"date_trunc('hour', ?)", "type":"DATETIME" }
          ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
          ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
@@ -909,7 +1276,116 @@
           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
        ]       
     }
+
+
+
+   ,{ "name":"AccessLogSessionView"
+     ,"description":"View that has Tenant + TenantUser"
+     ,"columns":[
+         { "sameAs":"AccessLog.requestUUID", "name":"sessionUUID"  }
+        ,{ "sameAs":"AccessLog.user_rn"    , "aggregate":"MAX" } 
+        ,{ "sameAs":"AccessLog.userEmail"  , "aggregate":"MAX" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"sessionId"   , "aggregate":"ROW_NUM", "orderBy":["sessionUUID"]  }
+        ,{ "sameAs":"AccessLog.created"    , "name":"sessionStart", "aggregate":"FIRST"  , "orderBy":["created"]    }
+        ,{ "sameAs":"AccessLog.created"    , "name":"sessionEnd"  , "aggregate":"LAST"   , "orderBy":["created"] }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"requestCount", "aggregate":"COUNT"  }
+       ]
+     ,"outputMaps":[
+         { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
     
+   ,{ "name":"AccessLogPerformanceDayView"
+     ,"description":"View of logs geared towards performance analysis per day per servlet"
+     ,"columns":[
+         { "sameAs":"AccessLog.servlet"      , "name":"servlet"  }
+        ,{ "sameAs":"AccessLog.created"      , "name":"day"         , "expression":"DATE_TRUNC('day',?)::DATE", "type":"DATE" } 
+        ,{ "sameAs":"AccessLog.refnum"       , "name":"requestCount", "aggregate":"COUNT" }
+        ,{ "sameAs":"AccessLog.durationNanos", "name":"minNanos"    , "aggregate":"MIN", "formulaOnly":true }
+        ,{ "sameAs":"AccessLog.durationNanos", "name":"avgNanos"    , "aggregate":"AVG", "formulaOnly":true }
+        ,{ "sameAs":"AccessLog.durationNanos", "name":"maxNanos"    , "aggregate":"MAX", "formulaOnly":true }
+       ]
+     ,"subWhere":"AccessLog.servlet not in ('/apps/home.jsp', '/svc/user/token') and AccessLog.responseCode not in ('302','401','404')"
+     ,"formulaColumns":[
+           { "name": "minMillis", "type": "LONG"
+            ,"formula":[ "minNanos/1000000" ]
+            ,"title": "Minimum duration"
+            ,"description":[
+                "The minimum duration in milliseconds of the requests."
+              ]
+           }
+          ,{ "name": "avgMillis", "type": "LONG"
+            ,"formula":[ "avgNanos/1000000" ]
+            ,"title": "Average duration"
+            ,"description":[
+                "The average duration in milliseconds of the requests."
+              ]
+           }
+          ,{ "name": "maxMillis", "type": "LONG"
+            ,"formula":[ "maxNanos/1000000" ]
+            ,"title": "Maximum duration"
+            ,"description":[
+                "The maximum duration in milliseconds of the requests."
+              ]
+           }
+         ]
+     ,"outputMaps":[
+         { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+       ]       
+    }
+    
+
+   ,{ "name":"AccessLogHistoryView",
+      "description":"View that has Tenant + TenantUser",
+      "columns":[
+          { "sameAs":"AccessLogSessionView.*", "excludes":["sessionUUID"]    } 
+         ,{ "sameAs":"AccessLog.created"    , "name": "requestDT"    }
+         ,{ "sameAs":"AccessLog.servlet"    }
+         ,{ "sameAs":"AccessLog.login"      }
+         ,{ "sameAs":"AccessLog.servlet"    , "name":"type", "expression":"case when servlet like '%.jsp' then 'P' else 'C' end", "type":"CHAR" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"requestNumber", "aggregate":"ROW_NUM", "partitionBy":["sessionUUID"], "orderBy":["created"]    }
+        ]
+      ,"joins": [
+          { "object": "AccessLog", "joinType": "LEFT", "on": [ { "db":"*", "clause":"AccessLog.requestUUID = AccessLogSessionView.sessionUUID" } ] }
+        ]
+      ,"subWhere":"AccessLog.servlet not in ('/svc/config', '/svc/MyTenantList', '/apps/home.jsp', '/svc/user/token') and AccessLog.responseCode not in ('302','401','404')"
+      ,"formulaColumns":[
+          { "name": "sessionDurationSeconds"
+           ,"type": "INTEGER"
+           ,"formula":[ 
+               "EXTRACT(EPOCH FROM (sessionEnd - sessionStart))"
+             ]
+           ,"title": "Duration in seconds of the session"
+           ,"description":[
+               "The duration in seconds of the session, i.e., end-start."
+             ]
+          }
+         ,{ "name": "sessionDurationSoFarSeconds"
+           ,"type": "INTEGER"
+           ,"formula":[ 
+               "EXTRACT(EPOCH FROM (requestDT - sessionStart))"
+             ]
+           ,"title": "Duration in seconds of the session so far"
+           ,"description":[
+               "The duration in seconds of the session so far at the time of this request, i.e., request-start."
+             ]
+          }
+        ]
+      ,"queries": [
+          { "name": "User"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "user_rn = ?()" }
+             ]
+           ,"orderBy":["sessionStart desc", "sessionUUID", "requestDT"]
+          }
+        ]
+      ,"outputMaps":[
+           { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+        ]       
+    }
+    
+         
    ,{ "name":"TenantJobView",
       "description":"User Job + Tenant",
       "columns":[
@@ -939,20 +1415,277 @@
           { "name": "complex", "columns": [ "jobStatus", "loadMode",  "error", "zipFile", "endTime", "startTime", "refnum", "tenantName", "userRefnum", "jobRefnum", "tenantRefnum" ] }
        ]
     }
+
+   ,{ "name":"TicketWaitingView",
+      "description":"View of tickets waiting a response",
+      "columns":[
+         { "sameas":"Ticket.refnum"              }
+        ,{ "sameas":"Ticket.creatorRefnum"       }
+        ,{ "sameas":"Ticket.creatorId"           }
+        ,{ "sameas":"Ticket.topic"               }
+        ,{ "sameas":"Ticket.subject"             }
+        ,{ "sameas":"Ticket.lastUpdated"         }
+        ,{ "sameas":"TicketAnswer.lastUpdated"  , "name":"lastAnswered"     , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+        ,{ "sameas":"TicketAnswer.creatorRefnum", "name":"lastCreatorRefnum", "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+        ,{ "sameas":"TicketAnswer.creatorId"    , "name":"lastCreatorId"    , "aggregate":"FIRST", "orderBy":["lastAnswered desc"] }
+       ]
+     ,"queries":[
+         { "name": "Unanswered"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "lastAnswered is null OR (lastCreatorRefnum is not null and TILDA.in(lastCreatorRefnum, ?[]) = false)" }
+             ]
+           ,"orderBy":["lastUpdated desc"]
+         }
+        ,{ "name": "User"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "creatorRefnum=?()" }
+            ]
+          ,"orderBy":["lastUpdated desc"]
+         }
+        ,{ "name": "All"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "1=1" }
+            ]
+          ,"orderBy":["lastUpdated desc"]
+         }
+       ]
+     ,"json": [
+          { "name": "", "columns": [ "*" ] }
+       ]
+    }
+     
+   ,{ "name":"TourView",
+      "description":"View of tickets waiting a response",
+      "columns":[
+          { "sameAs":"Tour.refnum"         , "name":"tourRefnum"          }
+         ,{ "sameAs":"Tour.id"             , "name":"tourId"              }
+         ,{ "sameAs":"TourPart.refnum"     , "name":"tourPartRefnum"      }
+         ,{ "sameAs":"TourPart.id"         , "name":"tourPartId"          }
+         ,{ "sameAs":"TourPart.pos"        , "name":"tourPartPos"         }
+         ,{ "sameAs":"TourPart.title"      , "name":"tourPartTitle"       }
+         ,{ "sameAs":"TourStep.refnum"     , "name":"tourStepRefnum"      }
+         ,{ "sameAs":"TourStep.id"         , "name":"tourStepId"          }
+         ,{ "sameAs":"TourStep.pos"        , "name":"tourStepPos"         }
+         ,{ "sameAs":"TourStep.title"      , "name":"tourStepTitle"       }
+         ,{ "sameAs":"TourStep.actions"    , "name":"tourStepActions"     }
+         ,{ "sameAs":"TourStep.actionsUndo", "name":"tourStepActionsUndo" }
+       ]
+     ,"queries":[
+         { "name": "Tour"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "tourRefnum=?()" }
+             ]
+           ,"orderBy":["tourPartPos", "tourStepPos"]
+         }
+        ,{ "name": "TourPart"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourPartRefnum=?()" }
+            ]
+          ,"orderBy":["tourPartPos", "tourStepPos"]
+         }
+        ,{ "name": "TourPartStepIds"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourId=?() and tourPartId=?() and tourStepId=?()" }
+            ]
+         }
+       ]
+     ,"json": [
+          { "name": "", "columns": [ "*" ] }
+       ]
+    }
+      
+   ,{ "name":"TourInfoView"
+     ,"description":"Tour stats"
+     ,"columns":[
+         { "sameAs":"Tour.refnum"     , "name":"tourRefnum"          }
+        ,{ "sameAs":"Tour.id"         , "name":"tourId"              }
+        ,{ "sameAs":"TourPart.refnum" , "name":"tourPartRefnum"      , "joinOnly":true }
+        ,{ "sameAs":"TourStep.refnum" , "name":"totalSteps", "aggregate":"COUNT", "distinct":true, "formulaOnly":true   }
+       ]
+     ,"formulaColumns":[
+         { "name": "totalSteps"
+          ,"type": "SHORT"
+          ,"formula":[ "totalSteps+1" ]
+          ,"title": "Total steps"
+          ,"description":[
+              "The total number of steps in the tour, plus the learning plan starting step (automatic and not defined in the data)."
+            ]
+         }
+       ]
+     ,"queries":[
+         { "name": "TourRefnum"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourRefnum=?()" }
+            ]
+         }
+        ,{ "name": "TourId"
+          ,"description": "TBD"
+          ,"wheres": [
+              { "db": "*", "clause": "tourId=?()" }
+            ]
+         }
+       ]
+     ,"json": [
+         { "name": "", "columns": [ "*" ] }
+       ]
+    }
+    
+    ,{ "name":"TourUserInfoView"
+      ,"description":"Tour user stats"
+      ,"columns":[
+          { "sameAs":"TourUserClick.userRefnum"  }
+         ,{ "sameAs":"User.id"                 , "name":"userId"              }
+         ,{ "sameAs":"TourUserClick.tourId"      }
+         ,{ "sameAs":"TourUserClick.contextId"   }
+         ,{ "sameAs":"TourUserClick.type"        }
+         ,{ "sameAs":"TourUserClick.topic"        }
+         ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps"  , "expression":"TourUserClick.partId||'|'||TourUserClick.stepId", "type":"SHORT", "aggregate":"COUNT", "distinct":true   }
+         ,{ "sameAs":"TourUserClick.created"   , "name":"startDt"     , "aggregate":"MIN" }
+         ,{ "sameAs":"TourUserClick.created"   , "name":"lastAccessDt", "aggregate":"MAX" }
+        ]
+      ,"queries":[
+          { "name": "User"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "userRefnum=?()" }
+             ]
+           ,"orderBy":["tourId", "contextId"]
+          }
+         ,{ "name": "UserContextTypeTopicTour"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "userRefnum=?() AND contextId=?() AND type=?() and topic=?() AND tourId=?()" }
+             ]
+          }
+        ]
+      ,"json": [
+          { "name": "", "columns": [ "*" ] }
+        ]
+     }
+
+     ,{ "name":"TourUserDetailsView"
+       ,"description":"Tour user stats"
+       ,"columns":[
+           { "sameAs":"TourUserClick.userRefnum"  }
+          ,{ "sameAs":"TourUserClick.tourId"      }
+          ,{ "sameAs":"TourUserClick.contextId"   }
+          ,{ "sameAs":"TourUserClick.type"        }
+          ,{ "sameAs":"TourUserClick.topic"        }
+          ,{ "sameAs":"TourUserClick.stepId"    , "name":"takenSteps", "aggregate":"ARRAY", "distinct":true }
+         ]
+       ,"queries":[
+           { "name": "User"
+            ,"description": "TBD"
+            ,"wheres": [
+                { "db": "*", "clause": "userRefnum=?()" }
+              ]
+            ,"orderBy":["tourId", "contextId"]
+           }
+          ,{ "name": "UserContextTypeTopicTour"
+            ,"description": "TBD"
+            ,"wheres": [
+                { "db": "*", "clause": "userRefnum=?() AND contextId=?() AND type=?() and topic=?() AND tourId=?()" }
+              ]
+           }
+         ]
+       ,"json": [
+           { "name": "", "columns": [ "*" ] }
+         ]
+      }
+     
+    ,{ "name":"TourUserStatusView"
+      ,"description":"Tour user status"
+      ,"columns":[
+          { "sameAs":"TourUserInfoView.*" }
+         ,{ "sameAs":"TourInfoView.totalSteps"  }
+        ]
+      ,"joins":[
+          { "object": "TourInfoView", "joinType": "INNER", "on": [ { "db":"*", "clause":"TourUserInfoView.tourId = TourInfoView.tourId" } ] }
+        ]
+      ,"formulaColumns":[
+          { "name": "timeSpentMn"
+           ,"type": "SHORT"
+           ,"formula":[ "TILDA.MinutesBetween(startDt, lastAccessDt)" ]
+           ,"title": "Time Spent"
+           ,"description":[
+               "The time spent in minutes between the user first started the project and the last time the project was accessed."
+             ]
+          }
+         ,{ "name": "progressStatus"
+           ,"type": "SHORT"
+           ,"formula":[ "case when takenSteps < totalSteps/8 then 1"
+                       ,"     when takenSteps < totalSteps/4 then 10"
+                       ,"     else 25*FLOOR((100.0*takenSteps/totalSteps)/25)"
+                       ,"end"
+                      ]
+           ,"title": "Progress Status"
+           ,"description":[
+               "The percentage of steps completed, in 25% increments, with an easing curve at the begining to 1%, then 10%."
+             ]
+          }
+         ,{ "name": "completionDt"
+           ,"type": "DATE"
+           ,"formula":[ "case when takenSteps>=totalSteps then lastAccessDt end"
+                      ]
+           ,"title": "Progress Status"
+           ,"description":[
+               "The percentage of steps completed, in 25% increments, with an easing curve at the begining to 1%, then 10%."
+             ]
+          }
+        ]
+      ,"queries":[
+          { "name": "UserId"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "userId=?()" }
+             ]
+           ,"orderBy":["tourId", "contextId"]
+          }
+         ,{ "name": "LastAccessed"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "lastAccessDt>=?()" }
+             ]
+           ,"orderBy":["lastAccessDt"]
+          }
+         ,{ "name": "UserLastAccessed"
+           ,"description": "TBD"
+           ,"wheres": [
+               { "db": "*", "clause": "userId=?() and lastAccessDt>=?()" }
+             ]
+           ,"orderBy":["lastAccessDt"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name": ""      , "outTypes":["JSON","CSV"], "columns": [ "*" ] }
+         ,{ "name": "export", "outTypes":["JSON"]      , "columns": [ "*" ], "exclude":["userRefnum", "tourId", "takenSteps", "totalSteps"] }
+        ]
+     }
   ]
 
  ,"migrations":{
       "renames":[
+         { "object":"User", "column":"contentIds", "oldNames":["programs"] }
        ]
      ,"moves":[
-         { "schema":"ADMIN", "objects":["SystemEmail"]
-         }
+         { "schema":"ADMIN", "objects":["SystemEmail"] }
        ]
      ,"notNulls":[
-         { "object":"User", "columns":["pswdSalt"    ], "default":""  }
+         { "object":"User" , "columns":["pswdSalt"], "default":""   }
+        ,{ "object":"Ticket" , "columns":["creatorId"], "default":"N/A"   }
+        ,{ "object":"TicketAnswer" , "columns":["creatorId"], "default":"N/A"   }
+        ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
+        ,{ "object":"TourUserClick", "columns":["contextId"], "default":"_base" }
+        ,{ "object":"TourUserClick", "columns":["type", "topic"], "default":"_generic" }
        ]
    }
-
 }    
 
 

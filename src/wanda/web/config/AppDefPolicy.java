@@ -66,18 +66,18 @@ public class AppDefPolicy implements JSONable
 
         if (TextUtil.isNullOrEmpty(_name) == true)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " defined a policy with no name.");
+            Wanda.LOG.error("The Wanda app configuration file for app " + appLabel + " defined a policy with no name.");
             OK = false;
           }
         if (TextUtil.isNullOrEmpty(_label) == true)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " defined a policy with no label.");
+            Wanda.LOG.error("The Wanda app configuration file for app " + appLabel + " defined a policy with no label.");
             OK = false;
           }
         
         if (_type != null && TextUtil.findElement(_TYPE_VALUES, _type, true, 0) == -1)
           {
-            WebBasics.LOG.error("The WebBasics app configuration file for app " + appLabel + " define a policy '"+_name+"' with a type '"+_type+"' which is not one of the following: "+TextUtil.print(_TYPE_VALUES)+".");
+            Wanda.LOG.error("The Wanda app configuration file for app " + appLabel + " define a policy '"+_name+"' with a type '"+_type+"' which is not one of the following: "+TextUtil.print(_TYPE_VALUES)+".");
             OK = false;
           }
         

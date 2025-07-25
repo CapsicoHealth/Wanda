@@ -20,12 +20,11 @@
 
 package wanda.data;
 
-import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import tilda.db.*;
+import tilda.db.Connection;
+import tilda.db.DeleteQuery;
 
 /**
  * This is the application class <B>Data_AppUser</B> mapped to the table <B>PEOPLE.AppUser</B>.

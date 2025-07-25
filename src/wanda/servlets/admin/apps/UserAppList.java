@@ -18,25 +18,25 @@ package wanda.servlets.admin.apps;
 
 import java.io.PrintWriter;
 
-import javax.servlet.annotation.WebServlet;
+import jakarta.servlet.annotation.WebServlet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import wanda.data.AppUserView_Data;
-import wanda.data.AppUserView_Factory;
-import wanda.data.App_Data;
-import wanda.data.App_Factory;
-import wanda.data.User_Data;
-import wanda.data.User_Factory;
-import wanda.servlets.helpers.RoleHelper;
-
 import tilda.db.Connection;
 import tilda.db.ListResults;
 import tilda.utils.json.JSONUtil;
+import wanda.data.AppUserView_Data;
+import wanda.data.AppUserView_Factory;
+import wanda.data.AppView_Data;
+import wanda.data.AppView_Factory;
+import wanda.data.User_Data;
+import wanda.data.User_Factory;
+import wanda.servlets.helpers.RoleHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.config.Wanda;
 import wanda.web.exceptions.NotFoundException;
 
 @WebServlet("/svc/admin/users/apps")
@@ -79,12 +79,12 @@ public class UserAppList extends SimpleServlet
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         if(User.hasRoles(RoleHelper.SUPERADMIN) == true)
           {
-            ListResults<App_Data> apps = App_Factory.lookupWhereAll(C, 0, 1000);
+            ListResults<AppView_Data> apps = AppView_Factory.lookupWhereAll(C, Wanda.getHostName(), 0, 1000);
             JSONUtil.response(Out, "", apps);
           }
         else
           {
-            ListResults<AppUserView_Data> list = AppUserView_Factory.lookupWhereUserByActiveApp(C, UserRefnum, 0, 1000);
+            ListResults<AppUserView_Data> list = AppUserView_Factory.lookupWhereUserByActiveApp(C, Wanda.getHostName(), UserRefnum, 0, 1000);
             JSONUtil.response(Out, "", list);            
           }
       }

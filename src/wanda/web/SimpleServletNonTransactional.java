@@ -22,9 +22,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +47,7 @@ import wanda.web.exceptions.SimpleServletException;
  * 
  * @author Laurent Hasson
  */
-public abstract class SimpleServletNonTransactional extends javax.servlet.http.HttpServlet implements javax.servlet.Servlet
+public abstract class SimpleServletNonTransactional extends jakarta.servlet.http.HttpServlet implements jakarta.servlet.Servlet
   {
     protected static final Logger LOG = LogManager.getLogger(SimpleServletNonTransactional.class.getName());
 

@@ -33,26 +33,27 @@ import org.apache.logging.log4j.Logger;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import jakarta.servlet.http.HttpServletRequest;
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.FileUtil;
 import tilda.utils.TextUtil;
-import wanda.data.App_Data;
-import wanda.data.App_Factory;
+import wanda.data.AppView_Data;
+import wanda.data.AppView_Factory;
 import wanda.data.Config_Data;
 import wanda.data.Config_Factory;
 
 
-public class WebBasics
+public class Wanda
   {
-    static final Logger               LOG         = LogManager.getLogger(WebBasics.class.getName());
+    static final Logger               LOG         = LogManager.getLogger(Wanda.class.getName());
 
-    private static WebBasicsDefConfig _Config;
-    private static List<App_Data>     _Apps       = new ArrayList<App_Data>();
+    private static WandaDefConfig     _Config;
+    private static List<AppView_Data> _Apps       = new ArrayList<AppView_Data>();
     private static Config_Data        _AppsConfig = null;
 
-    private WebBasics()
+    private Wanda()
       {
 
       }
@@ -69,7 +70,7 @@ public class WebBasics
           }
         catch (Throwable T)
           {
-            LOG.error("An exception occurred while configuring the WebBasics library.\n", T);
+            LOG.error("An exception occurred while configuring the Wanda library.\n", T);
             if (T.getCause() != null)
               {
                 T = T.getCause();
@@ -92,28 +93,28 @@ public class WebBasics
         Connection C = null;
         try
           {
-            LOG.info("Loading '/WebBasics.config.json' from the classpath.");
+            LOG.info("Loading '/wanda.config.json' from the classpath.");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            InputStream In = FileUtil.getResourceAsStream("WebBasics.config.json");
+            InputStream In = FileUtil.getResourceAsStream("wanda.config.json");
             if (In == null)
-              throw new Exception("Cannot find the WebBasics configuration file '/WebBasics.config.json' in the classpath.");
+              throw new Exception("Cannot find the Wanda configuration file '/wanda.config.json' in the classpath.");
 
-            URL url = FileUtil.getResourceUrl("WebBasics.config.json");
-            LOG.info("   Found WebBasics.config.json file in " + url.toString());
+            URL url = FileUtil.getResourceUrl("wanda.config.json");
+            LOG.info("   Found wanda.config.json file in " + url.toString());
 
             C = ConnectionPool.get("MAIN");
 
             R = new BufferedReader(new InputStreamReader(In));
-            _Config = gson.fromJson(R, WebBasicsDefConfig.class);
+            _Config = gson.fromJson(R, WandaDefConfig.class);
             if (_Config.validate(C) == false)
-              throw new Exception("Invalid WebBasics configuration file '" + url.toString() + "'.");
+              throw new Exception("Invalid Wanda configuration file '" + url.toString() + "'.");
 
-            _Apps = App_Factory.lookupWhereActive(C, 0, -1);
+            _Apps = AppView_Factory.lookupWhereAll(C, Wanda.getHostName(), 0, -1);
             _AppsConfig = Config_Factory.lookupById("MAIN");
             if (_AppsConfig.read(C) == false)
               {
-                LOG.warn("The WebBasics app configuration is empty. This may be normal if this is the first time the server is started.");
-//                throw new Exception("The WebBasics app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
+                LOG.warn("The Wanda app configuration is empty. This may be normal if this is the first time the server is started.");
+                // throw new Exception("The Wanda app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
               }
             StringBuilder Str = new StringBuilder();
             Str.append("\n   ************************************************************************************************************************\n");
@@ -122,8 +123,8 @@ public class WebBasics
             Str.append("   ** AuthPassthroughs: " + TextUtil.print(_AppsConfig.getAuthPassthroughs()) + "\n");
             Str.append("   ** MasterPaths     : " + TextUtil.print(_AppsConfig.getMasterPaths()) + "\n");
             Str.append("   ** Apps            :\n");
-            for (App_Data A : _Apps)
-              Str.append("   **      " + A.getLabel() + " (" + A.getHome() + ")" + (A.getActive() == false ? "  --INACTIVE--" : "") + "\n");
+            for (AppView_Data A : _Apps)
+              Str.append("   **      " + A.getAppLabel() + " (" + A.getAppHome() + ")" + (A.getAppActive() == false ? "  --INACTIVE--" : "") + "\n");
             Str.append("   ************************************************************************************************************************\n");
             LOG.info(Str.toString());
           }
@@ -153,11 +154,6 @@ public class WebBasics
     public static BeaconConfig getBeaconConfig()
       {
         return _Config._beacon;
-      }
-
-    public static int getJobCheckIntervalSeconds()
-      {
-        return _Config._jobCheckIntervalSeconds;
       }
 
     public static int getLoginAttempts()
@@ -238,9 +234,19 @@ public class WebBasics
         return _Config._inviteEmailTexts;
       }
 
-    public static boolean getGuestRegistrationAllowed()
+    public static boolean isGuestRegistrationAllowed()
       {
-        return _Config._guestRegistration == null ? false : _Config._guestRegistration._allowed;
+        return _Config._guestRegistration == null || _Config._guestRegistration._type == null || _Config._guestRegistration._type == GuestRegistration.GuestType.NONE ? false : true;
+      }
+
+    public static String getGuestRegistrationButtonLabel()
+      {
+        return isGuestRegistrationAllowed() == true ? _Config._guestRegistration._buttonLabel : null;
+      }
+
+    public static GuestRegistration.GuestType getGuestRegistrationType()
+      {
+        return _Config._guestRegistration == null ? GuestRegistration.GuestType.NONE : _Config._guestRegistration._type;
       }
 
     public static long[] getGuestRegistrationAppRefnums()
@@ -279,6 +285,11 @@ public class WebBasics
       }
 
 
+    public static String getUrlRedirectPostLogin()
+      {
+        return _Config._laf._urlRedirectPostLogin;
+      }
+
     public static String getPageTitle(boolean LoggedIn)
       {
         return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._pageTitlePostLogin) == false ? _Config._laf._pageTitlePostLogin : _Config._laf._pageTitle;
@@ -287,6 +298,11 @@ public class WebBasics
     public static String getLogoBig(boolean LoggedIn)
       {
         return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._logoBigPostLogin) == false ? _Config._laf._logoBigPostLogin : _Config._laf._logoBig;
+      }
+
+    public static String getOverlayText(boolean LoggedIn)
+      {
+        return LoggedIn == true && TextUtil.isNullOrEmpty(_Config._laf._overlayTextPostLogin) == false ? _Config._laf._overlayTextPostLogin : _Config._laf._overlayText;
       }
 
     public static String getLogoSmall(boolean LoggedIn)
@@ -304,7 +320,7 @@ public class WebBasics
         return _Config._laf._copyright.replace("%%CURRENT_YEAR%%", "" + DateTimeUtil.nowUTC().getYear());
       }
 
-    public static List<App_Data> getApps()
+    public static List<AppView_Data> getApps()
       {
         return _Apps;
       }
@@ -330,20 +346,6 @@ public class WebBasics
         return _Config._laf._overrideCssFile;
       }
 
-    public static String getHomeStyles()
-      {
-        return _Config._laf._homeStyles;
-      }
-    public static String getErrorStyles()
-      {
-        return _Config._laf._errorStyles;
-      }
-    
-    public static String getTwofishesUrl()
-      {
-        return _Config._twofishesUrl;
-      }
-
     public static Eula getEula(String TenantName)
       {
         if (TenantName == null)
@@ -360,6 +362,22 @@ public class WebBasics
         return e;
       }
 
+    public static LoginSystem getLoginSystem()
+      {
+        return _Config._loginSystem;
+      }
+
+    public static String getDefaultSsoConfigId()
+      {
+        return _Config._loginSystem == null == true ? null : _Config._loginSystem.getDefaultSsoConfigId();
+      }
+
+    public static SSOConfig getSsoConfig(String ssoId)
+    throws CloneNotSupportedException
+      {
+        return _Config._loginSystem == null ? null : _Config._loginSystem.getSsoConfig(ssoId);
+      }
+
     public static Map<String, String> getExtra(String configName)
       {
         return _Config._extras == null ? null : _Config._extras.get(configName);
@@ -372,6 +390,69 @@ public class WebBasics
 
         Map<String, String> config = _Config._extras.get(configName);
         return config == null ? null : config.get(elementName);
+      }
+
+    /**
+     * Returns the list of notification administrator accounts for answering to tickets if the wanda.config.json
+     * file specifies such a thing, and the subsystem is enabled, and admin accounts are specified.
+     * 
+     * @return
+     */
+    public static long[] getTicketAccountRefnums()
+      {
+        return _Config._ticketSystem._notificationUserRefnums;
+      }
+
+    /**
+     * Returns the list of notification administrator accounts for answering to tickets if the wanda.config.json
+     * file specifies such a thing, and the subsystem is enabled, and admin accounts are specified.
+     * 
+     * @return
+     */
+    public static int getTicketAlertMinutes()
+      {
+        return _Config._ticketSystem._enabled == true ? _Config._ticketSystem._notifications._alertMinutes : null;
+      }
+
+    /**
+     * Returns true if the user is listed as a ticket admin
+     * 
+     * @param refnum
+     * @return
+     */
+    public static boolean isUserTicketAdmin(long refnum)
+      {
+        for (long r : _Config._ticketSystem._notificationUserRefnums)
+          if (r == refnum)
+            return true;
+        return false;
+      }
+
+    public static boolean validateApiKey(HttpServletRequest request, String clientId, String apiKey)
+    throws Exception
+      {
+        if (TextUtil.isNullOrEmpty(clientId) == true || TextUtil.isNullOrEmpty(apiKey) == true)
+          throw new Exception("validateApiKey: clientID and/or apikey is/are null or empty.");
+
+        if (_Config._loginSystem != null)
+          {
+            String[] IPs = _Config._loginSystem.checkApiKeyAllowedSourceIps(clientId, apiKey);
+            if (IPs == null || IPs.length == 0)
+              {
+                LOG.error("No API key or allowed source IPs found for clientId: " + clientId);
+                return false;
+              }
+            String remoteIp = request.getRemoteAddr();
+            for (String ip : IPs)
+              {
+                if (ip.endsWith("*") == true)
+                  ip = ip.substring(0, ip.length() - 1);
+                if (remoteIp.startsWith(ip) == true)
+                  return true;
+              }
+          }
+        return false;
+
       }
 
   }

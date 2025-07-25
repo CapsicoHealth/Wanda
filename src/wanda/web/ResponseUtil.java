@@ -19,16 +19,16 @@ package wanda.web;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
 import java.util.List;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import tilda.interfaces.CSVable;
 import tilda.interfaces.JSONable;
 import tilda.utils.CSVUtil;
@@ -50,6 +50,13 @@ public class ResponseUtil
 
     protected HttpServletResponse _Res;
     protected PrintWriter         _Out;
+    
+    public HttpServletResponse getHttpServletResponse()
+      {
+        return _Res;
+      }
+
+    
 
     public enum ContentType
       {
@@ -74,6 +81,7 @@ public class ResponseUtil
         if (_Out != null)
           throw new Error("You cannot call setContentType twice.");
         _Res.setContentType(CT.getContentType());
+        _Res.setCharacterEncoding("UTF-8");
         _Out = _Res.getWriter();
         return _Out;
       }
@@ -98,20 +106,23 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         JSONUtil.response(_Out, JsonExportName, obj, perfMessage);
       }
+
     public void successJson(String JsonExportName, JSONable obj)
     throws Exception
       {
         successJson(JsonExportName, obj, null);
       }
 
-    public void successJson(String JsonExportName, List<? extends JSONable> L, String perfMessage)
+    public void successJson(String JsonExportName, Collection<? extends JSONable> L, String perfMessage)
     throws Exception
       {
         if (_Out == null)
           setContentType(ContentType.JSON);
         JSONUtil.response(_Out, JsonExportName, L, perfMessage);
       }
-    public void successJson(String JsonExportName, List<? extends JSONable> L)
+
+    
+    public void successJson(String JsonExportName, Collection<? extends JSONable> L)
     throws Exception
       {
         successJson(JsonExportName, L, null);
@@ -124,11 +135,13 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         J.print(_Out, perfMessage);
       }
+
     public void successJson(JSONPrinter J)
     throws Exception
       {
         successJson(J, null);
       }
+
     public void successJsonRaw(JSONPrinter J)
     throws Exception
       {
@@ -136,8 +149,27 @@ public class ResponseUtil
           setContentType(ContentType.JSON);
         J.printRaw(_Out);
       }
+
+    public void successJsonRaw(String json)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        _Out.append(json);
+      }
+
+    public void successJson(String jsonData, boolean asArray)
+    throws Exception
+      {
+        if (_Out == null)
+          setContentType(ContentType.JSON);
+        
+        JSONUtil.startOK(_Out, asArray==true?'[':'{');
+        _Out.append(jsonData);
+        JSONUtil.end(_Out, asArray==true?']':'}');
+      }
     
-    
+
     public void successCsv(String csvExportName, List<? extends CSVable> L)
     throws Exception
       {
@@ -145,7 +177,7 @@ public class ResponseUtil
           setContentType(ContentType.CSV);
         CSVUtil.response(_Out, csvExportName, L);
       }
-    
+
 
     /**
      * When using client-side frameworks such as Dojo that may use an iFrame for ajax-contents, the protocol
@@ -158,20 +190,20 @@ public class ResponseUtil
      * @param Obj
      * @throws Exception
      */
-//    public void successDojoMultipartConfig()
-//    throws Exception
-//      {
-//        if (_Out == null)
-//          setContentType(ContentType.HTML);
-//        _Out.write("<textarea>\n");
-//        success();
-//        _Out.write("</textarea>\n");
-//      }
+    // public void successDojoMultipartConfig()
+    // throws Exception
+    // {
+    // if (_Out == null)
+    // setContentType(ContentType.HTML);
+    // _Out.write("<textarea>\n");
+    // success();
+    // _Out.write("</textarea>\n");
+    // }
 
 
     /**
      * This is meant for a serious system issue and will return a traditional error sequence for HTTP.
-     * This is expected mostly to be used by frameworks on top of WebBasics. If you have an application
+     * This is expected mostly to be used by frameworks on top of Wanda. If you have an application
      * error from a simpleServlet, you should use the standard {@link SimpleServletException} mechanism
      * to return a regular HTTPStatus=200 response, but with a JSON error payload.
      * 
@@ -226,5 +258,11 @@ public class ResponseUtil
       {
         _Res.addCookie(c);
       }
-    
+
+    public void sendRedirect(String url)
+    throws IOException
+      {
+        _Res.sendRedirect(url);
+      }
+
   }

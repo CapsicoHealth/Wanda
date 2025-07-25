@@ -16,9 +16,6 @@
 
 package wanda.web;
 
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,7 +23,6 @@ import tilda.db.Connection;
 import tilda.utils.HttpStatus;
 import wanda.data.User_Data;
 import wanda.servlets.helpers.RoleHelper;
-import wanda.web.config.WebBasics;
 import wanda.web.exceptions.SimpleServletException;
 
 /**
@@ -48,68 +44,101 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
   {
     protected static final Logger LOG = LogManager.getLogger(SimpleServlet.class.getName());
 
+    /**
+     * Creates a new SimpleServlet instance with defaults for postOnly=false, guestAllowed=false and apiKey=false.
+     * 
+     * @param mustAuthenticate
+     */
     public SimpleServlet(boolean mustAuthenticate)
       {
-        this(mustAuthenticate, false, false);
+        this(mustAuthenticate, false, false, null);
       }
 
+    /**
+     * Creates a new SimpleServlet instance with defaults for guestAllowed=false and apiKey=false.
+     * 
+     * @param mustAuthenticate
+     */
     public SimpleServlet(boolean mustAuthenticate, boolean postOnly)
       {
-        this(mustAuthenticate, postOnly, false);
+        this(mustAuthenticate, postOnly, false, null);
       }
 
+    /**
+     * Creates a new SimpleServlet instance with defaults for apiKey=false.
+     * 
+     * @param mustAuthenticate
+     */
     public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed)
       {
-        this(mustAuthenticate, postOnly, guestAllowed, false);
+        this(mustAuthenticate, postOnly, guestAllowed, null);
       }
 
-    public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed, boolean skipTransactionSetup)
+    public static enum APIKeyEnum
+      {
+      ALLOWED, EXCLUSIVELY;
+      }
+
+    /**
+     * Creates a new SimpleServlet instance.
+     * 
+     * @param mustAuthenticate if true, the servlet will only be accessible to authenticated users.
+     * @param postOnly if true, the servlet will only accept POST requests.
+     * @param guestAllowed if true, the servlet will accept requests from users with the guest role.
+     * @param apiKey if set to APIKeyEnum.ALLOWED, the servlet will accept unauthenticated requests with a valid API Key
+     */
+    public SimpleServlet(boolean mustAuthenticate, boolean postOnly, boolean guestAllowed, APIKeyEnum apiKey)
       {
         super(postOnly);
         _mustAuth = mustAuthenticate;
         _guestAllowed = guestAllowed;
+        _apiKey = apiKey;
       }
 
-    protected final boolean _mustAuth;
-    protected final boolean _guestAllowed;
+
+    protected final boolean       _mustAuth;
+    protected final boolean       _guestAllowed;
+    protected final APIKeyEnum    _apiKey;
 
     @Override
     protected void justDo(RequestUtil request, ResponseUtil response)
     throws Exception
       {
-        User_Data U = null;
         Connection C = (Connection) request.getAttribute(RequestUtil.Attributes.CONNECTION.toString());
         if (C == null)
           throw new SimpleServletException(HttpStatus.InternalServerError, "No DB connection found in the request's attributes!");
 
-        U = (User_Data) request.getAttribute(RequestUtil.Attributes.USER.toString());
-        if (U == null && _mustAuth == true)
-          throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
-        if (U != null && _mustAuth == true && U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
-          throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per servlet configuration");
+        User_Data U = (User_Data) request.getAttribute(RequestUtil.Attributes.USER.toString());
+        
+        if (U == null) // anonymous session
+          {
+            if (_mustAuth == true)
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
+          }
+        else if (U.isLoginTypeAPI() == true) // API Call
+          {
+            if (_apiKey == null) // no API access declared for this servlet
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request: this endpoint is not accessible via an API call.");
+            request.setApiCall(U.getLoginDomain());
+          }
+        else // regular user call
+          {
+            if (_apiKey == APIKeyEnum.EXCLUSIVELY)
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized request: this endpoint is only accessible via a formal API call.");
+            if (_mustAuth == true)
+              {
+                if (U.hasRoles(RoleHelper.GUEST) == true && _guestAllowed == false)
+                 throw new SimpleServletException(HttpStatus.BadRequest, "Unauthorized guest request as per endpoint code configuration");
+              }
+          }
 
         justDo(request, response, C, U);
       }
 
+
     protected abstract void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception;
 
-
-    /**
-     * Checks if the user's password has expired. Mostly used for the login servlet. Wondering if it should be elsewhere.
-     * 
-     * @param U
-     * @return
-     */
-    protected boolean hasPasswordExpired(User_Data U)
-      {
-        return U.getPswdCreate() != null && ChronoUnit.DAYS.between(U.getPswdCreate(), ZonedDateTime.now()) > WebBasics.getPasswordExpiry();
-      }
-
-    protected boolean isUserLocked(User_Data U)
-      {
-        return User_Data.isUserLocked(U);
-      }
 
     /**
      * Tests is a user has at least one of the specified roles. If not, will throw a HttpStatus.Forbidden exception.
