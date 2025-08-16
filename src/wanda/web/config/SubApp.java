@@ -31,6 +31,7 @@ public class SubApp implements JSONable
     @SerializedName("label") public String  _label= null;
     @SerializedName("home" ) public String  _home = null;
     @SerializedName("tour" ) public boolean _tour = false;
+    @SerializedName("icon" ) public boolean _icon = false;
     @SerializedName("admin") public String  _admin= null;
     /*@formatter:on*/
 
@@ -48,6 +49,7 @@ public class SubApp implements JSONable
         JSONUtil.print(Out, "home" , false, this._home );
         JSONUtil.print(Out, "label", false, this._label);
         JSONUtil.print(Out, "tour" , false, this._tour );
+        JSONUtil.print(Out, "icon" , false, this._icon );
         JSONUtil.print(Out, "admin", false, this._admin );
         Out.write("}");
 

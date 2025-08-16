@@ -25,6 +25,7 @@ import jakarta.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
+import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
 import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
@@ -60,16 +61,18 @@ public class UserOnBoarding extends SimpleServlet
         String email = Req.getParamString("email", true);
         String token = Req.getParamString("token", true);
         String password = Req.getParamString("password", true);
+        String company = Req.getParamString("company", false);
+        String title = Req.getParamString("title", false);
         String phone = Req.getParamString("phone", false);
+        String country = Req.getParamString("country", false);
+        String stateProv = Req.getParamString("stateProv", false);
+
         List<String> passwordHistory = new ArrayList<String>();
         List<String> errors = Wanda.validatePassword(password);
-        if (!errors.isEmpty())
-          {
-            for (String error : errors)
-              {
-                Req.addError("password", error);
-              }
-          }
+        if (errors.isEmpty() == false)
+          for (String error : errors)
+            Req.addError("password", error);
+
         Req.throwIfErrors();
 
         User_Data user = User_Factory.lookupByPswdResetCode(token);
@@ -97,12 +100,15 @@ public class UserOnBoarding extends SimpleServlet
             throw new Exception("Password Already used");
           }
         passwordHistory.add(hashedPassword);
-        if (phone != null && phone.length() > 0)
-          {
-            UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());
-            contact.setTelMobile(phone);
-            contact.write(C);
-          }
+
+        UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());
+        contact.setCompany(company);
+        contact.setProfTitle(title);
+        contact.setTelMobile(phone);
+        contact.setCountry(country);
+        contact.setStateProv(stateProv);
+        contact.write(C);
+
         user.setPswd(hashedPassword);
         user.setPswdSalt(salt);
         user.setPswdCreateNow();

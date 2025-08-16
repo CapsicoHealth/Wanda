@@ -25,18 +25,21 @@
      { "name":"Promo"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"code"          , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
-         ,{ "name":"descr"         , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
-         ,{ "name":"start"         , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"end"           , "type":"DATE"    , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"active"        , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
-         ,{ "name":"system"        , "type":"BOOLEAN" , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
-         ,{ "name":"roles"         , "type":"STRING[]", "nullable": false                   , "description":"The default roles for users registering with this promo." }
-         ,{ "name":"apps"          , "type":"LONG[]"  , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
-         ,{ "name":"contents"      , "type":"STRING[]", "nullable": true                    , "description":"The default content codes for users registering with this promo." }
-         ,{ "name":"plans"         , "type":"STRING[]", "nullable": true                    , "description":"The plans available for users registering with this promo." }
-         ,{ "name":"discountPct"   , "type":"SHORT"   , "nullable": true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100%." }
-         ,{ "name":"discountMonths", "type":"SHORT"   , "nullable": true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...." }
+          { "name":"code"           , "type":"STRING"      , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
+         ,{ "name":"descr"          , "type":"STRING"      , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start"          , "type":"DATE"        , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"            , "type":"DATE"        , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"         , "type":"BOOLEAN"     , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+         ,{ "name":"system"         , "type":"BOOLEAN"     , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
+         ,{ "name":"roles"          , "type":"STRING[]"    , "nullable": false                   , "description":"The default roles for users registering with this promo." }
+         ,{ "name":"apps"           , "type":"LONG[]"      , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
+         ,{ "name":"contents"       , "type":"STRING[]"    , "nullable": true                    , "description":"The default content codes for users registering with this promo." }
+         ,{ "name":"plans"          , "type":"STRING[]"    , "nullable": true                    , "description":"The plans available for users registering with this promo." }
+         ,{ "name":"discountPct"    , "type":"SHORT"       , "nullable": true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100%." }
+         ,{ "name":"discountMonths" , "type":"SHORT"       , "nullable": true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...." }
+         ,{ "name":"allowedDomains" , "type":"STRING[]"    , "nullable": true                    , "description":"The domains allowed to use this promo code." }
+         ,{ "name":"eulaUrl"        , "type":"STRING(1024)", "nullable": true                    , "description":"The URL for the EULA." }
+         ,{ "name":"eulaRenewalDays", "type":"INTEGER"     , "nullable": true                    , "description":"The number of days to force users to resign the EULA." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -52,18 +55,27 @@
     ,{ "name":"Plan"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"code"    , "type":"STRING"  , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The code for this Plan"}
-         ,{ "name":"label"   , "type":"STRING"  , "nullable": false, "size": 255      , "protection":"ABSOLUTE", "description":"The label for this Plan"}
-         ,{ "name":"descr"   , "type":"STRING"  , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Plan"}
-         ,{ "name":"start"   , "type":"DATE"    , "nullable": false, "default":"NOW"  , "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"end"     , "type":"DATE"    , "nullable": true                    , "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"active"  , "type":"BOOLEAN" , "nullable": false, "default":"true" , "description":"Whether this plan is active or not. Note that a plan with a valid date might be marked as inactive, so always check both dates and active flag." }
+          { "name":"code"       , "type":"STRING(100)", "nullable": false, "protection":"ABSOLUTE", "description":"The code for this Plan"}
+         ,{ "name":"label"      , "type":"STRING(255)", "nullable": false, "protection":"ABSOLUTE", "description":"The label for this Plan"}
+         ,{ "name":"descr"      , "type":"STRING[]"   , "nullable": false, "protection":"ABSOLUTE", "description":"The multi-line description for this Plan. Likely rendered as a biulleted list."}
+         ,{ "name":"pos"        , "type":"SHORT"      , "nullable": false                         , "description":"The sorting order of the plan for display."}
+         ,{ "name":"start"      , "type":"DATE"       , "nullable": false                         , "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"        , "type":"DATE"       , "nullable": true                          , "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"     , "type":"BOOLEAN"    , "nullable": false, "default":"true"       , "description":"Whether this plan is active or not. Note that a plan with a valid date might be marked as inactive, so always check both dates and active flag." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
           { "name":"Code", "columns":["code"], "db": true }
+         ,{ "name":"Position", "columns":["pos"], "db": true }
         ]
       ,"queries": [
+          { "name": "Positions"
+           ,"description": "ordered by positions"
+           ,"wheres": [
+               { "db": "*", "clause": "1=1" }
+             ]
+           ,"orderBy":["pos asc"]
+          }
         ]
       ,"outputMaps": [
           { "name":"", "outTypes":["JSON"], "columns": ["*"] }
@@ -76,7 +88,11 @@
          ,{ "name":"currency"  , "type":"STRING(255)"  , "nullable": false, "description":"The currency"}
          ,{ "name":"monthly"   , "type":"FLOAT"        , "nullable": false, "description":"The monthly rate"}
          ,{ "name":"yearly"    , "type":"FLOAT"        , "nullable": false, "description":"The yearly rate." }
+         ,{ "name":"yearlyDesc", "type":"STRING(255)"  , "nullable": false, "description":"The explanation of the yearly rate discount." }
         ]
+      ,"foreign": [
+          { "name":"Plan",  "srcColumns":["planRefnum"], "destObject":"Plan" }
+       ]
       ,"indices":[ 
           { "name":"Pricing", "columns":["planRefnum", "currency"], "db": true }
         ]
@@ -248,7 +264,12 @@
      ,"queries": [
        ]
      ,"json":[
-          { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard", "dob", "dod", "race", "gender", "citizenship", "picture", "address1", "address2", "city", "stateProv", "county", "zipPostal", "country", "company", "orgId", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel", "created", "lastUpdated"] }
+          { "name":"", "columns": ["userRefnum", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "nameStandard"
+                                  ,"dob", "dod", "race", "gender", "citizenship", "picture"
+                                  ,"address1", "address2", "city", "stateProv", "county", "zipPostal", "country"
+                                  ,"company", "profTitle", "orgId", "telHome", "telMobile", "telMobileText", "telOffice", "telOfficeExt", "telFax", "emailHome", "emailOffice", "emailLevel"
+                                  ,"created", "lastUpdated"
+                                  ] }
        ]
      ,"masks":[
          { "columns":["name*", "address*", "zipPostal", "telMobile","telOffice", "telFax", "emailHome", "emailOffice"], "mask":"******" }
@@ -376,13 +397,15 @@
    ,{ "name": "App"
      ,"description": "App Details, on a per-host basis"
      ,"columns": [
-        ,{"name":"id"      , "type":"STRING(250)", "nullable":false, "description":"App unique Id"   }
-        ,{"name":"path"    , "type":"STRING(250)", "nullable":false, "description":"App web path"    }
-        ,{"name":"home"    , "type":"STRING(250)", "nullable":false, "description":"App home page"   }
-        ,{"name":"tour"    , "type":"BOOLEAN"    , "nullable":false, "default":"false", "description":"App home page"   }
-        ,{"name":"subOfId" , "type":"STRING(250)", "nullable":true , "description":"Is this a sub-app, and if so, of what app?"   }
-        ,{"name":"admin"   , "type":"STRING(250)", "nullable":true , "description":"App admin page"  }
-        ,{"name":"services", "type":"JSON[]"     , "nullable":true , "description":"Service definition"
+        ,{"name":"id"       , "type":"STRING(250)", "nullable":false, "description":"App unique Id"   }
+        ,{"name":"path"     , "type":"STRING(250)", "nullable":false, "description":"App web path"    }
+        ,{"name":"home"     , "type":"STRING(250)", "nullable":false, "description":"App home page"   }
+        ,{"name":"icon"     , "type":"BOOLEAN"    , "nullable":false, "description":"Whether the app has an icon"   }
+        ,{"name":"directNav", "type":"BOOLEAN"    , "nullable":false, "description":"Whether the app can be directly navigated to"   }
+        ,{"name":"tour"     , "type":"BOOLEAN"    , "nullable":false, "default":"false", "description":"App home page"   }
+        ,{"name":"subOfId"  , "type":"STRING(250)", "nullable":true , "description":"Is this a sub-app, and if so, of what app?"   }
+        ,{"name":"admin"    , "type":"STRING(250)", "nullable":true , "description":"App admin page"  }
+        ,{"name":"services" , "type":"JSON[]"     , "nullable":true , "description":"Service definition"
           ,"jsonSchema": {
               "typeName": "ServiceDefinition"
              ,"descr": "Define the services that comprise this app"
@@ -1106,6 +1129,8 @@
          ,{ "sameas":"App.home"            , "name":"appHome"       }
          ,{ "sameas":"App.id"              , "name":"appId"         }
          ,{ "sameas":"App.tour"            , "name":"appTour"       }
+         ,{ "sameas":"App.icon"            , "name":"appIcon"       }
+         ,{ "sameas":"App.directNav"       , "name":"appDirectNav"  }
          ,{ "sameas":"App.subOfId"         , "name":"appSubOfId"    }
          ,{ "sameas":"App.admin"           , "name":"appAdmin"      }
          ,{ "sameas":"App.path"            , "name":"appPath"       }
@@ -1179,7 +1204,7 @@
        ]
      ,"outputMaps":[
           { "name": ""      , "outTypes":["JSON"], "columns": ["*"] }
-         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appId", "appTour", "appSubOfId", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
+         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appId", "appTour", "appSubOfId", "appIcon", "appDirectNav", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
        ]       
     }
 
@@ -1682,6 +1707,8 @@
         ,{ "object":"Ticket" , "columns":["creatorId"], "default":"N/A"   }
         ,{ "object":"TicketAnswer" , "columns":["creatorId"], "default":"N/A"   }
         ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
+        ,{ "object":"App"  , "columns":["icon"]   , "default":"false" }
+        ,{ "object":"App"  , "columns":["directNav"]   , "default":"true" }
         ,{ "object":"TourUserClick", "columns":["contextId"], "default":"_base" }
         ,{ "object":"TourUserClick", "columns":["type", "topic"], "default":"_generic" }
        ]

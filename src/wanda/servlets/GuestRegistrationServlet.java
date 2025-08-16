@@ -19,6 +19,8 @@
  */
 package wanda.servlets;
 
+import java.util.Iterator;
+
 import jakarta.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
@@ -68,6 +70,22 @@ public class GuestRegistrationServlet extends SimpleServlet
                 p = Promo_Factory.lookupByCode(promoCode);
                 if (p.read(C) == false || p.isActiveAndValid() == false)
                   Req.addError("promoCode", "This event/promotion code is invalid.");
+                if (p.isNullAllowedDomains() == false)
+                  {
+                    boolean found = false;
+                    Iterator<String> it = p.getAllowedDomains();
+                    while (it.hasNext() == true)
+                      {
+                        String domain = it.next();
+                        if (email.endsWith("@" + domain) == true)
+                          {
+                            found = true;
+                            break;
+                          }
+                      }
+                    if (found == false)
+                      Req.addError("email", "This email is not allowed for this event/promo code. Use your professional email, or reach out for another code");
+                  }
               }
           }
 

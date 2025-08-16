@@ -43,78 +43,89 @@ public class AccountUpdate extends SimpleServlet
 
     public AccountUpdate()
       {
-        super(true, false, true);
+        super(true, true, true);
       }
-    
+
     @Override
     public void init(ServletConfig Conf)
       {
         SessionFilter.addMaskedUrlNvp("password");
+        SessionFilter.addMaskedUrlNvp("pswd");
       }
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        String currentPassword = req.getParamString("currentPassword", true);
-        req.throwIfErrors();
-
+        // Local accounts cannot be updated
         if (U.isLoginTypeLocal() == false)
           {
-            LOG.error("User '"+U.getId()+"' is not a local user and cannot be updated via this service.");
-            throw new NotFoundException("User", U.getEmail(), "This account cannot be updated");
+            LOG.error("User '" + U.getId() + "' is not a local user and cannot be updated via this service.");
+            throw new NotFoundException("User", U.getEmail(), "This account is not a local account and cannot be updated");
           }
 
-        long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
-        if (EncryptionUtil.hash(currentPassword, U.getPswdSalt()).equals(U.getPswd()) == false)
-          {
-            req.addError("currentPassword", "please enter correct current password");
-          }
+        /*@formatter:off*/
+        String currentPassword = req.getParamString("currentPassword", true );
+        String newPassword     = req.getParamString("newPassword"    , false);
+        String email           = req.getParamString("email"          , true );
+        String nameTitle       = req.getParamString("nameTitle"      , false);
+        String nameFirst       = req.getParamString("nameFirst"      , true );
+        String nameLast        = req.getParamString("nameLast"       , true );
+        String company         = req.getParamString("company"        , false);
+        String profTitle       = req.getParamString("profTitle"      , false);
+        String phone           = req.getParamString("phone"          , false);
+        String address1        = req.getParamString("address1"       , false);
+        String city            = req.getParamString("city"           , false);
+        String stateProv       = req.getParamString("stateProv"      , false);
+        String zipPostal       = req.getParamString("zipPostal"      , false);
+        String country         = req.getParamString("country"        , false);
+        /*@formatter:on*/
+
         req.throwIfErrors();
-        UserDetail_Data person = U.getUserDetails();
-                
-        String nameTitle = req.getParamString("nameTitle", false);
-        String nameFirst = req.getParamString("nameFirst", false);
-        String nameLast  = req.getParamString("nameLast", false);
-        String email     = req.getParamString("email", false);
-        String password  = req.getParamString("password", false);
-        
-        person.updateDetails(C, nameTitle, nameFirst, nameLast);
-        U.updateEmail(C, email);
-       
-        if (TextUtil.isNullOrEmpty(password) == false)
-          {
-            String hashedPassword = null;
-            List<String> errors = Wanda.validatePassword(password);
-            if (!errors.isEmpty())
-              {
-                for (String error : errors)
-                  {
-                    req.addError("password", error);
-                  }
-              }
-            req.throwIfErrors();
 
-            String salt = U.getOrCreatePswdSalt();
-            hashedPassword = EncryptionUtil.hash(password, salt);
-            if (U.hasPswdHist(hashedPassword))
-              {
-                throw new Exception("Password Already used");
-              }
-            U.setPswd(hashedPassword);
-            U.setPswdSalt(salt);
-            U.setPswdCreateNow();
-            U.pushToPswdHistory(hashedPassword);
-          } // TODO ADD FOR CONTACT / PERSON
+        // If the current password is invalid, throw error
+        if (EncryptionUtil.hash(currentPassword, U.getPswdSalt()).equals(U.getPswd()) == false)
+          req.addError("currentPassword", "please enter correct current password");
 
-        U.write(C);
-        person.write(C);
-        // Commit happens in Session filter.
-        if (TenantUserRefnum != SystemValues.EVIL_VALUE && U != null)
+        // Check if newPassword is valid (if present)
+        if (TextUtil.isNullOrEmpty(newPassword) == false)
           {
-            UserTenantSync.sync(C, U, TenantUserRefnum);
+            List<String> errors = Wanda.validatePassword(newPassword);
+            if (errors.isEmpty() == false)
+              for (String error : errors)
+                req.addError("password", error);
           }
-         
+
+        req.throwIfErrors();
+
+        // First, check if email has changed and make necessary updates
+        U.updateEmailIfChanged(C, email);
+        // Update the password if needed
+        U.updatePassword(newPassword);
+        U.write(C);
+
+
+        UserDetail_Data UD = U.getUserDetails();
+        /*@formatter:off*/
+        if (TextUtil.isNullOrEmpty(nameTitle) == false)  UD.setNameTitle(nameTitle);
+        if (TextUtil.isNullOrEmpty(nameFirst) == false)  UD.setNameFirst(nameFirst);
+        if (TextUtil.isNullOrEmpty(nameLast ) == false)  UD.setNameLast (nameLast );
+        if (TextUtil.isNullOrEmpty(company  ) == false)  UD.setCompany  (company  );
+        if (TextUtil.isNullOrEmpty(profTitle) == false)  UD.setProfTitle(profTitle);
+        if (TextUtil.isNullOrEmpty(phone    ) == false)  UD.setTelMobile(phone    );
+        if (TextUtil.isNullOrEmpty(address1 ) == false)  UD.setAddress1 (address1 );
+        if (TextUtil.isNullOrEmpty(city     ) == false)  UD.setCity     (city     );
+        if (TextUtil.isNullOrEmpty(stateProv) == false)  UD.setStateProv(stateProv);
+        if (TextUtil.isNullOrEmpty(zipPostal) == false)  UD.setZipPostal(stateProv);
+        if (TextUtil.isNullOrEmpty(country  ) == false)  UD.setCountry  (country  );
+        /*@formatter:on*/
+        UD.write(C);
+
+        // Commit happens in Session filter.
+        long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
+        if (TenantUserRefnum != SystemValues.EVIL_VALUE && U != null)
+          UserTenantSync.sync(C, U, TenantUserRefnum);
+
         Res.success();
       }
   }

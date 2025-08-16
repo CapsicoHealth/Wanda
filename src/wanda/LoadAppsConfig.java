@@ -202,6 +202,8 @@ public class LoadAppsConfig
               A.setAdmin(ad._AppDefDetail._admin);
               A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
               A.setNullDeleted();
+              A.setIcon(ad._icon);
+              A.setDirectNav(ad._directNav);
               if (A.write(C) == false) // not existing
                 {
                   A = App_Factory.lookupById(ad._id); // search by id
@@ -209,11 +211,13 @@ public class LoadAppsConfig
                   A.setHome(ad._AppDefDetail._home);
                   A.setTour(ad._AppDefDetail._tour);
                   A.setAdmin(ad._AppDefDetail._admin);
+                  A.setIcon(ad._icon);
+                  A.setDirectNav(ad._directNav);
                   A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                   A.setNullDeleted();
                   if (A.write(C) == false) // not existing, need to create new
                     {
-                      A = App_Factory.create(ad._id, ad._path, ad._AppDefDetail._home);
+                      A = App_Factory.create(ad._id, ad._path, ad._AppDefDetail._home, ad._icon, ad._directNav);
                       A.setAdmin(ad._AppDefDetail._admin);
                       A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
                       if (A.write(C) == false)

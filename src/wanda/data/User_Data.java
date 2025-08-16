@@ -40,6 +40,7 @@ import tilda.utils.pairs.StringStringPair;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.EMailSender;
 import wanda.web.SessionFilter;
+import wanda.web.config.EulaActivation;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.BadRequestException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -394,7 +395,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         return NewObject;
       }
 
-    public void updateEmail(Connection C, String newEmail)
+    public void updateEmailIfChanged(Connection C, String newEmail)
     throws Exception
       {
         if (TextUtil.isNullOrEmpty(newEmail) == false)
@@ -667,5 +668,69 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             throw new Exception("No applications found for this user.");
           }
         updateAppAccess(C, U, CollectionUtil.toPrimitiveArray(p.getAppsAsArray()));
+      }
+
+    /**
+     * If the user comes from a promo code, we check if the promo code has an EULA URL and if the last EULA
+     * was signed more than the renewal days defined in the promo code. If so, we return the EULA URL to be
+     * displayed to the user.<BR>
+     * If the user doesn't come from a promo code, we check if there is a default EULA defined in the
+     * Wanda configuration and if the last EULA was signed more than the renewal days defined there.
+     * 
+     * @param C
+     * @param EA
+     * @return
+     * @throws Exception
+     */
+    public String needsEula(Connection C, String TenantName)
+    throws Exception
+      {
+        String promo = getPromoCode();
+        if (TextUtil.isNullOrEmpty(promo) == false)
+          {
+            Promo_Data p = Promo_Factory.lookupByCode(promo);
+            // Promo record must exist, and Eula URL must be defined, and either the user never signed a EULA or the last EULA is older than the renewal days.
+            if (p.read(C) == true && p.getEulaUrl() != null && (isNullLastEula() == true || p.getEulaRenewalDays() > 0 && DateTimeUtil.computeDaysToNow(getLastEula()) > p.getEulaRenewalDays()))
+              return p.getEulaUrl();
+          }
+        else
+          {
+            EulaActivation EA = Wanda.getEula(TenantName);
+            if (EA != null)
+              {
+                int days = DateTimeUtil.computeDaysToNow(getLastEula());
+                if (EA != null && (days < 0 || days > EA._renewalDays))
+                  return EA._eulaUrl;
+              }
+          }
+        return null;
+      }
+
+    /**
+     * Updates and salts the new password and related attributes. Will skip if newPassword is null or empty.
+     * This method will check the password history and will throw an exception if the new password was already used.
+     * NOTE: This method doesn't check if the password meets the complexity rules. This should be done before calling this method.
+     * @param newPassword
+     * @throws Exception
+     */
+    public void updatePassword(String newPassword)
+    throws Exception
+      {
+        // If new password, do the dance
+        if (TextUtil.isNullOrEmpty(newPassword) == true)
+          return;
+
+        String salt = getOrCreatePswdSalt();
+        String newPasswordHashed = EncryptionUtil.hash(newPassword, salt);
+        if (hasPswdHist(newPasswordHashed))
+          throw new Exception("Password Already used");
+
+        setPswd(newPasswordHashed);
+        setPswdSalt(salt);
+        setPswdCreateNow();
+        setNullPswdResetCode();
+        setNullPswdResetCreate();
+
+        pushToPswdHistory(newPasswordHashed);
       }
   }

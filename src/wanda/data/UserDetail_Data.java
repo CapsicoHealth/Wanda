@@ -80,17 +80,4 @@ public class UserDetail_Data extends wanda.data._Tilda.TILDA__USERDETAIL
        return NewObject;
      }
 
-   public void updateDetails(Connection C, String nameTitle, String nameFirst, String nameLast) throws Exception
-     {
-       if (TextUtil.isNullOrEmpty(nameTitle) == false)
-         setNameTitle(nameTitle);
-       
-       if (TextUtil.isNullOrEmpty(nameFirst) == false)
-         setNameFirst(nameFirst);
-       
-       if (TextUtil.isNullOrEmpty(nameLast) == false)
-         setNameLast(nameLast);
-       write(C);
-     }
-   
  }

@@ -15,39 +15,46 @@
  */
 
 package wanda.data.importers.promos;
-import java.util.ArrayList;
+
 import java.util.List;
 
 import com.google.gson.annotations.SerializedName;
 
-import tilda.Importer;
 import tilda.db.Connection;
-import wanda.data.Promo_Data;
+import wanda.data.PlanPricing_Data;
+import wanda.data.Plan_Data;
 
-public class RootImporter implements Importer
+public class Plan
   {
     /*@formatter:off*/
-    @SerializedName("plans"  ) public List<Plan> _Plans = new ArrayList<Plan>();
-    @SerializedName("promos" ) public List<Promo_Data> _Promos = new ArrayList<Promo_Data>();
+    @SerializedName("plan"    ) public Plan_Data              _Plan     = null;
+    @SerializedName("pricings") public List<PlanPricing_Data> _Pricings = null;
     /*@formatter:on*/
 
-    @Override
-    public int process(Connection C)
+    public int write(Connection C)
     throws Exception
       {
         int count = 0;
 
-        for (Plan obj : _Plans)
-          count+= obj.write(C);
+        if (_Plan == null)
+          throw new Exception("The element 'plan' cannot be null.");
 
-        for (Promo_Data obj : _Promos)
-          {
-            ++count;
-            if (obj.upsert(C) == false)
-              throw new Exception("Cannot upsert Promo record");
-          }
+        if (_Plan.upsert(C) == false)
+          throw new Exception("Cannot upsert Plan record");
+        _Plan.refresh(C); // to get the refnum if the row was updated from the DB.
+        ++count;
+
+        if (_Pricings != null)
+          for (PlanPricing_Data obj : _Pricings)
+            {
+              if (obj == null)
+                continue;
+              obj.setPlanRefnum(_Plan.getRefnum());
+              if (obj.upsert(C) == false)
+                throw new Exception("Cannot upsert PlanPricing record");
+              ++count;
+            }
 
         return count;
       }
-    /*@formatter:on*/
   }

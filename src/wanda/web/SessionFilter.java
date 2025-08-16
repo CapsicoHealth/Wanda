@@ -295,7 +295,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                 if (mainUser.hasRoles(RoleHelper.GUEST) == true && isGuestPath(mainUser, request) == false)
                   {
                     // There is a conflict here between 404's and non-authorized guest requests.
-                    if (req.isResourceMapped() == false)
+                    if (req.isResourceMapped() == false && req.isServletMapped() == false)
                       {
                         response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
                         throw new ServletException("Unauthorized Application Access 404");

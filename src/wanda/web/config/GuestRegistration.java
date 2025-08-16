@@ -16,7 +16,16 @@
 
 package wanda.web.config;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 import com.google.gson.annotations.SerializedName;
+
+import tilda.db.Connection;
+import wanda.data.AppView_Data;
+import wanda.data.AppView_Factory;
+import wanda.data.Tenant_Data;
+import wanda.data.Tenant_Factory;
 
 public class GuestRegistration
   {
@@ -32,7 +41,72 @@ public class GuestRegistration
     @SerializedName("tenantIds"  ) public String[]               _tenantIds = null;
     /*@formatter:on*/
 
-    public transient long[]       _appRefnums             = null;
-    public transient long[]       _tenantRefnums          = null;
+    public transient long[]       _appRefnums    = null;
+    public transient long[]       _tenantRefnums = null;
 
+
+    protected static boolean validate(Connection C, GuestRegistration gr, boolean OK)
+    throws Exception
+      {
+        if (gr != null && gr._type != GuestType.NONE)
+          {
+            if (gr._defaultApps == null || gr._defaultApps.length == 0)
+              {
+                Wanda.LOG.error("The guestRegistration appIds is empty or unspecified. If allowed is true, there must be at least one aplication listed.");
+                OK = false;
+              }
+            else
+              {
+                String[] appIds = Stream.of(gr._defaultApps).map(e -> e._id).toArray(String[]::new);
+
+                List<AppView_Data> AL = AppView_Factory.lookupWhereIds(C, Wanda.getHostName(), appIds, 0, -1);
+                if (AL.size() != appIds.length)
+                  {
+                    Wanda.LOG.warn("Some guestRegistration appIds cannot be found in the database.");
+                    for (String appId : appIds)
+                      {
+                        boolean found = false;
+                        for (AppView_Data av : AL)
+                          if (av.getAppId().equals(appId) == true)
+                            {
+                              found = true;
+                              break;
+                            }
+                        if (found == false)
+                          Wanda.LOG.warn("      - " + appId);
+                      }
+                  }
+                else
+                  {
+                    gr._appRefnums = new long[AL.size()];
+                    for (int i = 0; i < AL.size(); ++i)
+                      gr._appRefnums[i] = AL.get(i).getAppRefnum();
+                  }
+              }
+
+            // Gotta check if the system is in multi-tenant mode or not.
+            List<Tenant_Data> TL = Tenant_Factory.lookupWhereActive(C, 0, -1);
+            if (TL.size() > 0 && (gr._tenantIds == null || gr._tenantIds.length == 0))
+              {
+                Wanda.LOG.error("The guestRegistration tenantIds is empty or unspecified. If allowed is true, there must be at least one tenant listed.");
+                OK = false;
+              }
+            else
+              {
+                TL = Tenant_Factory.lookupWhereNames(C, gr._tenantIds, 0, -1);
+                if (TL.size() != (gr._tenantIds == null ? 0 : gr._tenantIds.length))
+                  {
+                    Wanda.LOG.error("The guestRegistration tenantIds specifies tenant ids which cannot be found in the database.");
+                    OK = false;
+                  }
+                else
+                  {
+                    gr._tenantRefnums = new long[TL.size()];
+                    for (int i = 0; i < TL.size(); ++i)
+                      gr._tenantRefnums[i] = TL.get(i).getRefnum();
+                  }
+              }
+          }
+        return OK;
+      }
   }

@@ -44,6 +44,7 @@ import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.Eula;
+import wanda.web.config.EulaActivation;
 import wanda.web.config.SSOConfig;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.AccessForbiddenException;
@@ -151,13 +152,10 @@ public class Login extends SimpleServlet
                 req.addError("tenantUserRefnum", "is Invalid");
                 req.throwIfErrors();
               }
-
-            Eula E = Wanda.getEula(TV.getName());
-            int days = DateTimeUtil.computeDaysToNow(TV.getTenantUserLastEula());
-            if (E != null && TextUtil.isNullOrEmpty(E._eulaUrl) == false && (days < 0 || days > E._days))
-              {
-                LoginHelper.doEula(Out, req, C, TenantUserRefnum, E, U);
-              }
+            
+            String eulaUrl = U.needsEula(C, TV.getName());
+            if (TextUtil.isNullOrEmpty(eulaUrl) == false)
+             LoginHelper.doEula(Out, req, C, TenantUserRefnum, eulaUrl, U);
             else
               {
                 req.setSessionTenantUser(TV.getTenantUserRefnum());

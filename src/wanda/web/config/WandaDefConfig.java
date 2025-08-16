@@ -17,22 +17,13 @@
 package wanda.web.config;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 
 import com.google.gson.annotations.SerializedName;
 
 import tilda.db.Connection;
 import tilda.utils.TextUtil;
-import wanda.data.AppView_Data;
-import wanda.data.AppView_Factory;
-import wanda.data.Tenant_Data;
-import wanda.data.Tenant_Factory;
-import wanda.web.BeaconBit;
-import wanda.web.config.GuestRegistration.GuestType;
 
 public class WandaDefConfig
   {
@@ -96,53 +87,8 @@ public class WandaDefConfig
             Wanda.LOG.error("The Wanda configuration file didn't define any 'sessionConfig' property");
             OK = false;
           }
-
-        if (_sessionConfig._passwordExpiryDays < 60)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'passwordExpiryDays' value of " + _sessionConfig._passwordExpiryDays + " < 60.");
-            OK = false;
-          }
-
-        if (_sessionConfig._loginOrResetAttempts < 3)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a '_loginOrResetAttempts' value of" + _sessionConfig._loginOrResetAttempts + " < 3.");
-            OK = false;
-          }
-        if (_sessionConfig._withinMins < 3)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'withinMins' value of " + _sessionConfig._withinMins + " < 3.");
-            OK = false;
-          }
-        if (_sessionConfig._lockForMins < 1)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'lockForMins' value of " + _sessionConfig._lockForMins + " < 10.");
-            OK = false;
-          }
-        if (_sessionConfig._failedLoginCycle < 2)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'failedLoginCycle' value of " + _sessionConfig._failedLoginCycle + " < 2.");
-            OK = false;
-          }
-        if (_sessionConfig._lockForeverDays < 1)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'lockForeverDays' value of " + _sessionConfig._lockForeverDays + " < 360.");
-            OK = false;
-          }
-        if (_sessionConfig._resetCodeExpiryMins < 10)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'resetCodeExpiryMins' value of " + _sessionConfig._resetCodeExpiryMins + " < 10.");
-            OK = false;
-          }
-        if (_sessionConfig._maxPswdHistory < 2)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'maxPswdHistory' value of " + _sessionConfig._maxPswdHistory + " < 2.");
-            OK = false;
-          }
-        if (_sessionConfig._forceReLoginMins == 0)
-          {
-            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'forceReLoginMins' value of " + _sessionConfig._forceReLoginMins + " == 0.");
-            OK = false;
-          }
+        else
+          OK = _sessionConfig.validate(OK);
 
         if (_passwordRules == null || _passwordRules.size() == 0)
           {
@@ -169,7 +115,7 @@ public class WandaDefConfig
           }
         else
           Wanda.LOG.warn("The User Email Configuration in the Wanda configuration file is missing or not set. No end-user email services will be available, which will affect registration invitations, password reset capabilities and other features..");
-          
+
         if (_emailSettingsSys != null)
           {
             if (TextUtil.isNullOrEmpty(_emailSettingsSys._smtp) == true)
@@ -214,118 +160,22 @@ public class WandaDefConfig
               _laf._logoSmall = "";
             if (TextUtil.isNullOrEmpty(_laf._pageTitle) == true)
               _laf._pageTitle = "";
-            
+
             if (_laf._urlRedirectPostLogin == null)
-             _laf._urlRedirectPostLogin = _appPath+_homePagePath;
+              _laf._urlRedirectPostLogin = _appPath + _homePagePath;
           }
-        Set<String> Names = new HashSet<String>();
-        for (Eula E : _eulas)
-          if (E != null)
-            {
-              if (Names.add(E._tenantName) == false)
-                {
-                  Wanda.LOG.error("There are duplicate EULAs for the tenant '" + E._tenantName + "'.");
-                  OK = false;
-                }
-            }
 
-        if (_beacon != null && _beacon._bits != null)
-          for (BeaconBitConfig b : _beacon._bits)
-            {
-              if (b == null)
-                continue;
+        OK = Eula.validate(_eulas, OK);
+        OK = BeaconConfig.validate(_beacon, OK);
+        OK = GuestRegistration.validate(C, _guestRegistration, OK);
 
-              if (TextUtil.isNullOrEmpty(b._className) == true)
-                {
-                  Wanda.LOG.error("A beacon definition is missing a value for the attribute 'className'.");
-                  OK = false;
-                }
-              else
-                {
-                  try
-                    {
-                      b._bitObj = (BeaconBit) Class.forName(b._className).newInstance();
-                    }
-                  catch (Throwable T)
-                    {
-                      Wanda.LOG.error("The class '" + b._className + " could not be found or does not implement the wanda.web.BeaconBit interface.\n", T);
-                      OK = false;
-                    }
-                }
-
-              if (b._timing == null)
-                {
-                  Wanda.LOG.error("The beacon definition '" + b._className + "' doesn't defines a timing (should be either DAY, HOUR or MINUTE).");
-                  OK = false;
-                }
-            }
-
-        if (_guestRegistration != null && _guestRegistration._type != GuestType.NONE)
-          {
-            if (_guestRegistration._defaultApps == null || _guestRegistration._defaultApps.length == 0)
-              {
-                Wanda.LOG.error("The guestRegistration appIds is empty or unspecified. If allowed is true, there must be at least one aplication listed.");
-                OK = false;
-              }
-            else
-              {
-                String[] appIds = Stream.of(_guestRegistration._defaultApps).map(e -> e._id).toArray(String[]::new);
-                
-                List<AppView_Data> AL = AppView_Factory.lookupWhereIds(C, Wanda.getHostName(), appIds, 0, -1);
-                if (AL.size() != appIds.length)
-                  {
-                    Wanda.LOG.warn("Some guestRegistration appIds cannot be found in the database.");
-                    for (String appId : appIds)
-                      {
-                        boolean found = false;
-                         for (AppView_Data av : AL)
-                           if (av.getAppId().equals(appId) == true)
-                             {
-                               found = true;
-                               break;
-                             }
-                         if (found == false)
-                           Wanda.LOG.warn("      - "+appId);
-                      }
-                  }
-                else
-                  {
-                    _guestRegistration._appRefnums = new long[AL.size()];
-                    for (int i = 0; i < AL.size(); ++i)
-                      _guestRegistration._appRefnums[i] = AL.get(i).getAppRefnum();
-                  }
-              }
-
-            // Gotta check if the system is in multi-tenant mode or not.
-            List<Tenant_Data> TL = Tenant_Factory.lookupWhereActive(C, 0, -1);
-            if (TL.size() > 0 && (_guestRegistration._tenantIds == null || _guestRegistration._tenantIds.length == 0))
-              {
-                Wanda.LOG.error("The guestRegistration tenantIds is empty or unspecified. If allowed is true, there must be at least one tenant listed.");
-                OK = false;
-              }
-            else
-              {
-                TL = Tenant_Factory.lookupWhereNames(C, _guestRegistration._tenantIds, 0, -1);
-                if (TL.size() != (_guestRegistration._tenantIds == null ? 0 : _guestRegistration._tenantIds.length))
-                  {
-                    Wanda.LOG.error("The guestRegistration tenantIds specifies tenant ids which cannot be found in the database.");
-                    OK = false;
-                  }
-                else
-                  {
-                    _guestRegistration._tenantRefnums = new long[TL.size()];
-                    for (int i = 0; i < TL.size(); ++i)
-                      _guestRegistration._tenantRefnums[i] = TL.get(i).getRefnum();
-                  }
-              }
-          }
-        
         _ticketSystem.validate(C);
         _ticketSystem.launch();
-        
+
         if (_loginSystem.validate() == false)
-         OK = false;
+          OK = false;
 
         return OK;
       }
+
   }

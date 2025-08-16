@@ -25,6 +25,7 @@ import jakarta.servlet.annotation.WebServlet;
 
 import tilda.db.Connection;
 import tilda.utils.SystemValues;
+import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
 import wanda.data.Promo_Data;
 import wanda.data.Promo_Factory;
@@ -64,6 +65,9 @@ public class PromoCreate extends SimpleServlet
         List<StringStringPair> errors = new ArrayList<StringStringPair>();
         Map<String, String[]> params = new HashMap<String, String[]>(req.getParameterMap());
         params.put("system", new String[] {"0"}); // overwrite any system value coming in: system promotions can only be side-loaded.
+        String[] allowedDomains = params.get("allowedDomains");
+        if (allowedDomains != null && allowedDomains.length > 0)
+         params.put("allowedDomains", TextUtil.split(allowedDomains[0], "\\s*,\\s*"));
         Promo_Data p = Promo_Factory.init(params, errors);
 
         req.throwIfErrors(errors);

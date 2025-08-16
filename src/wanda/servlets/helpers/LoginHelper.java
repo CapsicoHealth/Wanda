@@ -27,6 +27,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionUtil;
 import wanda.web.config.Eula;
+import wanda.web.config.EulaActivation;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.AccessForbiddenException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -59,8 +60,8 @@ public class LoginHelper
 
         // If the user has a promo code, we want to update their app mapping.
         if (TextUtil.isNullOrEmpty(U.getPromoCode()) == false)
-         U.syncUpApps(C, U, U.getPromoCode(), U.getLoginDomain());
-        
+          U.syncUpApps(C, U, U.getPromoCode(), U.getLoginDomain());
+
         req.setSessionUser(U);
         req.setSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name(), SessionUtil.FORCE_RELOAD_USER);
       }
@@ -93,12 +94,9 @@ public class LoginHelper
 
         if (ConnectionPool.isMultiTenant() == false)
           {
-            Eula E = Wanda.getEula("");
-            int days = DateTimeUtil.computeDaysToNow(U.getLastEula());
-            if (E != null && (days < 0 || days > E._days))
-              {
-                doEula(Out, req, C, TenantUserRefnum, E, U);
-              }
+            String eulaUrl = U.needsEula(C, "");
+            if (TextUtil.isNullOrEmpty(eulaUrl) == false)
+              doEula(Out, req, C, TenantUserRefnum, eulaUrl, U);
             else
               {
                 req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
@@ -149,7 +147,7 @@ public class LoginHelper
             else
               ErrorMessage = "Invalid Login Id or Password.\nYou have " + FailCount + " attempt(s) remaining";
           }
-         throw new ResourceNotAuthorizedException("User", U.getEmail(), ErrorMessage);
+        throw new ResourceNotAuthorizedException("User", U.getEmail(), ErrorMessage);
       }
 
     protected static void doUserSyncServices(Connection C, User_Data U)
@@ -205,7 +203,7 @@ public class LoginHelper
         Req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
       }
 
-    public static boolean doEula(PrintWriter Out, RequestUtil Req, Connection C, long TenantUserRefnum, Eula E, User_Data U)
+    public static boolean doEula(PrintWriter Out, RequestUtil Req, Connection C, long TenantUserRefnum, String eulaUrl, User_Data U)
     throws Exception
       {
         // For encrypting AppData._dbKey
@@ -225,7 +223,7 @@ public class LoginHelper
         JSONUtil.startOK(Out, '{');
         JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
         JSONUtil.print(Out, "tenantUserRefnum", false, TenantUserRefnum);
-        JSONUtil.print(Out, "eulaUrl", false, E._eulaUrl);
+        JSONUtil.print(Out, "eulaUrl", false, eulaUrl);
         JSONUtil.print(Out, "eulaToken", false, TokenNew);
         JSONUtil.end(Out, '}');
         return false;
@@ -244,14 +242,13 @@ public class LoginHelper
             Req.removeSessionUser();
             throw new ResourceNotAuthorizedException("User", U.getEmail(), "You do not have access to any Tenants.\nPlease contact your Administrator.");
           }
+        // single tenant
         else if (list.size() == 1)
           {
-            Eula E = Wanda.getEula(list.get(0).getName());
-            int days = DateTimeUtil.computeDaysToNow(U.getLastEula());
-            if (E != null && (days < 0 || days > E._days))
-              {
-                doEula(Out, Req, C, list.get(0).getTenantUserRefnum(), E, U);
-              }
+            TenantView_Data firstTenant = list.get(0);
+            String eulaUrl = U.needsEula(C, firstTenant.getName());
+            if (TextUtil.isNullOrEmpty(eulaUrl) == false)
+              doEula(Out, Req, C, firstTenant.getTenantUserRefnum(), eulaUrl, U);
             else
               {
                 Req.setSessionLong(SessionUtil.Attributes.USERREFNUM.toString(), list.get(0).getUserRefnum());

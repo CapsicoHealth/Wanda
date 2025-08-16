@@ -18,6 +18,7 @@ package wanda.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -477,11 +478,6 @@ public class RequestUtil
         return _Req.getServletPath();
       }
 
-    public Collection<? extends ServletRegistration> getServletList()
-      {
-        return _Req.getServletContext().getServletRegistrations().values();
-      }
-
     public Object getAttribute(String name)
       {
         return _Req.getAttribute(name);
@@ -521,13 +517,31 @@ public class RequestUtil
       {
         try
           {
-            return context.getResource(resourcePath) != null;
+            URL url = context.getResource(resourcePath);
+            return url!= null;
           }
         catch (Exception e)
           {
             return false; // Handle invalid paths or other exceptions
           }
       }
+    
+    public Collection<? extends ServletRegistration> getServletList()
+      {
+        return _Req.getServletContext().getServletRegistrations().values();
+      }
+    
+    public boolean isServletMapped()
+      {
+        String servletPath = _Req.getServletPath();
+        Collection<? extends ServletRegistration> servlets = getServletList();
+        for (ServletRegistration registration : servlets)
+          for (String mapping : registration.getMappings())
+           if (mapping.equals(servletPath) == true)
+            return true;
+        return false;
+      }
+
 
     public ServletContext getServletContext()
       {
@@ -555,5 +569,6 @@ public class RequestUtil
 
         return null;
       }
+
 
   }

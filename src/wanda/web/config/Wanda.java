@@ -284,6 +284,11 @@ public class Wanda
         return _Config._sessionConfig._forceReLoginMins;
       }
 
+    public static boolean isAppDashboardPostLogin()
+      {
+        return _Config._laf._appDashboardPostLogin;
+      }
+    
 
     public static String getUrlRedirectPostLogin()
       {
@@ -346,20 +351,41 @@ public class Wanda
         return _Config._laf._overrideCssFile;
       }
 
-    public static Eula getEula(String TenantName)
+    /**
+     * Returns a Eula object if there is an active EULA for the given tenant name.
+     * 
+     * @param TenantName
+     * @return
+     */
+    public static EulaActivation getEula(String TenantName)
       {
         if (TenantName == null)
           TenantName = "";
-        Eula e = null;
         for (Eula E : _Config._eulas)
-          if (E != null)
-            {
-              if (E._tenantName.equals(TenantName) == true)
-                return E;
-              if (E._tenantName.equals("") == true)
-                e = E;
-            }
-        return e;
+          if (E != null && E._activations != null)
+            for (EulaActivation EA : E._activations)
+              if (EA._renewalDays > 0 && EA._tenantName.equals(TenantName) == true)
+                return EA;
+        return null;
+      }
+
+    /**
+     * Returns a list of eulas for a forms element.
+     * 
+     * @return
+     */
+    public static String[][] getEulas()
+      {
+        if (_Config._eulas == null || _Config._eulas.size() == 0)
+          return null;
+
+        String[][] eulas = new String[_Config._eulas.size() + 1][];
+        int i = 0;
+        eulas[0] = new String[] { "", "No EULA", "No active EULA for this promo code" };
+        for (Eula E : _Config._eulas)
+          eulas[++i] = new String[] { E._url, E._name, E._descr
+          };
+        return eulas;
       }
 
     public static LoginSystem getLoginSystem()
