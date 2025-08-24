@@ -37,6 +37,7 @@ import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
+import wanda.data.importers.promos.Plan;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.EMailSender;
 import wanda.web.SessionFilter;
@@ -541,11 +542,6 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         return hasRoles(RoleHelper.SUPERADMIN);
       }
 
-    public static boolean isUserSuperAdmin(User_Data U)
-      {
-        return U.isSuperAdmin();
-      }
-
     public boolean isGuest()
       {
         return hasRoles(RoleHelper.GUEST);
@@ -710,6 +706,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
      * Updates and salts the new password and related attributes. Will skip if newPassword is null or empty.
      * This method will check the password history and will throw an exception if the new password was already used.
      * NOTE: This method doesn't check if the password meets the complexity rules. This should be done before calling this method.
+     * 
      * @param newPassword
      * @throws Exception
      */
@@ -732,5 +729,20 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         setNullPswdResetCreate();
 
         pushToPswdHistory(newPasswordHashed);
+      }
+
+
+
+    public List<Plan> getAvailablePlans(Connection C)
+    throws Exception
+      {
+        if (isNullPromoCode() == false)
+          {
+            Promo_Data P = Promo_Factory.lookupByCode(getPromoCode());
+            if (P.read(C) == true)
+              return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths());
+          }
+
+        return null;
       }
   }

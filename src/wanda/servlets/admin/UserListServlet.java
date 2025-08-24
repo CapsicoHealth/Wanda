@@ -64,7 +64,7 @@ public class UserListServlet extends SimpleServlet
         boolean csv = req.getParamBoolean("csv", false);
         long TenantRefnum = SystemValues.EVIL_VALUE;
         long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
-        if (ConnectionPool.isMultiTenant() && U.hasRoles(RoleHelper.SUPERADMIN) == false)
+        if (ConnectionPool.isMultiTenant() && U.isSuperAdmin() == false)
           {
             TenantUser_Data TenantUser = TenantUser_Factory.lookupByPrimaryKey(TenantUserRefnum);
             if (TenantUser.read(C) == true)

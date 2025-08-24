@@ -83,7 +83,7 @@ public class LoginHelper
         onBasicLoginSuccess(req, C, U);
 
         // SuperAdmin Check
-        if (U.hasRoles(RoleHelper.SUPERADMIN))
+        if (U.isSuperAdmin() == true)
           {
             ClearUserForEula(C, req, U, SystemValues.EVIL_VALUE);
             JSONUtil.startOK(Out, '{');

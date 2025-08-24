@@ -69,6 +69,9 @@ public class TicketSystem
      */
     public void launch()
       {
+        if (_enabled == false)
+         return;
+
         ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
         Runnable task = () -> {
           Connection C = null;

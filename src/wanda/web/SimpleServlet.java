@@ -113,7 +113,7 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
         if (U == null) // anonymous session
           {
             if (_mustAuth == true)
-              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request");
+              throw new SimpleServletException(HttpStatus.Unauthorized, "Unauthorized anonymous request to a service that requires authentication");
           }
         else if (U.isLoginTypeAPI() == true) // API Call
           {
@@ -166,7 +166,7 @@ public abstract class SimpleServlet extends SimpleServletNonTransactional
     protected static boolean throwIfUserNotSuperOrAppAdmin(User_Data U, String appId)
     throws Exception
       {
-        boolean superAdmin = U.hasRoles(RoleHelper.SUPERADMIN);
+        boolean superAdmin = U.isSuperAdmin();
         if (!superAdmin && !U.hasRoles(new String[] { "Admin" + appId
         }))
           {

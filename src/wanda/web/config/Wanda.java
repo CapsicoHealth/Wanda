@@ -430,14 +430,12 @@ public class Wanda
       }
 
     /**
-     * Returns the list of notification administrator accounts for answering to tickets if the wanda.config.json
-     * file specifies such a thing, and the subsystem is enabled, and admin accounts are specified.
-     * 
+     * Returns the number of minutes before a ticket is due when an alert should be sent out, or null if the ticketing
      * @return
      */
     public static int getTicketAlertMinutes()
       {
-        return _Config._ticketSystem._enabled == true ? _Config._ticketSystem._notifications._alertMinutes : null;
+        return _Config._ticketSystem._enabled == true ? _Config._ticketSystem._notifications._alertMinutes : -1;
       }
 
     /**

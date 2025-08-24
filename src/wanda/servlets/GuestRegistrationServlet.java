@@ -89,6 +89,8 @@ public class GuestRegistrationServlet extends SimpleServlet
               }
           }
 
+        Req.throwIfErrors();        
+        
         User_Data user = User_Factory.lookupByEmail(email);
         boolean previousUser = false;
         // If the user exists and, is not a guest or has already registered, then this is a collision.

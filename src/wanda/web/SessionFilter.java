@@ -231,7 +231,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                   {
                     if (isAuthPassthrough == false)
                       {
-                        if (MasterDbUser != null && !MasterDbUser.hasRoles(RoleHelper.SUPERADMIN))
+                        if (MasterDbUser != null && MasterDbUser.isSuperAdmin() == false)
                           {
                             LOG.info("Unable to load TenantUser from Session.");
                             SessionUtil.InvalidateSession(request);

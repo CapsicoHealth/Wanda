@@ -22,15 +22,18 @@ import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
-
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
+import wanda.data.Plan_Data;
+import wanda.data.Promo_Data;
+import wanda.data.Promo_Factory;
 import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
+import wanda.data.importers.promos.Plan;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -47,7 +50,7 @@ public class UserOnBoarding extends SimpleServlet
       {
         super(false, true);
       }
-    
+
     @Override
     public void init(ServletConfig Conf)
       {
@@ -78,7 +81,7 @@ public class UserOnBoarding extends SimpleServlet
         User_Data user = User_Factory.lookupByPswdResetCode(token);
         if (user.read(C) == false)
           throw new NotFoundException("User Token", "" + token);
-        
+
         if (user.getEmail().equalsIgnoreCase(email) == false)
           throw new NotFoundException("User email", "" + email);
 
@@ -120,9 +123,17 @@ public class UserOnBoarding extends SimpleServlet
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');
-        JSONUtil.print(Out, "message", true, "Successfully registered. Please Login.");
+        List<Plan> plans = user.getAvailablePlans(C);
+        if (plans != null && plans.isEmpty() == false)
+          {
+            JSONUtil.print(Out, "mustPickPlan", true, true);
+            JSONUtil.print(Out, "message", false, "Successfully registered. Please pick a plan now.");
+          }
+        else
+          {
+            JSONUtil.print(Out, "message", false, "Successfully registered. Please Login.");
+          }
         JSONUtil.end(Out, '}');
-
       }
 
   }

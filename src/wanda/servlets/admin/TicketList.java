@@ -40,7 +40,6 @@ public class TicketList extends SimpleServlet
       }
 
     protected static long[] _ADMIN_REFNUMS = Wanda.getTicketAccountRefnums();
-    protected static int    _ALERT_TIMING  = Wanda.getTicketAlertMinutes();
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil Res, Connection C, User_Data U)

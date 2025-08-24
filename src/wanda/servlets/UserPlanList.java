@@ -14,41 +14,40 @@
  * limitations under the License.
  */
 
-package wanda.servlets.admin;
+package wanda.servlets;
 
+import java.util.List;
+
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
-import tilda.db.ListResults;
-import wanda.data.Plan_Data;
-import wanda.data.Plan_Factory;
 import wanda.data.User_Data;
-import wanda.servlets.helpers.RoleHelper;
+import wanda.data.importers.promos.Plan;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/admin/plans")
-public class PlanListServlet extends SimpleServlet
+@WebServlet("/svc/user/plan/list")
+public class UserPlanList extends SimpleServlet
   {
+    private static final long serialVersionUID = 2358369573367773870L;
 
-    private static final long serialVersionUID = -1745307937763620646L;
-
-    public PlanListServlet()
+    public UserPlanList()
       {
-        super(true);
+        super(true, false, true);
       }
 
     @Override
-    protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
+    public void init(ServletConfig Conf)
+      {
+      }
+
+    @Override
+    protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
-
-        req.throwIfErrors();
-
-        ListResults<Plan_Data> L = Plan_Factory.lookupWhereAllByPositions(C, 0, 100);
-        
-        res.successJson("", L);
+        List<Plan> plans = U.getAvailablePlans(C);
+        Res.successJson("", plans);
       }
 
   }

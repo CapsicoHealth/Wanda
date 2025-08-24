@@ -16,20 +16,40 @@
 
 package wanda.data.importers.promos;
 
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.annotations.SerializedName;
 
 import tilda.db.Connection;
+import tilda.interfaces.JSONable;
+import tilda.utils.json.JSONUtil;
 import wanda.data.PlanPricing_Data;
 import wanda.data.Plan_Data;
 
-public class Plan
+public class Plan implements JSONable
   {
     /*@formatter:off*/
     @SerializedName("plan"    ) public Plan_Data              _Plan     = null;
-    @SerializedName("pricings") public List<PlanPricing_Data> _Pricings = null;
+    @SerializedName("pricings") public List<PlanPricing_Data> _Pricings = new ArrayList<PlanPricing_Data>();
     /*@formatter:on*/
+
+    transient short               _discountPct    = 0;
+    transient short               _discountMonths = 0;
+
+    public Plan(Plan_Data p)
+      {
+        _Plan = p;
+      }
+
+    public Plan(Plan P, short discountPct, short discountMonths)
+      {
+        _Plan = P._Plan;
+        _Pricings = P._Pricings;
+        _discountPct = discountPct;
+        _discountMonths = discountMonths;
+      }
 
     public int write(Connection C)
     throws Exception
@@ -56,5 +76,20 @@ public class Plan
             }
 
         return count;
+      }
+
+    @Override
+    public void toJSON(Writer out, String jsonExportName, String lead, boolean fullObject, boolean noNullArrays)
+    throws Exception
+      {
+        out.write("{ ");
+        JSONUtil.print(out, "discountPct", true, _discountPct);
+        out.write("\n" + lead + "     ");
+        JSONUtil.print(out, "discountMonths", false, _discountMonths);
+        out.write("\n" + lead + "     ");
+        JSONUtil.print(out, "plan", "", false, _Plan, "");
+        out.write(lead + "     ");
+        JSONUtil.print(out, "pricings", "", false, _Pricings, "    ");
+        out.write(lead + "     }\n");
       }
   }

@@ -69,10 +69,17 @@
          ,{ "name":"Position", "columns":["pos"], "db": true }
         ]
       ,"queries": [
-          { "name": "Positions"
-           ,"description": "ordered by positions"
+          { "name": "AllByPositions"
+           ,"description": "All plans, ordered by positions"
            ,"wheres": [
                { "db": "*", "clause": "1=1" }
+             ]
+           ,"orderBy":["pos asc"]
+          }
+         ,{ "name": "Codes"
+           ,"description": "Plans specified (by codes) ordered by positions"
+           ,"wheres": [
+               { "db": "*", "clause": "code in ?[]" }
              ]
            ,"orderBy":["pos asc"]
           }
@@ -97,6 +104,27 @@
           { "name":"Pricing", "columns":["planRefnum", "currency"], "db": true }
         ]
       ,"queries": [
+         { "name": "AllByCurrency"
+          ,"description": "All plan pricings, ordered by planRefnum, currency"
+          ,"wheres": [
+              { "db": "*", "clause": "1=1" }
+            ]
+          ,"orderBy":["planRefnum", "currency"]
+         }
+        ,{ "name": "PlanRefnum"
+          ,"description": "Plan pricings for multiple plans, ordered by currency"
+          ,"wheres": [
+              { "db": "*", "clause": "planRefnum = ?()" }
+            ]
+          ,"orderBy":["currency asc"]
+         }
+        ,{ "name": "PlanRefnums"
+          ,"description": "Plan pricings for multiple plans, ordered by currency"
+          ,"wheres": [
+              { "db": "*", "clause": "planRefnum in ?[]" }
+            ]
+          ,"orderBy":["currency asc"]
+         }
         ]
       ,"outputMaps": [
           { "name":"", "outTypes":["JSON"], "columns": ["*"] }

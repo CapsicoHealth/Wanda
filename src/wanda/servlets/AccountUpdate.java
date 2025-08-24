@@ -104,7 +104,6 @@ public class AccountUpdate extends SimpleServlet
         U.updatePassword(newPassword);
         U.write(C);
 
-
         UserDetail_Data UD = U.getUserDetails();
         /*@formatter:off*/
         if (TextUtil.isNullOrEmpty(nameTitle) == false)  UD.setNameTitle(nameTitle);
@@ -116,7 +115,7 @@ public class AccountUpdate extends SimpleServlet
         if (TextUtil.isNullOrEmpty(address1 ) == false)  UD.setAddress1 (address1 );
         if (TextUtil.isNullOrEmpty(city     ) == false)  UD.setCity     (city     );
         if (TextUtil.isNullOrEmpty(stateProv) == false)  UD.setStateProv(stateProv);
-        if (TextUtil.isNullOrEmpty(zipPostal) == false)  UD.setZipPostal(stateProv);
+        if (TextUtil.isNullOrEmpty(zipPostal) == false)  UD.setZipPostal(zipPostal);
         if (TextUtil.isNullOrEmpty(country  ) == false)  UD.setCountry  (country  );
         /*@formatter:on*/
         UD.write(C);

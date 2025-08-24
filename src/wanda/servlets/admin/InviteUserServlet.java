@@ -75,7 +75,7 @@ public class InviteUserServlet extends SimpleServlet
         String[] contentIds = Req.getParamsString("contentIds", false);
 
         Req.throwIfErrors();
-        if (U.hasRoles(RoleHelper.SUPERADMIN) == false)
+        if (U.isSuperAdmin() == false)
           {
             for(long tenantRefnum : oldTenantRefnums)
              if(TenantUser_Factory.hasTenant(C, U.getRefnum(), tenantRefnum) == false)
