@@ -121,6 +121,7 @@ public class Login extends SimpleServlet
         int accept = req.getParamInt("accept", false);
         String ssoId = req.getParamString("ssoId", false);
 
+        // EULA step
         if (TextUtil.isNullOrEmpty(eulaToken) == false && U != null)
           { // Eula step
             String EulaTokenSaved = req.getSessionString(SessionUtil.Attributes.EULA_CODE.name());
@@ -140,6 +141,7 @@ public class Login extends SimpleServlet
               UserTenantSync.sync(C, U, TenantUserRefnum);
             res.success();
           }
+        // Tenant login
         else if (TenantUserRefnum != SystemValues.EVIL_VALUE && U != null)
           { // User Selected a Tenant
             TenantView_Data TV = TenantView_Factory.getTenantByTenantUserRefnum(C, U.getRefnum(), TenantUserRefnum);
@@ -161,7 +163,8 @@ public class Login extends SimpleServlet
                 JSONUtil.response(Out, "tenantUserJson", TV);
               }
           }
-        else if (TextUtil.isNullOrEmpty(ssoId) == false) // SSO
+        // SSO Login
+        else if (TextUtil.isNullOrEmpty(ssoId) == false)
           {
             LOG.debug("SSO login!");
             SAMLUserProfile userProfile = ConfigSAML.processCallback(req.getHttpServletRequest(), res.getHttpServletResponse(), C, ssoId);
@@ -180,7 +183,7 @@ public class Login extends SimpleServlet
             LOG.debug("SSO login successful. Redirecting to " + returnUrl);
             res.sendRedirect(returnUrl);
           }
-        else // User trying to login
+        else // User trying to login locally
           {
             String Email = req.getParamString("email", true);
             String Pswd = req.getParamString("pswd", true);

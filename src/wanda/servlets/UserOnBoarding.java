@@ -24,11 +24,7 @@ import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
-import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
-import wanda.data.Plan_Data;
-import wanda.data.Promo_Data;
-import wanda.data.Promo_Factory;
 import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
@@ -78,12 +74,12 @@ public class UserOnBoarding extends SimpleServlet
 
         Req.throwIfErrors();
 
-        User_Data user = User_Factory.lookupByPswdResetCode(token);
+        User_Data user = User_Factory.lookupByEmail(email);
         if (user.read(C) == false)
-          throw new NotFoundException("User Token", "" + token);
+          throw new NotFoundException("User email", email);
 
-        if (user.getEmail().equalsIgnoreCase(email) == false)
-          throw new NotFoundException("User email", "" + email);
+        if (user.checkTokenValidity(token) == false)
+          throw new NotFoundException("User token", "Invalid or expired token");
 
         /*
          * find user with +token
@@ -100,9 +96,14 @@ public class UserOnBoarding extends SimpleServlet
         String hashedPassword = EncryptionUtil.hash(password, salt);
         if (user.hasPswdHist(hashedPassword))
           {
-            throw new Exception("Password Already used");
+            // Is this a user who has already logged in, or a user still in the process of registering?
+            if (user.getLoginCount() > 0)                    // an existing established user changing their password and failing
+             throw new Exception("Password Already used");   // the already-used-password check.
           }
-        passwordHistory.add(hashedPassword);
+        else
+          {
+            passwordHistory.add(hashedPassword);
+          }
 
         UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());
         contact.setCompany(company);
@@ -115,8 +116,6 @@ public class UserOnBoarding extends SimpleServlet
         user.setPswd(hashedPassword);
         user.setPswdSalt(salt);
         user.setPswdCreateNow();
-        user.setNullPswdResetCode();
-        user.setNullPswdResetCreate();
         user.setInvitedUser(false);
         user.setPswdHist(passwordHistory);
         user.write(C);
@@ -127,11 +126,13 @@ public class UserOnBoarding extends SimpleServlet
         if (plans != null && plans.isEmpty() == false)
           {
             JSONUtil.print(Out, "mustPickPlan", true, true);
+            JSONUtil.print(Out, "email", false, email);
+            JSONUtil.print(Out, "token", false, token);
             JSONUtil.print(Out, "message", false, "Successfully registered. Please pick a plan now.");
           }
         else
           {
-            JSONUtil.print(Out, "message", false, "Successfully registered. Please Login.");
+            JSONUtil.print(Out, "message", true, "Successfully registered. Please Login.");
           }
         JSONUtil.end(Out, '}');
       }

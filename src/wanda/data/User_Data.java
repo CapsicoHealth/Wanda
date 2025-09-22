@@ -745,4 +745,34 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
 
         return null;
       }
+
+    public boolean checkTokenValidity(String token)
+      {
+        if (token == null || token.equals(getPswdResetCode()) == false)
+          {
+            LOG.error("Invalid token for user");
+            return false;
+          }
+        if (ChronoUnit.MINUTES.between(getPswdResetCreate(), ZonedDateTime.now()) > Wanda.getResetCodeTTL())
+          {
+            LOG.error("Token for user expired");
+            return false;
+          }
+        return true;
+      }
+
+    public boolean needsPlan(Connection C) throws Exception
+      {
+        return false;
+/*        
+        // Does this user have plans they have to chose from?
+        List<Plan> L = getAvailablePlans(C);
+        if (L == null || L.isEmpty() == true)
+         return false;
+        // If they do, check if they have an active plan
+        UserPlanSubscription_Data UPS = UserPlanSubscription_Factory.lookupByUserActivePlan(this.getRefnum());
+        // return true if no active plan found
+        return UPS.read(C) == false;
+*/
+      }
   }

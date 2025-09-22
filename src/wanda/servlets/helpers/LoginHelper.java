@@ -2,6 +2,7 @@ package wanda.servlets.helpers;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -17,10 +18,14 @@ import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
+import wanda.data.PlanPricing_Data;
+import wanda.data.PlanPricing_Factory;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.TenantView_Data;
 import wanda.data.TenantView_Factory;
+import wanda.data.UserPlanSubscription_Data;
+import wanda.data.UserPlanSubscription_Factory;
 import wanda.data.User_Data;
 import wanda.web.LoginSyncService;
 import wanda.web.RequestUtil;
@@ -56,6 +61,9 @@ public class LoginHelper
         U.setFailCycleCount(0);
         U.setNullFailFirst();
         U.setNullLocked();
+        U.setNullPswdResetCode();
+        U.setNullPswdResetCreate();
+
         U.write(C);
 
         // If the user has a promo code, we want to update their app mapping.
@@ -96,15 +104,20 @@ public class LoginHelper
           {
             String eulaUrl = U.needsEula(C, "");
             if (TextUtil.isNullOrEmpty(eulaUrl) == false)
-              doEula(Out, req, C, TenantUserRefnum, eulaUrl, U);
-            else
               {
-                req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
-                // Generate Response
-                JSONUtil.startOK(Out, '{');
-                JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-                JSONUtil.end(Out, '}');
+                doEula(Out, req, C, TenantUserRefnum, eulaUrl, U);
+                return;
               }
+            if (U.needsPlan(C) == true)
+              {
+                doPlan(Out, req, C, U);
+                return;
+              }
+            req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
+            // Generate Response
+            JSONUtil.startOK(Out, '{');
+            JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
+            JSONUtil.end(Out, '}');
           }
         else
           {
@@ -229,6 +242,53 @@ public class LoginHelper
         return false;
       }
 
+    public static boolean doPlan(PrintWriter Out, RequestUtil Req, Connection C, User_Data U)
+    throws Exception
+      {
+        long   planRefnum   = Req.getParamLong  ("planRefnum"  , false);
+        String planCurrency = Req.getParamString("planCurrency", false);
+        char   planCycle    = Req.getParamChar  ("planCycle"   , false);
+        if (planRefnum != SystemValues.EVIL_VALUE)
+          {
+            
+            if (UserPlanSubscription_Data.checkCycle(planCycle) == false)
+             Req.addError("planCycle", "Plan cycle '"+planCycle+"' is invalid.");
+
+            List<PlanPricing_Data> L = PlanPricing_Factory.lookupWherePlanRefnum(C, planRefnum, 0, -1);
+            boolean found = false;
+            for (PlanPricing_Data P : L)
+              if (P.getCurrency().equals(planCurrency) == true)
+                {
+                  found = true;
+                  break;
+                }
+            if (found == false)
+             Req.addError("planCurrency", "Plan currency '"+planCurrency+"' is invalid for this plan.");
+
+            Req.throwIfErrors();
+              
+            UserPlanSubscription_Data UPS = UserPlanSubscription_Factory.lookupByUserActivePlan(U.getRefnum());
+            if (UPS.read(C) == true)
+              {
+                UPS.setActive(false);
+                UPS.setEndDt(DateTimeUtil.nowLocalDate());
+                if (UPS.write(C) == false)
+                 throw new Exception("Cannot update existing plan subscription for user " + U.getRefnum());
+              }
+            LocalDate start = DateTimeUtil.nowLocalDate();
+            LocalDate end = planCycle==UserPlanSubscription_Data._cycleYearly ? start.plusYears(1) : start.plusMonths(1);
+            UPS = UserPlanSubscription_Factory.create(U.getRefnum(), planRefnum, planCurrency, planCycle, start, end, true);
+            if (UPS.write(C) == false)
+             throw new Exception("Cannot create plan subscription for user " + U.getRefnum());
+            return true;
+          }
+        JSONUtil.startOK(Out, '{');
+        JSONUtil.print(Out, "pickPlan", true, true);
+        JSONUtil.end(Out, '}');
+        return false;
+      }
+    
+    
     private static void nextLoginStep(Connection C, User_Data U, RequestUtil Req, ResponseUtil Res, PrintWriter Out)
     throws Exception
       {

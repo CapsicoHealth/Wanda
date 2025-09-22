@@ -305,6 +305,38 @@
     }
 
     
+    
+    ,{ "name":"UserPlanSubscription"
+      ,"description":"User to Plan mapping"
+      ,"columns": [
+           {"name":"userRefnum" , "sameAs":"User.refnum", "nullable":false , "description":"User Foreign Key" }
+          ,{"name":"planRefnum" , "sameAs":"Plan.refnum", "nullable":false , "description":"Plan Foreign Key" }
+          ,{"name":"currency"   , "sameAs":"PlanPricing.currency", "nullable":false , "description":"The currency for the plan" }
+          ,{"name":"cycle"      , "type":"CHAR" , "nullable": false, "description":"The plan cycle"
+                                , "values": [
+                                     {"name":"Monthly", "value":"M" , "description":"Monthly payments" } 
+                                    ,{"name":"Yearly" , "value":"Y" , "description":"Yearly payments"  } 
+                                   ]
+           }
+          ,{"name":"startDt"   , "type":"DATE"   , "nullable": false, "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+          ,{"name":"endDt"     , "type":"DATE"   , "nullable": false, "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+          ,{"name":"active"    , "type":"BOOLEAN", "nullable": false, "description":"Whether this user plan is active or not. Any user should have at most ONE active plan they are under. When a plan is renewed or changed, the current plan should be ended (endDt=now + active-false) and a new sub scription should be created" }
+        ]
+      ,"foreign":[
+          { "name":"User", "srcColumns":["userRefnum"], "destObject":"User" }
+         ,{ "name":"Plan", "srcColumns":["planRefnum" ], "destObject":"Plan"  }
+        ]
+      ,"indices":[
+          { "name":"UserActivePlan"  , "columns":["userRefnum"], "subWhere":"active = true", "db": true  }
+         ,{ "name":"UserPlans"       , "columns":["userRefnum"], "orderBy":["startDt desc"], "db": true  }
+        ]
+      ,"queries": [
+       ]
+     }
+    
+    
+    
+    
    ,{ "name":"Ticket"
      ,"description":"Tickets"
      ,"columns":[
