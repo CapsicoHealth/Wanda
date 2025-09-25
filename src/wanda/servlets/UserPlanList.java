@@ -23,6 +23,7 @@ import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
 import wanda.data.User_Data;
 import wanda.data.importers.promos.Plan;
+import wanda.servlets.helpers.PlanHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
@@ -58,7 +59,7 @@ public class UserPlanList extends SimpleServlet
 //              throw new NotFoundException("User", "User not found.");
 //          }
 
-        List<Plan> plans = U.getAvailablePlans(C);
+        List<Plan> plans = PlanHelper.getAvailablePlans(C, U);
         Res.successJson("", plans);
       }
 

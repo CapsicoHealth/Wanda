@@ -2,9 +2,6 @@ package wanda.servlets.helpers;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -14,25 +11,16 @@ import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.db.ListResults;
 import tilda.utils.DateTimeUtil;
-import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
-import wanda.data.PlanPricing_Data;
-import wanda.data.PlanPricing_Factory;
-import wanda.data.TenantUser_Data;
-import wanda.data.TenantUser_Factory;
 import wanda.data.TenantView_Data;
 import wanda.data.TenantView_Factory;
-import wanda.data.UserPlanSubscription_Data;
-import wanda.data.UserPlanSubscription_Factory;
 import wanda.data.User_Data;
 import wanda.web.LoginSyncService;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionUtil;
-import wanda.web.config.Eula;
-import wanda.web.config.EulaActivation;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.AccessForbiddenException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -41,19 +29,117 @@ public class LoginHelper
   {
     protected static final Logger LOG = LogManager.getLogger(LoginHelper.class.getName());
 
-    public static void onBasicLoginSuccess(RequestUtil req, Connection C, User_Data U)
+    /**
+     * Note: clientAppDataKeys was used to sign a client-side database on a mobile device. This is no longer in use.
+     *      We keep this for reference only.
+     * @param req
+     * @param res
+     * @param C
+     * @param U
+     * @throws Exception
+     */
+    public static void loginSuccess(RequestUtil req, ResponseUtil res, Connection C, User_Data U) //, String[] clientAppDataKeys)
+    throws Exception
+      {
+        basicLoginSuccess(req, C, U);
+
+        // SuperAdmin Check
+        if (U.isSuperAdmin() == true)
+          {
+            LOG.debug("SuperAdmin let through!");
+            EulaHelper.ClearUserForEula(C, req, U, null, false);
+            PlanHelper.ClearUserForPlan(C, req, U, false);
+            PrintWriter out = res.setContentType(ResponseUtil.ContentType.JSON);
+            JSONUtil.startOK(out, '{');
+            //JSONUtil.print(out, "appData", true, clientAppDataKeys);
+            JSONUtil.end(out, '}');
+            return;
+          }
+
+        TenantView_Data TV = null;
+        LOG.debug("Checking multi-tenancy");
+        if (ConnectionPool.isMultiTenant() == true)
+          {
+            LOG.debug("Multi-tenancy is enabled");
+            // Let's get the list of tenants the user has access to
+            ListResults<TenantView_Data> list = TenantView_Factory.getAllActiveByUserRefnum(C, U.getRefnum(), 0, 1000);
+            if (list.size() == 0)
+              {
+                req.removeSessionUser();
+                throw new ResourceNotAuthorizedException("User", U.getEmail(), "You do not have access to any Tenant.\nPlease contact your Administrator.");
+              }
+
+            // If Tenant Login, need to check access
+            long tenantUserRefnum = req.getParamLong("tenantUserRefnum", false);
+            if (tenantUserRefnum != SystemValues.EVIL_VALUE)
+              { // User Selected a Tenant
+                LOG.debug("Tenant login");
+                for (TenantView_Data tv : list)
+                  if (tv.getTenantUserRefnum() == tenantUserRefnum)
+                    {
+                      TV = tv;
+                      break;
+                    }
+                if (TV == null) // couldn't find a tenantUserRefnum match
+                  {
+                    req.removeSessionUser();
+                    throw new ResourceNotAuthorizedException("User", U.getEmail(), "You do not have access to this Tenant.\nPlease contact your Administrator.");
+                  }
+              }
+            else if (list.size() > 1) // this is not a tenant login and the user has access to multiple tenants, so we have to force a pick.
+              {
+                LOG.debug("Tenant selection needed");
+                // multiple tenants, we need a tenant selection
+                PrintWriter out = res.setContentType(ResponseUtil.ContentType.JSON);
+                JSONUtil.startOK(out, '{');
+                JSONUtil.print(out, "tenants", "tenantJson", true, list, " ");
+                JSONUtil.print(out, "message", false, "Please select a tenant");
+//                JSONUtil.print(out, "appData", true, clientAppDataKeys);
+                JSONUtil.end(out, '}');
+                return;
+              }
+
+            LOG.debug("Setting Tenant session");
+            req.setSessionTenantUser(TV.getTenantUserRefnum());
+            LOG.debug("Tenant user sync");
+            UserTenantSync.sync(C, U, tenantUserRefnum);
+          }
+
+        LOG.debug("Checking Eula");
+        if (EulaHelper.doEula(req, res, C, U, TV) == false)
+          return;
+        LOG.debug("Checking Plan");
+        if (PlanHelper.doPlan(req, res, C, U) == false)
+          return;
+
+        if (U.write(C) == false)
+          throw new Exception("Cannot update user " + U.getRefnum());
+
+        // all good!
+        req.setSessionUser(U);
+        PrintWriter out = res.setContentType(ResponseUtil.ContentType.JSON);
+        JSONUtil.startOK(out, '{');
+        JSONUtil.print(out, "tenantUser", "tenantUserJson", true, TV, " ");
+//        JSONUtil.print(out, "appData", false, clientAppDataKeys);
+        JSONUtil.end(out, '}');
+      }
+
+    public static void basicLoginSuccess(RequestUtil req, Connection C, User_Data U)
     throws Exception, ResourceNotAuthorizedException, AccessForbiddenException, IOException
       {
+        LOG.debug("Calling UserSync Services");
         doUserSyncServices(C, U);
+
+        LOG.debug("Setting data masking if appropriate");
         boolean maskedMode = req.getParamBoolean("dataMasking", false);
         req.setSessionBool(SessionUtil.Attributes.MASKING_MODE.name(), maskedMode);
 
         // Generate App Data if empty
+        LOG.debug("Initializing first-time AppData");
         if (U.getAppData().size() < 1 && U.generateAppData(C) == false)
-          {
-            throw new Exception("Failed to generate AppData.");
-          }
+          throw new Exception("Failed to generate AppData.");
 
+        LOG.debug("Updating user info");
         U.setLastipaddress(req.getRemoteAddr());
         U.setLastLoginNow();
         U.setLoginCount(U.getLoginCount() + 1);
@@ -64,69 +150,18 @@ public class LoginHelper
         U.setNullPswdResetCode();
         U.setNullPswdResetCreate();
 
-        U.write(C);
-
         // If the user has a promo code, we want to update their app mapping.
+        LOG.debug("Updating user apps based on promo code if any");
         if (TextUtil.isNullOrEmpty(U.getPromoCode()) == false)
           U.syncUpApps(C, U, U.getPromoCode(), U.getLoginDomain());
 
+        LOG.debug("Setting session user");
         req.setSessionUser(U);
         req.setSessionInt(SessionUtil.Attributes.FORCE_RELOAD_USER.name(), SessionUtil.FORCE_RELOAD_USER);
       }
 
-    public static void onLoginSuccess(RequestUtil req, ResponseUtil res, Connection C, PrintWriter Out, long TenantUserRefnum, String Email, String Pswd, User_Data U)
-    throws Exception, ResourceNotAuthorizedException, AccessForbiddenException, IOException
-      {
-        if (User_Data.isUserLocked(U))
-          {
-            throw new ResourceNotAuthorizedException("User", Email);
-          }
 
-        if (hasPasswordExpired(U))
-          {
-            U.sendForgotPswdEmail(C);
-            throw new AccessForbiddenException("User", "Your password has expired, please reset your password");
-          }
-
-        onBasicLoginSuccess(req, C, U);
-
-        // SuperAdmin Check
-        if (U.isSuperAdmin() == true)
-          {
-            ClearUserForEula(C, req, U, SystemValues.EVIL_VALUE);
-            JSONUtil.startOK(Out, '{');
-            JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-            JSONUtil.end(Out, '}');
-            return;
-          }
-
-        if (ConnectionPool.isMultiTenant() == false)
-          {
-            String eulaUrl = U.needsEula(C, "");
-            if (TextUtil.isNullOrEmpty(eulaUrl) == false)
-              {
-                doEula(Out, req, C, TenantUserRefnum, eulaUrl, U);
-                return;
-              }
-            if (U.needsPlan(C) == true)
-              {
-                doPlan(Out, req, C, U);
-                return;
-              }
-            req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
-            // Generate Response
-            JSONUtil.startOK(Out, '{');
-            JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-            JSONUtil.end(Out, '}');
-          }
-        else
-          {
-            nextLoginStep(C, U, req, res, Out); // Also returns response
-          }
-      }
-
-
-    public static void onLoginFailure(Connection C, User_Data U)
+    public static void loginFailure(Connection C, User_Data U)
     throws Exception
       {
         String ErrorMessage = null;
@@ -178,156 +213,6 @@ public class LoginHelper
                   {
                     LOG.warn("Cannot follow user sync process off of '" + lss.getClass().getCanonicalName() + "'.");
                   }
-          }
-      }
-
-    /**
-     * Checks if the user's password has expired. Mostly used for the login servlet. Wondering if it should be elsewhere.
-     * 
-     * @param U
-     * @return
-     */
-    protected static boolean hasPasswordExpired(User_Data U)
-      {
-        return U.getPswdCreate() != null && ChronoUnit.DAYS.between(U.getPswdCreate(), ZonedDateTime.now()) > Wanda.getPasswordExpiry();
-      }
-
-    protected static boolean isUserLocked(User_Data U)
-      {
-        return User_Data.isUserLocked(U);
-      }
-
-
-    public static void ClearUserForEula(Connection C, RequestUtil Req, User_Data U, long tenantUserRefnum)
-    throws Exception
-      {
-        U.setLastEulaNow();
-        if (U.write(C) == false)
-          throw new Exception("Cannot update user " + U.getRefnum());
-        if (tenantUserRefnum != SystemValues.EVIL_VALUE)
-          {
-            TenantUser_Data TU = TenantUser_Factory.lookupByPrimaryKey(tenantUserRefnum);
-            TU.setLastEulaNow();
-            if (TU.write(C) == false)
-              throw new Exception("Cannot update TenantUser refnum " + tenantUserRefnum);
-            Req.setSessionTenantUser(TU.getRefnum());
-          }
-        Req.removeSessionAttribute(SessionUtil.Attributes.EULA_CODE.toString());
-        Req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
-      }
-
-    public static boolean doEula(PrintWriter Out, RequestUtil Req, Connection C, long TenantUserRefnum, String eulaUrl, User_Data U)
-    throws Exception
-      {
-        // For encrypting AppData._dbKey
-        String Email = Req.getParamString("email", true);
-        String Pswd = Req.getParamString("pswd", true);
-        // For Eula
-        String TokenIn = Req.getParamString("eulaToken", false);
-        String TokenSaved = Req.getSessionString(SessionUtil.Attributes.EULA_CODE.toString());
-        if (TextUtil.isNullOrEmpty(TokenSaved) == false && TokenSaved.equals(TokenIn) == true)
-          {
-            ClearUserForEula(C, Req, U, TenantUserRefnum);
-            return true;
-          }
-
-        String TokenNew = EncryptionUtil.getToken(18, true);
-        Req.setSessionString(SessionUtil.Attributes.EULA_CODE.toString(), TokenNew);
-        JSONUtil.startOK(Out, '{');
-        JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-        JSONUtil.print(Out, "tenantUserRefnum", false, TenantUserRefnum);
-        JSONUtil.print(Out, "eulaUrl", false, eulaUrl);
-        JSONUtil.print(Out, "eulaToken", false, TokenNew);
-        JSONUtil.end(Out, '}');
-        return false;
-      }
-
-    public static boolean doPlan(PrintWriter Out, RequestUtil Req, Connection C, User_Data U)
-    throws Exception
-      {
-        long   planRefnum   = Req.getParamLong  ("planRefnum"  , false);
-        String planCurrency = Req.getParamString("planCurrency", false);
-        char   planCycle    = Req.getParamChar  ("planCycle"   , false);
-        if (planRefnum != SystemValues.EVIL_VALUE)
-          {
-            
-            if (UserPlanSubscription_Data.checkCycle(planCycle) == false)
-             Req.addError("planCycle", "Plan cycle '"+planCycle+"' is invalid.");
-
-            List<PlanPricing_Data> L = PlanPricing_Factory.lookupWherePlanRefnum(C, planRefnum, 0, -1);
-            boolean found = false;
-            for (PlanPricing_Data P : L)
-              if (P.getCurrency().equals(planCurrency) == true)
-                {
-                  found = true;
-                  break;
-                }
-            if (found == false)
-             Req.addError("planCurrency", "Plan currency '"+planCurrency+"' is invalid for this plan.");
-
-            Req.throwIfErrors();
-              
-            UserPlanSubscription_Data UPS = UserPlanSubscription_Factory.lookupByUserActivePlan(U.getRefnum());
-            if (UPS.read(C) == true)
-              {
-                UPS.setActive(false);
-                UPS.setEndDt(DateTimeUtil.nowLocalDate());
-                if (UPS.write(C) == false)
-                 throw new Exception("Cannot update existing plan subscription for user " + U.getRefnum());
-              }
-            LocalDate start = DateTimeUtil.nowLocalDate();
-            LocalDate end = planCycle==UserPlanSubscription_Data._cycleYearly ? start.plusYears(1) : start.plusMonths(1);
-            UPS = UserPlanSubscription_Factory.create(U.getRefnum(), planRefnum, planCurrency, planCycle, start, end, true);
-            if (UPS.write(C) == false)
-             throw new Exception("Cannot create plan subscription for user " + U.getRefnum());
-            return true;
-          }
-        JSONUtil.startOK(Out, '{');
-        JSONUtil.print(Out, "pickPlan", true, true);
-        JSONUtil.end(Out, '}');
-        return false;
-      }
-    
-    
-    private static void nextLoginStep(Connection C, User_Data U, RequestUtil Req, ResponseUtil Res, PrintWriter Out)
-    throws Exception
-      {
-        // For Encrypting AppData._dbKey
-        String Email = Req.getParamString("email", true);
-        String Pswd = Req.getParamString("pswd", true);
-
-        ListResults<TenantView_Data> list = TenantView_Factory.getAllActiveByUserRefnum(C, U.getRefnum(), 0, 1000);
-        if (list.size() == 0)
-          {
-            Req.removeSessionUser();
-            throw new ResourceNotAuthorizedException("User", U.getEmail(), "You do not have access to any Tenants.\nPlease contact your Administrator.");
-          }
-        // single tenant
-        else if (list.size() == 1)
-          {
-            TenantView_Data firstTenant = list.get(0);
-            String eulaUrl = U.needsEula(C, firstTenant.getName());
-            if (TextUtil.isNullOrEmpty(eulaUrl) == false)
-              doEula(Out, Req, C, firstTenant.getTenantUserRefnum(), eulaUrl, U);
-            else
-              {
-                Req.setSessionLong(SessionUtil.Attributes.USERREFNUM.toString(), list.get(0).getUserRefnum());
-                Req.setSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString(), list.get(0).getTenantUserRefnum());
-                ClearUserForEula(C, Req, U, list.get(0).getTenantUserRefnum());
-                UserTenantSync.sync(C, U, list.get(0).getTenantUserRefnum());
-                JSONUtil.startOK(Out, '{');
-                list.get(0).toJSON(Out, "tenantUserJson", false);
-                JSONUtil.print(Out, "appData", false, U.getAppDataJson(Email + "@@" + Pswd));
-                JSONUtil.end(Out, '}');
-              }
-          }
-        else
-          {
-            JSONUtil.startOK(Out, '{');
-            JSONUtil.print(Out, "appData", true, U.getAppDataJson(Email + "@@" + Pswd));
-            JSONUtil.print(Out, "tenants", "tenantUserJson", false, list, " ");
-            JSONUtil.print(Out, "message", false, "Please select a tenant");
-            JSONUtil.end(Out, '}');
           }
       }
   }

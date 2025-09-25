@@ -40,6 +40,7 @@
          ,{ "name":"allowedDomains" , "type":"STRING[]"    , "nullable": true                    , "description":"The domains allowed to use this promo code." }
          ,{ "name":"eulaUrl"        , "type":"STRING(1024)", "nullable": true                    , "description":"The URL for the EULA." }
          ,{ "name":"eulaRenewalDays", "type":"INTEGER"     , "nullable": true                    , "description":"The number of days to force users to resign the EULA." }
+         ,{ "name":"maxUsers"       , "type":"SHORT"       , "nullable": true                    , "description":"The maximum number of users who can use that promo." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -142,6 +143,7 @@
           ,{ "name":"lastLogin"      , "type"  :"DATETIME" ,                                                       "description":"The last time the user logged in." }
           ,{ "name":"lastipaddress"  , "type"  :"STRING"   ,                    "size":  50,                       "description":"The IP Address for the last login"}
           ,{ "name":"lastEula"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user signed the EULA, for systems without tenants. See UserTenant for tenant-level Eulas." }
+          ,{ "name":"lastPlan"       , "type"  :"DATETIME" , "nullable": true ,                                    "description":"The last time the user picked a plan." }
           ,{ "name":"loginCount"     , "type"  :"INTEGER"  , "nullable": false,                                    "description":"The login counts for this user"
                                      , "values": [
                                         { "name":"Create", "value":"0", "description":"Default Password Creation Time", "default":"CREATE" }
@@ -432,7 +434,6 @@
                                    ]
           }
          ,{ "name":"lastEula"   , "type":"DATETIME", "nullable": true , "description":"The last time the user signed the EULA for this tenant." }
-
        ],
       "primary":{ "autogen": true},
       "foreign":[

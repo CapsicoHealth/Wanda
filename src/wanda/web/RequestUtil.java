@@ -323,6 +323,7 @@ public class RequestUtil
             S.removeAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
             S.removeAttribute(SessionUtil.Attributes.EULA_CODE.toString());
             S.removeAttribute(SessionUtil.Attributes.EULA_CLEAR.toString());
+            S.removeAttribute(SessionUtil.Attributes.PLAN_CLEAR.toString());
           }
       }
 
@@ -355,22 +356,8 @@ public class RequestUtil
 
     public String getSessionAttributes()
       {
-        StringBuilder Str = new StringBuilder();
         HttpSession S = SessionUtil.getSession(_Req);
-        if (S == null)
-          return null;
-        Enumeration<String> E = S.getAttributeNames();
-        boolean First = true;
-        while (E.hasMoreElements() == true)
-          {
-            String name = E.nextElement();
-            if (First == false)
-              Str.append("; ");
-            else
-              First = false;
-            Str.append(name + ":" + S.getAttribute(name));
-          }
-        return Str.toString();
+        return S == null ? null : SessionUtil.printSessionAttributes(S, "; ");
       }
 
     public String getSessionString(String Name)

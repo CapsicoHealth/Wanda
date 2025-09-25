@@ -30,6 +30,7 @@ import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.data.importers.promos.Plan;
+import wanda.servlets.helpers.PlanHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -122,7 +123,7 @@ public class UserOnBoarding extends SimpleServlet
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');
-        List<Plan> plans = user.getAvailablePlans(C);
+        List<Plan> plans = PlanHelper.getAvailablePlans(C, U);
         if (plans != null && plans.isEmpty() == false)
           {
             JSONUtil.print(Out, "mustPickPlan", true, true);

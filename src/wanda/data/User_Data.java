@@ -37,11 +37,9 @@ import tilda.utils.EncryptionUtil;
 import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.pairs.StringStringPair;
-import wanda.data.importers.promos.Plan;
 import wanda.servlets.helpers.RoleHelper;
 import wanda.web.EMailSender;
 import wanda.web.SessionFilter;
-import wanda.web.config.EulaActivation;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.BadRequestException;
 import wanda.web.exceptions.ResourceNotAuthorizedException;
@@ -665,42 +663,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
         updateAppAccess(C, U, CollectionUtil.toPrimitiveArray(p.getAppsAsArray()));
       }
-
-    /**
-     * If the user comes from a promo code, we check if the promo code has an EULA URL and if the last EULA
-     * was signed more than the renewal days defined in the promo code. If so, we return the EULA URL to be
-     * displayed to the user.<BR>
-     * If the user doesn't come from a promo code, we check if there is a default EULA defined in the
-     * Wanda configuration and if the last EULA was signed more than the renewal days defined there.
-     * 
-     * @param C
-     * @param EA
-     * @return
-     * @throws Exception
-     */
-    public String needsEula(Connection C, String TenantName)
-    throws Exception
-      {
-        String promo = getPromoCode();
-        if (TextUtil.isNullOrEmpty(promo) == false)
-          {
-            Promo_Data p = Promo_Factory.lookupByCode(promo);
-            // Promo record must exist, and Eula URL must be defined, and either the user never signed a EULA or the last EULA is older than the renewal days.
-            if (p.read(C) == true && p.getEulaUrl() != null && (isNullLastEula() == true || p.getEulaRenewalDays() > 0 && DateTimeUtil.computeDaysToNow(getLastEula()) > p.getEulaRenewalDays()))
-              return p.getEulaUrl();
-          }
-        else
-          {
-            EulaActivation EA = Wanda.getEula(TenantName);
-            if (EA != null)
-              {
-                int days = DateTimeUtil.computeDaysToNow(getLastEula());
-                if (EA != null && (days < 0 || days > EA._renewalDays))
-                  return EA._eulaUrl;
-              }
-          }
-        return null;
-      }
+    
 
     /**
      * Updates and salts the new password and related attributes. Will skip if newPassword is null or empty.
@@ -732,20 +695,6 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       }
 
 
-
-    public List<Plan> getAvailablePlans(Connection C)
-    throws Exception
-      {
-        if (isNullPromoCode() == false)
-          {
-            Promo_Data P = Promo_Factory.lookupByCode(getPromoCode());
-            if (P.read(C) == true)
-              return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths());
-          }
-
-        return null;
-      }
-
     public boolean checkTokenValidity(String token)
       {
         if (token == null || token.equals(getPswdResetCode()) == false)
@@ -759,20 +708,5 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             return false;
           }
         return true;
-      }
-
-    public boolean needsPlan(Connection C) throws Exception
-      {
-        return false;
-/*        
-        // Does this user have plans they have to chose from?
-        List<Plan> L = getAvailablePlans(C);
-        if (L == null || L.isEmpty() == true)
-         return false;
-        // If they do, check if they have an active plan
-        UserPlanSubscription_Data UPS = UserPlanSubscription_Factory.lookupByUserActivePlan(this.getRefnum());
-        // return true if no active plan found
-        return UPS.read(C) == false;
-*/
       }
   }
