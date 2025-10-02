@@ -47,18 +47,6 @@ public class UserPlanList extends SimpleServlet
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-//        if (U == null)
-//          {
-//            String email = Req.getParamString("email", true);
-//            String token = Req.getParamString("token", true);
-//            Req.throwIfErrors();
-//            U = User_Factory.lookupByEmail(email);
-//            if (U.read(C) == false)
-//              throw new NotFoundException("User", "User not found.");
-//            if (U.checkTokenValidity(token) == false)
-//              throw new NotFoundException("User", "User not found.");
-//          }
-
         List<Plan> plans = PlanHelper.getAvailablePlans(C, U);
         Res.successJson("", plans);
       }

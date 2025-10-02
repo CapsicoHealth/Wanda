@@ -46,6 +46,7 @@ public class WandaDefConfig
     @SerializedName("lookAndFeel"     )         LookAndFeel                         _laf                    = null;
     @SerializedName("loginSystem"     )         LoginSystem                         _loginSystem            = null;
     @SerializedName("ticketSystem"    )         TicketSystem                        _ticketSystem           = new TicketSystem();
+    @SerializedName("paymentSystems"  )         List<PaymentSystem>                 _paymentSystems         = new ArrayList<PaymentSystem>();
     @SerializedName("eulas"           )         List<Eula>                          _eulas                  = new ArrayList<Eula>();
     @SerializedName("beacon"          )         BeaconConfig                        _beacon                 = null;
     @SerializedName("extras"          )         Map<String, Map<String, String>>    _extras                 = null;
@@ -166,6 +167,7 @@ public class WandaDefConfig
           }
 
         OK = Eula.validate(_eulas, OK);
+        OK = PaymentSystem.validate(_paymentSystems, OK);
         OK = BeaconConfig.validate(_beacon, OK);
         OK = GuestRegistration.validate(C, _guestRegistration, OK);
 

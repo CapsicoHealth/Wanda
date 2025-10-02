@@ -124,18 +124,22 @@ public class Login extends SimpleServlet
             email = email.toLowerCase();
             U = User_Factory.lookupByEmail(email);
             // If we cannot read the user, of the user has been soft-deleted, locked or the invite has been cancelled, we cannot proceed.
-            if (U.read(C) == false || U.isNullDeleted() == false || U.isLocked() == true || U.getInviteCancelled() == true)
-              {
-                LOG.error("User '" + email + "' not found in the local DB or not in a state where they can log in.");
-                LoginHelper.loginFailure(C, U);
-                return;
-              }
-
+            String errMsg = null; 
+            if (U.read(C) == false)
+             errMsg = "User '" + email + "' not found in the local DB.";
+            else if (U.isNullDeleted() == false)
+             errMsg = "User '" + email + "' is soft-deleted.";
+            else if (U.isLocked() == true)
+             errMsg = "User '" + email + "' is locked.";
+            else if (U.getInviteCancelled() == true)
+             errMsg = "User '" + email + "' has a canceled invitation.";
             // Check password is correct
-            LOG.debug("Checking password");
-            if (EncryptionUtil.hash(pswd, U.getPswdSalt()).equals(U.getPswd()) == false)
+            else if (EncryptionUtil.hash(pswd, U.getPswdSalt()).equals(U.getPswd()) == false)
+             errMsg = "Invalid password for User '" + email + "' in the local DB";
+
+            if (errMsg != null)
               {
-                LOG.error("Invalid password for User '" + email + "' in the local DB");
+                LOG.error(errMsg);
                 LoginHelper.loginFailure(C, U);
                 return;
               }

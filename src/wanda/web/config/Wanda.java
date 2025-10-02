@@ -387,6 +387,14 @@ public class Wanda
           };
         return eulas;
       }
+    
+    public static PaymentSystem getPaymentSystem(String id, boolean sandbox)
+      {
+        for (PaymentSystem PS : _Config._paymentSystems)
+          if (PS._id.equals(id) == true && PS._sandbox == sandbox)
+            return PS;
+        return null;
+      }
 
     public static LoginSystem getLoginSystem()
       {

@@ -50,6 +50,16 @@ public class Plan implements JSONable
         _discountPct = discountPct;
         _discountMonths = discountMonths;
       }
+    
+    public short getDiscountPct()
+      {
+        return _discountPct;
+      }
+    
+    public short getDiscountMonths()
+      {
+        return _discountMonths;
+      }
 
     public int write(Connection C)
     throws Exception

@@ -75,11 +75,11 @@ public class UserOnBoarding extends SimpleServlet
 
         Req.throwIfErrors();
 
-        User_Data user = User_Factory.lookupByEmail(email);
-        if (user.read(C) == false)
+        U = User_Factory.lookupByEmail(email);
+        if (U.read(C) == false)
           throw new NotFoundException("User email", email);
 
-        if (user.checkTokenValidity(token) == false)
+        if (U.checkTokenValidity(token) == false)
           throw new NotFoundException("User token", "Invalid or expired token");
 
         /*
@@ -93,12 +93,12 @@ public class UserOnBoarding extends SimpleServlet
          * add +password to user.pswdHist
          * 
          */
-        String salt = user.getOrCreatePswdSalt();
+        String salt = U.getOrCreatePswdSalt();
         String hashedPassword = EncryptionUtil.hash(password, salt);
-        if (user.hasPswdHist(hashedPassword))
+        if (U.hasPswdHist(hashedPassword))
           {
             // Is this a user who has already logged in, or a user still in the process of registering?
-            if (user.getLoginCount() > 0)                    // an existing established user changing their password and failing
+            if (U.getLoginCount() > 0)                       // an existing established user changing their password and failing
              throw new Exception("Password Already used");   // the already-used-password check.
           }
         else
@@ -106,7 +106,7 @@ public class UserOnBoarding extends SimpleServlet
             passwordHistory.add(hashedPassword);
           }
 
-        UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());
+        UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
         contact.setCompany(company);
         contact.setProfTitle(title);
         contact.setTelMobile(phone);
@@ -114,12 +114,12 @@ public class UserOnBoarding extends SimpleServlet
         contact.setStateProv(stateProv);
         contact.write(C);
 
-        user.setPswd(hashedPassword);
-        user.setPswdSalt(salt);
-        user.setPswdCreateNow();
-        user.setInvitedUser(false);
-        user.setPswdHist(passwordHistory);
-        user.write(C);
+        U.setPswd(hashedPassword);
+        U.setPswdSalt(salt);
+        U.setPswdCreateNow();
+        U.setInvitedUser(false);
+        U.setPswdHist(passwordHistory);
+        U.write(C);
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');

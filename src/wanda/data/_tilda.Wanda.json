@@ -94,8 +94,8 @@
       ,"columns":[
           { "name":"planRefnum", "sameAs":"Plan.refnum", "nullable": false, "description":"The plan this pricing is applicable to"}
          ,{ "name":"currency"  , "type":"STRING(255)"  , "nullable": false, "description":"The currency"}
-         ,{ "name":"monthly"   , "type":"FLOAT"        , "nullable": false, "description":"The monthly rate"}
-         ,{ "name":"yearly"    , "type":"FLOAT"        , "nullable": false, "description":"The yearly rate." }
+         ,{ "name":"monthly"   , "type":"NUMERIC"       , "nullable": false, "description":"The monthly rate"}
+         ,{ "name":"yearly"    , "type":"NUMERIC"       , "nullable": false, "description":"The yearly rate." }
          ,{ "name":"yearlyDesc", "type":"STRING(255)"  , "nullable": false, "description":"The explanation of the yearly rate discount." }
         ]
       ,"foreign": [
@@ -320,10 +320,13 @@
                                     ,{"name":"Yearly" , "value":"Y" , "description":"Yearly payments"  } 
                                    ]
            }
-          ,{"name":"startDt"   , "type":"DATE"   , "nullable": false, "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-          ,{"name":"endDt"     , "type":"DATE"   , "nullable": false, "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-          ,{"name":"active"    , "type":"BOOLEAN", "nullable": false, "description":"Whether this user plan is active or not. Any user should have at most ONE active plan they are under. When a plan is renewed or changed, the current plan should be ended (endDt=now + active-false) and a new sub scription should be created" }
+          ,{"name":"discountPct"    , "sameAs":"Promo.discountPct"   , "nullable": true , "description":"The discount percentage available, e.g., 25%, 50%, 100%, at the moment of the plan selection" }
+          ,{"name":"discountMonths" , "sameAs":"Promo.discountMonths", "nullable": true , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...., at the moment of the plan selection" }
+          ,{"name":"startDt"        , "type":"DATE"                  , "nullable": false, "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+          ,{"name":"endDt"          , "type":"DATE"                  , "nullable": false, "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+          ,{"name":"active"         , "type":"BOOLEAN"               , "nullable": false, "description":"Whether this user plan is active or not. Any user should have at most ONE active plan they are under. When a plan is renewed or changed, the current plan should be ended (endDt=now + active-false) and a new sub scription should be created" }
         ]
+      ,"primary": { "autogen": true }
       ,"foreign":[
           { "name":"User", "srcColumns":["userRefnum"], "destObject":"User" }
          ,{ "name":"Plan", "srcColumns":["planRefnum" ], "destObject":"Plan"  }
@@ -335,10 +338,42 @@
       ,"queries": [
        ]
      }
-    
-    
-    
-    
+     
+     
+     ,{ "name":"UserPlanBilling"
+       ,"description":"User to Plan mapping"
+       ,"columns": [
+            {"name":"subscriptionRefnum", "sameAs":"UserPlanSubscription.refnum", "nullable":false , "description":"Subscription Foreign Key" }
+           ,{"name":"paymentProvider"   , "type":"STRING(128)"           , "nullable": false, "description":"The payment provider." }
+           ,{"name":"subscriptionId"    , "type":"STRING(256)"           , "nullable": false, "description":"Subscription ID." }
+           ,{"name":"orderId"           , "type":"STRING(128)"           , "nullable": true , "description":"Order ID." }
+           ,{"name":"orderDt"           , "type":"DATETIME"              , "nullable": false, "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+           ,{"name":"total"             , "type":"NUMERIC"               , "nullable": false, "description":"The price at the moment of the plan selection" }
+           ,{"name":"currency"          , "sameAs":"PlanPricing.currency", "nullable": false, "description":"The currency for the billing" }
+           ,{"name":"status"            , "type":"CHAR" , "nullable": false, "description":"The plan cycle"
+                                        , "values": [
+                                             {"name":"Pending", "value":"P" , "description":"Pending" } 
+                                            ,{"name":"Paid"   , "value":"D" , "description":"Paid"    } 
+                                            ,{"name":"Refund" , "value":"R" , "description":"Refund"  } 
+                                            ,{"name":"Failed" , "value":"F" , "description":"Failed"  } 
+                                           ]
+            }
+           ,{"name":"message"          , "type":"STRING(4096)"           , "nullable": true, "description":"A message from the payment provider for this transaction." }
+           ,{"name":"orderCapture"      , "type":"JSON"                  , "nullable": true , "description":"Order capture json payload." }
+         ]
+       ,"primary": { "autogen": true }
+       ,"foreign":[
+           { "name":"Subscription", "srcColumns":["subscriptionRefnum"], "destObject":"UserPlanSubscription" }
+         ]
+       ,"indices":[
+           { "name":"Subscription", "columns":["subscriptionRefnum"], "orderBy":["orderDt desc"], "db": true  }
+         ]
+       ,"queries": [
+         ]
+      }
+
+
+
    ,{ "name":"Ticket"
      ,"description":"Tickets"
      ,"columns":[
