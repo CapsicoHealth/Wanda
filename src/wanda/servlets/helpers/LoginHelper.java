@@ -47,8 +47,8 @@ public class LoginHelper
         if (U.isSuperAdmin() == true)
           {
             LOG.debug("SuperAdmin let through!");
-            EulaHelper.ClearUserForEula(C, req, U, null, false);
-            PlanHelper.ClearUserForPlan(C, req, U, false);
+            EulaHelper.clearUserForEula(C, req, U, null, false);
+            PlanHelper.clearUserForPlan(C, req, U, false);
             PrintWriter out = res.setContentType(ResponseUtil.ContentType.JSON);
             JSONUtil.startOK(out, '{');
             //JSONUtil.print(out, "appData", true, clientAppDataKeys);

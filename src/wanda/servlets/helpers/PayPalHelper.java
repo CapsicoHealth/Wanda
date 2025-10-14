@@ -21,6 +21,9 @@ import com.google.gson.JsonObject;
 import tilda.utils.json.JSONPrinter;
 import tilda.utils.json.JSONUtil;
 import wanda.web.config.PaymentSystem;
+import wanda.web.config.PaymentSystem.Credentials;
+import wanda.web.config.Wanda;
+import wanda.web.exceptions.NotFoundException;
 
 public class PayPalHelper
   {
@@ -34,7 +37,7 @@ public class PayPalHelper
 
     private static String base(PaymentSystem PS)
       {
-        return PS._sandbox == true ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+        return PS._sandboxMode == true ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
       }
 
     private static final Object TOKEN_LOCK            = new Object();
@@ -42,6 +45,7 @@ public class PayPalHelper
     private static long         _cachedExpiryEpochMs;                // absolute time in ms
 
     private static final long   _EXPIRY_LIMIT_SECONDS = 60 * 15;     // 15 minutes
+    private static final String _PAYMENT_PROVIDER     = "paypal";
 
     /*
      * private static void logSecretDiagnostics(String clientId, String secret)
@@ -77,10 +81,12 @@ public class PayPalHelper
             // Reuse if valid for at least another 15 minutes
             if (_cachedToken != null && now < _cachedExpiryEpochMs)
               return _cachedToken;
+            
+            Credentials creds = PS.getCredentials();
 
-            String basicRaw = PS._clientId + ":" + PS._secret;
+            String basicRaw = creds._clientId + ":" + creds._secret;
             String basic = Base64.getEncoder().encodeToString(basicRaw.getBytes(StandardCharsets.UTF_8));
-//            LOG.debug("Auth header Base64 length={}", basic.length());
+            // LOG.debug("Auth header Base64 length={}", basic.length());
 
             var req = HttpRequest.newBuilder()
             .uri(URI.create(base(PS) + "/v1/oauth2/token"))
@@ -120,9 +126,16 @@ public class PayPalHelper
      * @throws IOException
      * @throws InterruptedException
      */
-    public static String createOrder(PaymentSystem PS, String customId, String currency, BigDecimal value)
+    public static PayPalPreOrder createOrder(String paymentProvider, String customId, String currency, BigDecimal value)
     throws Exception
       {
+        if (_PAYMENT_PROVIDER.equals(paymentProvider) == false)
+          throw new NotFoundException("Payment provider", paymentProvider);
+
+        PaymentSystem PS = Wanda.getPaymentSystem(_PAYMENT_PROVIDER);
+        if (PS == null)
+          throw new NotFoundException("Payment provider", _PAYMENT_PROVIDER);
+
         JSONPrinter json = new JSONPrinter();
         json.addElement("intent", "CAPTURE");
         json.addArrayStart("purchase_units");
@@ -139,7 +152,7 @@ public class PayPalHelper
         json.addElement("shipping_preference", "NO_SHIPPING");
         json.addElement("user_action", "PAY_NOW");
         json.addElementClose("application_context");
-        
+
         String jsonStr = json.printRaw();
         LOG.debug(jsonStr);
 
@@ -154,14 +167,19 @@ public class PayPalHelper
         LOG.debug("PayPal Create Order (status " + resp.statusCode() + "): " + resp.body());
         if (resp.statusCode() != 201) // 201 Created
           throw new IOException("Create order failed with status " + resp.statusCode());
-        JsonObject obj = JSONUtil.fromJSONObj(resp.body());
-        JsonElement e = obj.get("id");
-        return e.isJsonNull() == true ? null : e.getAsString();
+        return new Gson().fromJson(resp.body(), PayPalPreOrder.class);
       }
 
-    public static PayPalOrderDetails captureOrder(PaymentSystem PS, String orderId)
-    throws IOException, InterruptedException
+    public static PayPalOrderDetails captureOrder(String paymentProvider, String orderId)
+    throws Exception
       {
+        if (_PAYMENT_PROVIDER.equals(paymentProvider) == false)
+          throw new NotFoundException("Payment provider", paymentProvider);
+
+        PaymentSystem PS = Wanda.getPaymentSystem(_PAYMENT_PROVIDER);
+        if (PS == null)
+          throw new NotFoundException("Payment provider", _PAYMENT_PROVIDER);
+        
         var req = HttpRequest.newBuilder()
         .uri(URI.create(base(PS) + "/v2/checkout/orders/" + orderId + "/capture"))
         .header("Content-Type", "application/json")
@@ -178,25 +196,49 @@ public class PayPalHelper
       }
 
 /*
-    public static void main(String[] args)
+    public static void refundCapture(String accessToken, String captureId)
     throws Exception
       {
-        try
-          {
-            PaymentSystem PS = new PaymentSystem();
-            PS._sandbox = true;
-            PS._clientId = "xxx"; // PUT YOURS HERE
-            PS._secret = "xxx";
-            String token = getAccessToken(PS);
-            System.out.println("Token: " + token);
-          }
-        catch (Exception E)
-          {
-            E.printStackTrace();
-          }
-        LOG.info("Done");
+        String url = "https://api-m.sandbox.paypal.com/v2/payments/captures/" + captureId + "/refund";
+        String json = """
+        {
+          "amount": { "value": "10.00", "currency_code": "USD" },
+          "note_to_payer": "Refund issued"
+        }
+        """;
+        HttpRequest req = HttpRequest.newBuilder()
+        .uri(URI.create(url))
+        .header("Authorization", "Bearer " + accessToken)
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(json))
+        .build();
+        HttpResponse<String> res = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+        if (res.statusCode() / 100 != 2)
+          throw new RuntimeException("Refund failed: " + res.statusCode() + " body=" + res.body());
+        System.out.println("Refund response: " + res.body());
       }
 */
+    
+    /*
+     * public static void main(String[] args)
+     * throws Exception
+     * {
+     * try
+     * {
+     * PaymentSystem PS = new PaymentSystem();
+     * PS._sandbox = true;
+     * PS._clientId = "xxx"; // PUT YOURS HERE
+     * PS._secret = "xxx";
+     * String token = getAccessToken(PS);
+     * System.out.println("Token: " + token);
+     * }
+     * catch (Exception E)
+     * {
+     * E.printStackTrace();
+     * }
+     * LOG.info("Done");
+     * }
+     */
 
     /*
      * public static void main(String[] args)

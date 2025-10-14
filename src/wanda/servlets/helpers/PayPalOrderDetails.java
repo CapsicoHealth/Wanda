@@ -1,14 +1,54 @@
 package wanda.servlets.helpers;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public class PayPalOrderDetails
   {
+    public String id;
+    public String intent;
+    public String status;
 
-    public String                id;
-    public String                intent;
-    public String                status;
+    public static enum OrderStatusEnum
+      {
+      CREATED, SAVED, APPROVED, VOIDED, COMPLETED, PAYER_ACTION_REQUIRED, UNKNOWN;
+
+        public static OrderStatusEnum from(String v)
+          {
+            if (v == null)
+              return UNKNOWN;
+            try
+              {
+                return OrderStatusEnum.valueOf(v.toUpperCase());
+              }
+            catch (IllegalArgumentException ex)
+              {
+                return UNKNOWN;
+              }
+          }
+      }
+
+    public static enum IntentEnum
+      {
+      CAPTURE, AUTHORIZE, UNKNOWN;
+
+        public static IntentEnum from(String v)
+          {
+            if (v == null)
+              return UNKNOWN;
+            try
+              {
+                return IntentEnum.valueOf(v.toUpperCase());
+              }
+            catch (IllegalArgumentException ex)
+              {
+                return UNKNOWN;
+              }
+          }
+      }
+
+
 
     @SerializedName("purchase_units")
     public List<PurchaseUnit>    purchaseUnits;
@@ -17,6 +57,33 @@ public class PayPalOrderDetails
     public List<LinkDescription> links;
 
     // Convenience helpers
+    public String getOrderId()
+      {
+        return id;
+      }
+
+    public String getOrderStatus()
+      {
+        return status;
+      }
+
+    public OrderStatusEnum getOrderStatusEnum()
+      {
+        return OrderStatusEnum.from(status);
+      }
+
+    public String getOrderIntent()
+      {
+        return intent;
+      }
+
+    public IntentEnum getIntentEnum()
+      {
+        return IntentEnum.from(intent);
+      }
+
+
+
     public Capture getFirstCapture()
       {
         if (purchaseUnits == null || purchaseUnits.isEmpty())
@@ -39,16 +106,19 @@ public class PayPalOrderDetails
         return c == null ? null : c.status;
       }
 
+    public Capture.CaptureStatusEnum getFirstCaptureStatusEnum()
+      {
+        Capture c = getFirstCapture();
+        return c == null ? null : Capture.CaptureStatusEnum.from(c.status);
+      }
+
     public Money getFirstCaptureAmount()
       {
         Capture c = getFirstCapture();
         return c == null ? null : c.amount;
       }
 
-    public boolean isCompleted()
-      {
-        return "COMPLETED".equalsIgnoreCase(status);
-      }
+
 
     // ==== Nested static classes ====
 
@@ -71,9 +141,29 @@ public class PayPalOrderDetails
 
     public static class Capture
       {
-        public String                    id;
-        public String                    status;
-        public Money                     amount;
+        public String id;
+        public String status;
+        public Money  amount;
+
+        public static enum CaptureStatusEnum
+          {
+          COMPLETED, PENDING, DECLINED, REFUNDED, PARTIALLY_REFUNDED, FAILED, CANCELLED, UNKNOWN;
+
+            public static CaptureStatusEnum from(String v)
+              {
+                if (v == null)
+                  return UNKNOWN;
+                try
+                  {
+                    return CaptureStatusEnum.valueOf(v.toUpperCase());
+                  }
+                catch (IllegalArgumentException ex)
+                  {
+                    return UNKNOWN;
+                  }
+              }
+          }
+
 
         @SerializedName("final_capture")
         public Boolean                   finalCapture;
@@ -135,4 +225,10 @@ public class PayPalOrderDetails
         @SerializedName("surname")
         public String surname;
       }
+
+    public String toJsonString()
+      {
+        return new Gson().toJson(this);
+      }
+
   }

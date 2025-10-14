@@ -35,14 +35,16 @@ public class GuestRegistration
       }
 
     /*@formatter:off*/
-    @SerializedName("type"       ) public GuestType              _type   = GuestType.NONE;
-    @SerializedName("buttonLabel") public String                 _buttonLabel = "Free Trial";
-    @SerializedName("defaultApps") public GuestRegistrationApp[] _defaultApps = null;
-    @SerializedName("tenantIds"  ) public String[]               _tenantIds = null;
+    @SerializedName("type"           ) public GuestType              _type   = GuestType.NONE;
+    @SerializedName("buttonLabel"    ) public String                 _buttonLabel = "Free Trial";
+    @SerializedName("defaultApps"    ) public GuestRegistrationApp[] _defaultApps = null;
+    @SerializedName("tenantIds"      ) public String[]               _tenantIds = null;
+    @SerializedName("excludedDomains") public String[]               _excludedDomains = null;
+    
     /*@formatter:on*/
 
-    public transient long[]       _appRefnums    = null;
-    public transient long[]       _tenantRefnums = null;
+    public transient long[]       _appRefnums      = null;
+    public transient long[]       _tenantRefnums   = null;
 
 
     protected static boolean validate(Connection C, GuestRegistration gr, boolean OK)
@@ -107,6 +109,25 @@ public class GuestRegistration
                   }
               }
           }
+
+        if (gr != null && gr._excludedDomains != null)
+          {
+            for (int i = 0; i < gr._excludedDomains.length; ++i)
+              gr._excludedDomains[i] = "@" + gr._excludedDomains[i].toLowerCase().trim();
+          }
+
         return OK;
+      }
+
+
+    public boolean isAllowedDomain(String userEmail)
+      {
+        if (_excludedDomains == null || _excludedDomains.length == 0)
+          return true;
+        String email = userEmail.toLowerCase().trim();
+        for (String domain : _excludedDomains)
+          if (email.endsWith(domain) == true)
+            return false;
+        return true;
       }
   }

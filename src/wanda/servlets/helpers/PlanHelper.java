@@ -17,6 +17,8 @@ import wanda.data.PlanPricing_Factory;
 import wanda.data.Plan_Factory;
 import wanda.data.Promo_Data;
 import wanda.data.Promo_Factory;
+import wanda.data.UserPlanBilling_Data;
+import wanda.data.UserPlanBilling_Factory;
 import wanda.data.UserPlanSubscription_Data;
 import wanda.data.UserPlanSubscription_Factory;
 import wanda.data.User_Data;
@@ -42,6 +44,7 @@ public class PlanHelper
     protected static boolean doPlan(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
     throws Exception
       {
+/*
         long planRefnum = req.getParamLong("planRefnum", false);
         if (planRefnum != SystemValues.EVIL_VALUE)
           {
@@ -74,19 +77,19 @@ public class PlanHelper
                   throw new Exception("Cannot update existing plan subscription for user " + U.getRefnum());
               }
             LocalDate start = DateTimeUtil.nowLocalDate();
-            LocalDate end = planCycle == UserPlanSubscription_Data._cycleYearly ? start.plusYears(1) : start.plusMonths(1);
-            UPS = UserPlanSubscription_Factory.create(U.getRefnum(), planRefnum, planCurrency, planCycle, start, end, true);
+//            LocalDate end = planCycle == UserPlanSubscription_Data._cycleYearly ? start.plusYears(1) : start.plusMonths(1);
+            UPS = UserPlanSubscription_Factory.create(U.getRefnum(), true, planRefnum, planCurrency, planCycle, start);
             if (UPS.write(C) == false)
               throw new Exception("Cannot create plan subscription for user " + U.getRefnum());
 
             LOG.debug("Plan selection active");
             return true;
           }
-
+*/
         if (needsPlan(C, U) == false)
           {
             LOG.debug("Plan not needed");
-            ClearUserForPlan(C, req, U, true);
+            clearUserForPlan(C, req, U, true);
             return true;
           }
 
@@ -106,10 +109,10 @@ public class PlanHelper
         List<Plan> L = getAvailablePlans(C, U);
         if (L == null || L.isEmpty() == true)
           return false;
-        // If they do, check if they have an active plan
-        UserPlanSubscription_Data UPS = UserPlanSubscription_Factory.lookupByUserActivePlan(U.getRefnum());
+        // If they do, check if they have an active billing
+        UserPlanBilling_Data UPB = UserPlanBilling_Factory.lookupByUserActive(U.getRefnum());
         // return true if no active plan found
-        return UPS.read(C) == false;
+        return UPB.read(C) == false;
       }
 
 
@@ -120,7 +123,7 @@ public class PlanHelper
           {
             Promo_Data P = Promo_Factory.lookupByCode(U.getPromoCode());
             if (P.read(C) == true)
-              return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths());
+              return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths(), P.getAutoRenew());
           }
 
         return null;
@@ -197,7 +200,7 @@ public class PlanHelper
       }
 
 
-    protected static void ClearUserForPlan(Connection C, RequestUtil Req, User_Data U, boolean refreshTS)
+    public static void clearUserForPlan(Connection C, RequestUtil Req, User_Data U, boolean refreshTS)
     throws Exception
       {
         if (refreshTS == true)

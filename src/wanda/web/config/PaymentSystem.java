@@ -26,11 +26,34 @@ import tilda.utils.TextUtil;
 
 public class PaymentSystem
   {
+    public static class Credentials
+      {
+        /*@formatter:off*/
+        @SerializedName("clientId") public String  _clientId  = null;
+        @SerializedName("secret"  ) public String  _secret    = null;
+        /*@formatter:on*/
+
+        public boolean validate(int i, boolean OK)
+          {
+            if (TextUtil.isNullOrEmpty(_clientId) == true)
+              {
+                Wanda.LOG.error("The PaymentSystem #" + i + " is missing a value for the attribute 'clientId'.");
+                OK = false;
+              }
+            if (TextUtil.isNullOrEmpty(_secret) == true)
+              {
+                Wanda.LOG.error("The PaymentSystem #" + i + " is missing a value for the attribute 'secret'.");
+                OK = false;
+              }
+            return OK;
+          }
+      }
+
     /*@formatter:off*/
-    @SerializedName("id"      ) public String  _id        = null;
-    @SerializedName("clientId") public String  _clientId  = null;
-    @SerializedName("secret"  ) public String  _secret    = null;
-    @SerializedName("sandbox" ) public boolean _sandbox   = true;
+    @SerializedName("id"         ) public String      _id          = null;
+    @SerializedName("sandbox"    ) public Credentials _sandbox     = null;
+    @SerializedName("prod"       ) public Credentials _prod        = null;
+    @SerializedName("sandboxMode") public boolean     _sandboxMode = true;
     /*@formatter:on*/
 
     protected static boolean validate(List<PaymentSystem> paymentSystems, boolean OK)
@@ -50,29 +73,37 @@ public class PaymentSystem
               }
             if (TextUtil.isNullOrEmpty(PS._id) == true)
               {
-                Wanda.LOG.error("The PaymentSystem #" + (++i) + " is missing a value for the attribute 'id'.");
+                Wanda.LOG.error("The PaymentSystem #" + i + " is missing a value for the attribute 'id'.");
                 OK = false;
                 continue;
               }
-            if (TextUtil.isNullOrEmpty(PS._clientId) == true)
+            if (PS._sandbox == null)
               {
-                Wanda.LOG.error("The PaymentSystem #" + (++i) + " is missing a value for the attribute 'clientId'.");
+                Wanda.LOG.error("The PaymentSystem #" + i + " is missing 'sandbox'.");
                 OK = false;
                 continue;
               }
-            if (TextUtil.isNullOrEmpty(PS._secret) == true)
-              {
-                Wanda.LOG.error("The PaymentSystem #" + (++i) + " is missing a value for the attribute 'secret'.");
-                OK = false;
-                continue;
-              }
+            OK = PS._sandbox.validate(i, OK);
 
-            if (paymentSystemsIds.add(PS._id+"/"+PS._sandbox) == false)
+            if (PS._prod == null)
               {
-                Wanda.LOG.error("There are multiple PaymentSystem with the same id/sandbox flag '" + PS._id+"/"+PS._sandbox + "'.");
+                Wanda.LOG.error("The PaymentSystem #" + i + " is missing 'prod'.");
+                OK = false;
+                continue;
+              }
+            OK = PS._prod.validate(i, OK);
+
+            if (paymentSystemsIds.add(PS._id) == false)
+              {
+                Wanda.LOG.error("The PaymentSystem #" + i + " is a duplicte of a prior PaymentSystem with the same id '" + PS._id + "'.");
                 OK = false;
               }
           }
         return OK;
+      }
+
+    public Credentials getCredentials()
+      {
+        return _sandboxMode == true ? _sandbox : _prod;
       }
   }

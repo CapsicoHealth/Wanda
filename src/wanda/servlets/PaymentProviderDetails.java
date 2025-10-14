@@ -31,15 +31,15 @@ public class PaymentProviderDetails extends SimpleServlet
         
         req.throwIfErrors();
 
-        PaymentSystem PS = Wanda.getPaymentSystem(paymentProvider, true);
+        PaymentSystem PS = Wanda.getPaymentSystem(paymentProvider);
         if (PS == null)
           throw new NotFoundException("Payment provider", paymentProvider);
 
         PrintWriter out = res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(out, '{');
         JSONUtil.print(out, "id", true, PS._id);
-        JSONUtil.print(out, "clientId", false, PS._clientId);
-        JSONUtil.print(out, "sandbox", false, PS._sandbox);
+        JSONUtil.print(out, "clientId", false, PS.getCredentials()._clientId);
+        JSONUtil.print(out, "sandbox", false, PS._sandboxMode);
         JSONUtil.end(out, '}');
       }
   }

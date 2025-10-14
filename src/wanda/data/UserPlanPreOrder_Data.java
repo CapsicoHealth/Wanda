@@ -4,23 +4,20 @@
 
 package wanda.data;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.Connection;
 
 /**
-This is the application class <B>Data_UserPlanSubscription</B> mapped to the table <B>WANDA.UserPlanSubscription</B>.
-@see wanda.data._Tilda.TILDA__USERPLANSUBSCRIPTION
+This is the application class <B>Data_UserPlanPreOrder</B> mapped to the table <B>WANDA.UserPlanPreOrder</B>.
+@see wanda.data._Tilda.TILDA__USERPLANPREORDER
 */
-public class UserPlanSubscription_Data extends wanda.data._Tilda.TILDA__USERPLANSUBSCRIPTION
+public class UserPlanPreOrder_Data extends wanda.data._Tilda.TILDA__USERPLANPREORDER
  {
-   protected static final Logger LOG = LogManager.getLogger(UserPlanSubscription_Data.class.getName());
+   protected static final Logger LOG = LogManager.getLogger(UserPlanPreOrder_Data.class.getName());
 
-   public UserPlanSubscription_Data() { }
+   public UserPlanPreOrder_Data() { }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,14 +39,4 @@ public class UserPlanSubscription_Data extends wanda.data._Tilda.TILDA__USERPLAN
        return true;
      }
 
-   public LocalDate getExpiryDtFrom(LocalDate orderDt)
-    {
-      if (isCycleMonthly() == true)
-        return orderDt.plus(1, ChronoUnit.MONTHS);
-      else if (isCycleYearly() == true)
-        return orderDt.plus(1, ChronoUnit.YEARS);
-
-      return null;
-    }
-   
  }

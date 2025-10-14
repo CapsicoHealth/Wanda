@@ -1,43 +1,26 @@
 package wanda.servlets.helpers;
 
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.Connection;
-import tilda.db.ConnectionPool;
-import tilda.db.ListResults;
 import tilda.utils.DateTimeUtil;
 import tilda.utils.EncryptionUtil;
-import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
 import tilda.utils.json.JSONUtil;
-import wanda.data.PlanPricing_Data;
-import wanda.data.PlanPricing_Factory;
 import wanda.data.Promo_Data;
 import wanda.data.Promo_Factory;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.TenantView_Data;
-import wanda.data.TenantView_Factory;
-import wanda.data.Tenant_Data;
-import wanda.data.UserPlanSubscription_Data;
-import wanda.data.UserPlanSubscription_Factory;
 import wanda.data.User_Data;
-import wanda.web.LoginSyncService;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionUtil;
 import wanda.web.config.EulaActivation;
 import wanda.web.config.Wanda;
-import wanda.web.exceptions.AccessForbiddenException;
-import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 public class EulaHelper
   {
@@ -98,7 +81,7 @@ public class EulaHelper
                 req.throwIfErrors();
               }
 
-            ClearUserForEula(C, req, U, TV, true);
+            clearUserForEula(C, req, U, TV, true);
             return true; // All good!
           }
 
@@ -108,7 +91,7 @@ public class EulaHelper
         if (TextUtil.isNullOrEmpty(eulaUrl) == true)
           {
             LOG.debug("Eula not needed");
-            ClearUserForEula(C, req, U, TV, true);
+            clearUserForEula(C, req, U, TV, true);
             return true; // No EULA needed, all good!
           }
 
@@ -167,7 +150,7 @@ public class EulaHelper
       }
 
 
-    protected static void ClearUserForEula(Connection C, RequestUtil Req, User_Data U, TenantView_Data TV, boolean refreshTS)
+    protected static void clearUserForEula(Connection C, RequestUtil Req, User_Data U, TenantView_Data TV, boolean refreshTS)
     throws Exception
       {
         if (refreshTS == true)

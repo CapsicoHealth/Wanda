@@ -259,6 +259,11 @@ public class Wanda
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._tenantRefnums;
       }
 
+    public static boolean isGuestRegistrationAllowerDomain(String userEmail)
+      {
+        return _Config._guestRegistration == null ? true : _Config._guestRegistration.isAllowedDomain(userEmail);
+      }
+    
     public static List<String> getEmailVerificationTexts()
       {
         return _Config._emailVerificationTexts;
@@ -388,10 +393,10 @@ public class Wanda
         return eulas;
       }
     
-    public static PaymentSystem getPaymentSystem(String id, boolean sandbox)
+    public static PaymentSystem getPaymentSystem(String id)
       {
         for (PaymentSystem PS : _Config._paymentSystems)
-          if (PS._id.equals(id) == true && PS._sandbox == sandbox)
+          if (PS._id.equals(id) == true)
             return PS;
         return null;
       }

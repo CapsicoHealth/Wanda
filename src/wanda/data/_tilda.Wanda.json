@@ -25,22 +25,23 @@
      { "name":"Promo"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"code"           , "type":"STRING"      , "nullable": false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
-         ,{ "name":"descr"          , "type":"STRING"      , "nullable": false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
-         ,{ "name":"start"          , "type":"DATE"        , "nullable": false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"end"            , "type":"DATE"        , "nullable": true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-         ,{ "name":"active"         , "type":"BOOLEAN"     , "nullable": false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
-         ,{ "name":"system"         , "type":"BOOLEAN"     , "nullable": false, "default":"false", "description":"Whether this Promo a default system one or not." }
-         ,{ "name":"roles"          , "type":"STRING[]"    , "nullable": false                   , "description":"The default roles for users registering with this promo." }
-         ,{ "name":"apps"           , "type":"LONG[]"      , "nullable": true                    , "description":"The default apps (FK) for users registering with this promo." }
-         ,{ "name":"contents"       , "type":"STRING[]"    , "nullable": true                    , "description":"The default content codes for users registering with this promo." }
-         ,{ "name":"plans"          , "type":"STRING[]"    , "nullable": true                    , "description":"The plans available for users registering with this promo." }
-         ,{ "name":"discountPct"    , "type":"SHORT"       , "nullable": true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100%." }
-         ,{ "name":"discountMonths" , "type":"SHORT"       , "nullable": true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...." }
-         ,{ "name":"allowedDomains" , "type":"STRING[]"    , "nullable": true                    , "description":"The domains allowed to use this promo code." }
-         ,{ "name":"eulaUrl"        , "type":"STRING(1024)", "nullable": true                    , "description":"The URL for the EULA." }
-         ,{ "name":"eulaRenewalDays", "type":"INTEGER"     , "nullable": true                    , "description":"The number of days to force users to resign the EULA." }
-         ,{ "name":"maxUsers"       , "type":"SHORT"       , "nullable": true                    , "description":"The maximum number of users who can use that promo." }
+          { "name":"code"           , "type":"STRING"      , "nullable":false, "size": 100      , "protection":"ABSOLUTE", "description":"The label for this Promo"}
+         ,{ "name":"descr"          , "type":"STRING"      , "nullable":false, "size": 2048     , "protection":"ABSOLUTE", "description":"The description for this Promo"}
+         ,{ "name":"start"          , "type":"DATE"        , "nullable":false, "default":"NOW"  , "description":"The date the Promo starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"end"            , "type":"DATE"        , "nullable":true                    , "description":"The date after which the Promo is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
+         ,{ "name":"active"         , "type":"BOOLEAN"     , "nullable":false, "default":"true" , "description":"Whether this Promo is active or not. Note that a Promo with a valid date might be marked as inactive, so always check both dates and active flag." }
+         ,{ "name":"system"         , "type":"BOOLEAN"     , "nullable":false, "default":"false", "description":"Whether this Promo a default system one or not." }
+         ,{ "name":"roles"          , "type":"STRING[]"    , "nullable":false                   , "description":"The default roles for users registering with this promo." }
+         ,{ "name":"apps"           , "type":"LONG[]"      , "nullable":true                    , "description":"The default apps (FK) for users registering with this promo." }
+         ,{ "name":"contents"       , "type":"STRING[]"    , "nullable":true                    , "description":"The default content codes for users registering with this promo." }
+         ,{ "name":"plans"          , "type":"STRING[]"    , "nullable":true                    , "description":"The plans available for users registering with this promo." }
+         ,{ "name":"discountPct"    , "type":"SHORT"       , "nullable":true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100%." }
+         ,{ "name":"discountMonths" , "type":"SHORT"       , "nullable":true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...." }
+         ,{ "name":"autoRenew"      , "type":"BOOLEAN"     , "nullable":false, "default":"false", "description":"Setup auto-renew subscriptions." }
+         ,{ "name":"allowedDomains" , "type":"STRING[]"    , "nullable":true                    , "description":"The domains allowed to use this promo code." }
+         ,{ "name":"eulaUrl"        , "type":"STRING(1024)", "nullable":true                    , "description":"The URL for the EULA." }
+         ,{ "name":"eulaRenewalDays", "type":"INTEGER"     , "nullable":true                    , "description":"The number of days to force users to resign the EULA." }
+         ,{ "name":"maxUsers"       , "type":"INTEGER"     , "nullable":true                    , "description":"The maximum number of users who can use that promo." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -58,6 +59,8 @@
       ,"columns":[
           { "name":"code"       , "type":"STRING(100)", "nullable": false, "protection":"ABSOLUTE", "description":"The code for this Plan"}
          ,{ "name":"label"      , "type":"STRING(255)", "nullable": false, "protection":"ABSOLUTE", "description":"The label for this Plan"}
+         ,{ "name":"paymentSystemProductName", "type":"STRING(255)", "nullable": true, "protection":"ABSOLUTE", "description":"The payment system product name"}
+         ,{ "name":"paymentSystemProductId"  , "type":"STRING(255)", "nullable": true, "protection":"ABSOLUTE", "description":"The payment system product id"}
          ,{ "name":"descr"      , "type":"STRING[]"   , "nullable": false, "protection":"ABSOLUTE", "description":"The multi-line description for this Plan. Likely rendered as a biulleted list."}
          ,{ "name":"pos"        , "type":"SHORT"      , "nullable": false                         , "description":"The sorting order of the plan for display."}
          ,{ "name":"start"      , "type":"DATE"       , "nullable": false                         , "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
@@ -92,17 +95,23 @@
     ,{ "name":"PlanPricing"
       ,"description":"Promo codes used for invitations or guest sign-ups"
       ,"columns":[
-          { "name":"planRefnum", "sameAs":"Plan.refnum", "nullable": false, "description":"The plan this pricing is applicable to"}
-         ,{ "name":"currency"  , "type":"STRING(255)"  , "nullable": false, "description":"The currency"}
-         ,{ "name":"monthly"   , "type":"NUMERIC"       , "nullable": false, "description":"The monthly rate"}
-         ,{ "name":"yearly"    , "type":"NUMERIC"       , "nullable": false, "description":"The yearly rate." }
-         ,{ "name":"yearlyDesc", "type":"STRING(255)"  , "nullable": false, "description":"The explanation of the yearly rate discount." }
+          { "name":"planRefnum"          , "sameAs":"Plan.refnum", "nullable": false, "description":"The plan this pricing is applicable to"}
+         ,{ "name":"currency"            , "type":"STRING(255)"  , "nullable": false, "description":"The currency"}
+         ,{ "name":"monthly"             , "type":"NUMERIC"      , "nullable": false, "description":"The monthly rate"}
+         ,{ "name":"paymentSystemMonthlyPlanName", "type":"STRING(255)"  , "nullable": true , "description":"The payment plan ID from the payment system"}
+         ,{ "name":"paymentSystemMonthlyPlanId"  , "type":"STRING(255)"  , "nullable": true , "description":"The payment plan ID from the payment system"}
+         ,{ "name":"yearly"              , "type":"NUMERIC"      , "nullable": false, "description":"The yearly rate." }
+         ,{ "name":"yearlyDesc"          , "type":"STRING(255)"  , "nullable": false, "description":"The explanation of the yearly rate discount." }
+         ,{ "name":"paymentSystemYearlyPlanName", "type":"STRING(255)"  , "nullable": true , "description":"The payment plan ID from the payment system"}
+         ,{ "name":"paymentSystemYearlyPlanId"  , "type":"STRING(255)"  , "nullable": true , "description":"The payment plan ID from the payment system"}
         ]
       ,"foreign": [
           { "name":"Plan",  "srcColumns":["planRefnum"], "destObject":"Plan" }
        ]
       ,"indices":[ 
-          { "name":"Pricing", "columns":["planRefnum", "currency"], "db": true }
+          { "name":"Pricing"      , "columns":["planRefnum", "currency"    ], "db": true }
+         ,{ "name":"MonthlyPlanId", "columns":["paymentSystemMonthlyPlanId"], "db": true }
+         ,{ "name":"YearlyPlanId" , "columns":["paymentSystemYearlyPlanId" ], "db": true }
         ]
       ,"queries": [
          { "name": "AllByCurrency"
@@ -133,7 +142,7 @@
      }
      
 
-   ,{ "name":"User"
+    ,{ "name":"User"
      ,"description":"blah blah"
      ,"columns":[
            { "name":"email"          , "type"  :"STRING"   , "nullable": false, "size": 255, "protect":"ABSOLUTE", "description":"The account's email address" }
@@ -227,15 +236,16 @@
      ,"indices":[ 
           { "name":"Id"          , "columns":["id"]    , "db": true }
          ,{ "name":"Email"       , "columns":["email"] , "db": true }
+         ,{ "name":"Promo"       , "columns":["promoCode"], "orderBy":["created desc"], "db": true }
 //         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
        ]
      ,"masks":[
          { "columns":["email", "id"], "mask":"******" }
        ]
-    },
+     }
     
     
-    { "name":"UserDetail",
+    ,{ "name":"UserDetail",
       "description":"blah blah",
       "columns":[
           { "name":"userRefnum"   , "sameas":"User.refnum",              "invariant": true,           "description":"The user PK"}
@@ -306,12 +316,43 @@
        ]
     }
 
+
+   ,{ "name":"UserPlanPreOrder"
+     ,"description":"Plan Orders submitted but not yet completed. This table should have only one order per user, as a staging area. Full orders, either completed or canceled, should be moved to UserPlanSubscription and UserPlanBilling."
+     ,"columns": [
+         {"name":"userRefnum"     , "sameAs":"User.refnum"         , "nullable":false, "description":"User Foreign Key" }
+        ,{"name":"planRefnum"     , "sameAs":"Plan.refnum"         , "nullable":false, "description":"Plan Foreign Key" }
+        ,{"name":"paymentProvider", "type":"STRING(128)"           , "nullable":false, "description":"The payment provider." }
+        ,{"name":"customId"       , "type":"STRING(256)"           , "nullable":false, "description":"Subscription ID." }
+        ,{"name":"orderId"        , "type":"STRING(128)"           , "nullable":true , "description":"Order ID." }
+        ,{"name":"orderDt"        , "type":"DATETIME"              , "nullable":false, "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+        ,{"name":"total"          , "type":"NUMERIC"               , "nullable":false, "description":"The price at the moment of the plan selection" }
+        ,{"name":"currency"       , "sameAs":"PlanPricing.currency", "nullable":false, "description":"The currency for the billing" }
+        ,{"name":"cycle"          , "type":"CHAR"                  , "nullable":false, "description":"The plan cycle"
+                                  , "values": [
+                                       {"name":"Monthly", "value":"M" , "description":"Monthly payments" } 
+                                      ,{"name":"Yearly" , "value":"Y" , "description":"Yearly payments"  } 
+                                     ]
+         }
+        ,{"name":"orderDetails"   , "type":"JSON"                  , "nullable":true , "description":"Order capture json payload." }
+       ]
+     ,"foreign":[
+         { "name":"User", "srcColumns":["userRefnum"], "destObject":"User" }
+        ,{ "name":"Plan", "srcColumns":["planRefnum" ], "destObject":"Plan"  }
+       ]
+     ,"indices":[
+         { "name":"User", "columns":["userRefnum"], "db": true  }
+       ]
+     ,"queries": [
+       ]
+    }
     
     
     ,{ "name":"UserPlanSubscription"
       ,"description":"User to Plan mapping"
       ,"columns": [
            {"name":"userRefnum" , "sameAs":"User.refnum", "nullable":false , "description":"User Foreign Key" }
+          ,{"name":"active"     , "type":"BOOLEAN"               , "nullable": false, "description":"Whether this user plan is active or not. Any user should have at most ONE active plan they are under. When a plan is renewed or changed, the current plan should be ended (endDt=now + active-false) and a new sub scription should be created" }
           ,{"name":"planRefnum" , "sameAs":"Plan.refnum", "nullable":false , "description":"Plan Foreign Key" }
           ,{"name":"currency"   , "sameAs":"PlanPricing.currency", "nullable":false , "description":"The currency for the plan" }
           ,{"name":"cycle"      , "type":"CHAR" , "nullable": false, "description":"The plan cycle"
@@ -323,8 +364,7 @@
           ,{"name":"discountPct"    , "sameAs":"Promo.discountPct"   , "nullable": true , "description":"The discount percentage available, e.g., 25%, 50%, 100%, at the moment of the plan selection" }
           ,{"name":"discountMonths" , "sameAs":"Promo.discountMonths", "nullable": true , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...., at the moment of the plan selection" }
           ,{"name":"startDt"        , "type":"DATE"                  , "nullable": false, "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-          ,{"name":"endDt"          , "type":"DATE"                  , "nullable": false, "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
-          ,{"name":"active"         , "type":"BOOLEAN"               , "nullable": false, "description":"Whether this user plan is active or not. Any user should have at most ONE active plan they are under. When a plan is renewed or changed, the current plan should be ended (endDt=now + active-false) and a new sub scription should be created" }
+          ,{"name":"endDt"          , "type":"DATE"                  , "nullable": true , "description":"The date after which the plan is not valid anymore, e.g., if the value is 2024-09-10, then the Promo is valid until 23:59:59:999. Timezones can make this more complicated, so handle as appropriate." }
         ]
       ,"primary": { "autogen": true }
       ,"foreign":[
@@ -340,33 +380,43 @@
      }
      
      
-     ,{ "name":"UserPlanBilling"
+    ,{ "name":"UserPlanBilling"
        ,"description":"User to Plan mapping"
        ,"columns": [
-            {"name":"subscriptionRefnum", "sameAs":"UserPlanSubscription.refnum", "nullable":false , "description":"Subscription Foreign Key" }
-           ,{"name":"paymentProvider"   , "type":"STRING(128)"           , "nullable": false, "description":"The payment provider." }
-           ,{"name":"subscriptionId"    , "type":"STRING(256)"           , "nullable": false, "description":"Subscription ID." }
-           ,{"name":"orderId"           , "type":"STRING(128)"           , "nullable": true , "description":"Order ID." }
-           ,{"name":"orderDt"           , "type":"DATETIME"              , "nullable": false, "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
-           ,{"name":"total"             , "type":"NUMERIC"               , "nullable": false, "description":"The price at the moment of the plan selection" }
-           ,{"name":"currency"          , "sameAs":"PlanPricing.currency", "nullable": false, "description":"The currency for the billing" }
-           ,{"name":"status"            , "type":"CHAR" , "nullable": false, "description":"The plan cycle"
+            {"name":"subscriptionRefnum", "sameAs":"UserPlanSubscription.refnum", "nullable":false, "description":"Subscription Foreign Key" }
+           ,{"name":"userRefnum"        , "sameAs":"User.refnum"                , "nullable":false, "description":"User Foreign Key" }
+           ,{"name":"planRefnum"        , "sameAs":"Plan.refnum"                , "nullable":false, "description":"Plan Foreign Key" }
+           ,{"name":"paymentProvider"   , "type":"STRING(128)"                  , "nullable":false, "description":"The payment provider." }
+           ,{"name":"subscriptionId"    , "type":"STRING(256)"                  , "nullable":false, "description":"Subscription ID." }
+           ,{"name":"orderId"           , "type":"STRING(128)"                  , "nullable":false, "description":"Order ID." }
+           ,{"name":"active"            , "type":"BOOLEAN"                      , "nullable":false, "description":"Whether this user plan is active or not. Any user should have at most ONE active plan they are under. When a plan is renewed or changed, the current plan should be ended (endDt=now + active-false) and a new sub scription should be created" }
+           ,{"name":"status"            , "type":"STRING(4)"                    , "nullable":false, "description":"The plan cycle"
                                         , "values": [
-                                             {"name":"Pending", "value":"P" , "description":"Pending" } 
-                                            ,{"name":"Paid"   , "value":"D" , "description":"Paid"    } 
-                                            ,{"name":"Refund" , "value":"R" , "description":"Refund"  } 
-                                            ,{"name":"Failed" , "value":"F" , "description":"Failed"  } 
+                                             {"name":"Created", "value":"CRTD" , "description":"Created", "default":"CREATE" } 
+                                            ,{"name":"Pending", "value":"PNDG" , "description":"Pending" } 
+                                            ,{"name":"Paid"   , "value":"PAID" , "description":"Paid"    } 
+                                            ,{"name":"Voided" , "value":"VOID" , "description":"Voided"  } 
+                                            ,{"name":"Refund" , "value":"RFND" , "description":"Refund"  } 
+                                            ,{"name":"Failed" , "value":"FAIL" , "description":"Failed"  } 
                                            ]
             }
-           ,{"name":"message"          , "type":"STRING(4096)"           , "nullable": true, "description":"A message from the payment provider for this transaction." }
+           ,{"name":"orderDt"           , "type":"DATETIME"              , "nullable": true , "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+           ,{"name":"expiryDt"          , "type":"DATE"                  , "nullable": true , "description":"The date the plan starts being valid (at 00:00:00 hours). Timezones can make this more complicated, so handle as appropriate." }
+           ,{"name":"total"             , "type":"NUMERIC"               , "nullable": true , "description":"The price at the moment of the plan selection" }
+           ,{"name":"currency"          , "sameAs":"PlanPricing.currency", "nullable": true , "description":"The currency for the billing" }
+           ,{"name":"message"           , "type":"STRING(4096)"          , "nullable": true, "description":"A message from the payment provider for this transaction." }
            ,{"name":"orderCapture"      , "type":"JSON"                  , "nullable": true , "description":"Order capture json payload." }
          ]
        ,"primary": { "autogen": true }
        ,"foreign":[
            { "name":"Subscription", "srcColumns":["subscriptionRefnum"], "destObject":"UserPlanSubscription" }
+          ,{ "name":"User"        , "srcColumns":["userRefnum"        ], "destObject":"User" }
+          ,{ "name":"Plan"        , "srcColumns":["planRefnum"        ], "destObject":"Plan"  }
          ]
        ,"indices":[
-           { "name":"Subscription", "columns":["subscriptionRefnum"], "orderBy":["orderDt desc"], "db": true  }
+           { "name":"Order"       , "columns":["orderId"], "db": true  }
+          ,{ "name":"UserActive"  , "columns":["userRefnum"], "subWhere":"active = true", "db": true  }
+          ,{ "name":"Subscription", "columns":["subscriptionRefnum"], "orderBy":["orderDt desc"], "db": true  }
          ]
        ,"queries": [
          ]
@@ -1026,7 +1076,7 @@
         ,{ "sameas": "User.loginType"                                        }
         ,{ "sameas": "User.loginDomain"                                      }
         ,{ "sameas": "User.lastLogin"                                        }
-        ,{ "sameas": "User.lastEula"                                              }
+        ,{ "sameas": "User.lastEula"                                         }
         ,{ "sameas": "UserDetail.nameTitle"                                  }
         ,{ "sameas": "UserDetail.nameLast"                                   }
         ,{ "sameas": "UserDetail.nameFirst"                                  }
@@ -1789,6 +1839,58 @@
          ,{ "name": "export", "outTypes":["JSON"]      , "columns": [ "*" ], "exclude":["userRefnum", "tourId", "takenSteps", "totalSteps"] }
         ]
      }
+     
+     
+     ,{ "name":"UserBillingView"
+       ,"description":"Active user billing info"
+       ,"columns":[
+           { "sameAs":"UserPlanBilling.refnum", "name":"billingRefnum" }
+          ,{ "sameAs":"UserPlanBilling.subscriptionRefnum" }
+          ,{ "sameAs":"UserPlanBilling.userRefnum" }
+          ,{ "sameAs":"UserPlanBilling.planRefnum" }
+          ,{ "sameAs":"Plan.code"                          , "name":"planCode"                   }
+          ,{ "sameAs":"Plan.label"                         , "name":"planLabel"                  }
+          ,{ "sameAs":"Plan.descr"                         , "name":"planDescr"                  }
+          ,{ "sameAs":"UserPlanSubscription.startDt"       , "name":"subscriptionStartDt"        }
+          ,{ "sameAs":"UserPlanSubscription.discountPct"   , "name":"subscriptionDiscountPct"    }
+          ,{ "sameAs":"UserPlanSubscription.discountMonths", "name":"subscriptionDiscountMonths" }
+          ,{ "sameAs":"UserPlanSubscription.currency"      , "name":"subscriptionCurrency"       }
+          ,{ "sameAs":"UserPlanSubscription.cycle"         , "name":"subscriptionCycle"          }
+          ,{ "sameAs":"UserPlanSubscription.active"        , "name":"subscriptionActive"         }
+          ,{ "sameAs":"UserPlanBilling.total"              , "name":"billingTotal"               }
+          ,{ "sameAs":"UserPlanBilling.orderDt"            , "name":"billingOrderDt"             }
+          ,{ "sameAs":"UserPlanBilling.expiryDt"           , "name":"billingExpiryDt"            }
+          ,{ "sameAs":"UserPlanBilling.status"             , "name":"billingStatus"              }
+          ,{ "sameAs":"UserPlanBilling.active"             , "name":"billingActive"              }
+         ]
+       ,"formulaColumns":[
+           { "name": "active", "type": "BOOLEAN"
+            ,"formula":[
+                "    subscriptionActive=true"
+               ,"AND billingActive=true"
+               ,"AND billingStatus='PAID'"
+               ,"AND (billingExpiryDt IS NULL OR billingExpiryDt>=CURRENT_DATE)"
+              ]
+            ,"title": "Active"
+            ,"description":[
+                "Whether this billing is the active one. For a given user, there should be only one active"
+               ,"billing at any given time, and it should be the most recent entry by order date."
+              ]
+           }
+         ]
+       ,"queries":[
+           { "name": "UserRefnum"
+            ,"description": "User billing history"
+            ,"wheres": [
+                { "db": "*", "clause": "userRefnum=?()" }
+              ]
+            ,"orderBy": ["billingOrderDt desc"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name": ""      , "outTypes":["JSON","CSV"], "columns": [ "*" ] }
+         ]
+      }
   ]
 
  ,"migrations":{
