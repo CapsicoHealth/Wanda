@@ -174,7 +174,12 @@ public class WandaDefConfig
         _ticketSystem.validate(C);
         _ticketSystem.launch();
 
-        if (_loginSystem.validate() == false)
+        if (_loginSystem == null)
+          {
+            Wanda.LOG.error("No 'loginSystem' Configuration was defined in the Wanda configuration file");
+            OK = false;
+          }
+        else if (_loginSystem.validate() == false)
           OK = false;
 
         return OK;

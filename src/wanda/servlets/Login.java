@@ -33,6 +33,7 @@ import wanda.data.User_Factory;
 import wanda.saml.ConfigSAML;
 import wanda.saml.SAMLUserProfile;
 import wanda.servlets.helpers.LoginHelper;
+import wanda.servlets.helpers.PlanHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -99,6 +100,8 @@ public class Login extends SimpleServlet
         SSOConfig ssoConfig = Wanda.getSsoConfig(ssoId);
         if (ssoConfig._eula == false)
           req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
+        // Automatically clearing users for plan on SSO login.
+        PlanHelper.clearUserForPlan(C, req, U, false);
         LoginHelper.basicLoginSuccess(req, C, U);
         U.write(C);
         U.syncUpApps(C, U, ssoConfig._defaultPromoCode, ssoId);

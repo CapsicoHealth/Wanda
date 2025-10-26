@@ -55,7 +55,7 @@ public class GuestRegistrationServlet extends SimpleServlet
         String email = Req.getParamString("email", true);
         String fName = Req.getParamString("fName", true);
         String lName = Req.getParamString("lName", true);
-        String promoCode = Req.getParamString("promoCode", false);
+        String promoCode = Req.getParamString("promoCode", false, Wanda.getGuestRegistrationDefaultPromoCode());
 
         if (Wanda.isGuestRegistrationAllowed() == false)
           Req.addError("email", "Guest registrations are not allowed");
@@ -67,7 +67,9 @@ public class GuestRegistrationServlet extends SimpleServlet
         if (Wanda.getGuestRegistrationType() == GuestRegistration.GuestType.PROMO)
           {
             if (TextUtil.isNullOrEmpty(promoCode) == true)
-              Req.addError("promoCode", "An event/promotion code is required");
+              {
+                Req.addError("promoCode", "An event/promotion code is required");
+              }
             else
               {
                 // Validate the promo code

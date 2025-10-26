@@ -249,6 +249,11 @@ public class Wanda
         return _Config._guestRegistration == null ? GuestRegistration.GuestType.NONE : _Config._guestRegistration._type;
       }
 
+    public static String getGuestRegistrationDefaultPromoCode()
+      {
+        return _Config._guestRegistration == null ? null : _Config._guestRegistration._defaultPromoCode;
+      }
+    
     public static long[] getGuestRegistrationAppRefnums()
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;

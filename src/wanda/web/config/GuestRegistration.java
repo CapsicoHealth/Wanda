@@ -22,8 +22,11 @@ import java.util.stream.Stream;
 import com.google.gson.annotations.SerializedName;
 
 import tilda.db.Connection;
+import tilda.utils.TextUtil;
 import wanda.data.AppView_Data;
 import wanda.data.AppView_Factory;
+import wanda.data.Promo_Data;
+import wanda.data.Promo_Factory;
 import wanda.data.Tenant_Data;
 import wanda.data.Tenant_Factory;
 
@@ -35,11 +38,12 @@ public class GuestRegistration
       }
 
     /*@formatter:off*/
-    @SerializedName("type"           ) public GuestType              _type   = GuestType.NONE;
-    @SerializedName("buttonLabel"    ) public String                 _buttonLabel = "Free Trial";
-    @SerializedName("defaultApps"    ) public GuestRegistrationApp[] _defaultApps = null;
-    @SerializedName("tenantIds"      ) public String[]               _tenantIds = null;
-    @SerializedName("excludedDomains") public String[]               _excludedDomains = null;
+    @SerializedName("type"            ) public GuestType              _type   = GuestType.NONE;
+    @SerializedName("buttonLabel"     ) public String                 _buttonLabel = "Free Trial";
+    @SerializedName("defaultPromoCode") public String                 _defaultPromoCode = null;
+    @SerializedName("defaultApps"     ) public GuestRegistrationApp[] _defaultApps = null;
+    @SerializedName("tenantIds"       ) public String[]               _tenantIds = null;
+    @SerializedName("excludedDomains" ) public String[]               _excludedDomains = null;
     
     /*@formatter:on*/
 
@@ -114,6 +118,16 @@ public class GuestRegistration
           {
             for (int i = 0; i < gr._excludedDomains.length; ++i)
               gr._excludedDomains[i] = "@" + gr._excludedDomains[i].toLowerCase().trim();
+          }
+        
+        if (gr != null && TextUtil.isNullOrEmpty(gr._defaultPromoCode) == false)
+          {
+            Promo_Data P = Promo_Factory.lookupByCode(gr._defaultPromoCode);
+            if (P.read(C) == false)
+              {
+                Wanda.LOG.error("The guestRegistration defaultPromo '" + gr._defaultPromoCode + "' cannot be found in the database.");
+                OK = false;
+              }
           }
 
         return OK;
