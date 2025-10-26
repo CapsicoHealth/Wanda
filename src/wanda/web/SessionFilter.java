@@ -510,20 +510,34 @@ public class SessionFilter implements jakarta.servlet.Filter
     public static String getRequestHeaderLogStr(HttpServletRequest Request, HttpSession S, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking, AuthApiToken apiToken)
     throws UnsupportedEncodingException, Exception
       {
+        return getRequestHeaderLogStr(Request, S, AL, LineMarkers, dataMasking, apiToken, false);
+      }
+
+    static final String[] _MINIMAL_HEADERS = new String[] { "user-agent", "referer", "cookie"
+    };
+
+    public static String getRequestHeaderLogStr(HttpServletRequest Request, HttpSession S, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking, AuthApiToken apiToken, boolean minimal)
+    throws UnsupportedEncodingException, Exception
+      {
         StringBuilder Str = new StringBuilder();
         if (LineMarkers == true)
           {
             Str.append("\n");
             Str.append("   ********************************************************************************************************************************************\n");
           }
-        Str.append("   ***  " + AnsiUtil.NEGATIVE + "R E Q U E S T   #" + (AL == null ? "NULL" : AL.getRefnum()) + AnsiUtil.NEGATIVE_OFF + " - " + DateTimeUtil.printDateTime(ZonedDateTime.now()) + "\n");
+        if (minimal == false)
+          Str.append("   ***  " + AnsiUtil.NEGATIVE + "R E Q U E S T   #" + (AL == null ? "NULL" : AL.getRefnum()) + AnsiUtil.NEGATIVE_OFF + " - " + DateTimeUtil.printDateTime(ZonedDateTime.now()) + "\n");
         if (dataMasking == true)
           Str.append("   ***  REQUEST SET WITH DATA MASKING ON !");
-        Str.append("   ***  Session Attr   : " + SessionUtil.printSessionAttributes(S, "; ")+"\n");
+        if (minimal == false)
+        Str.append("   ***  Session Attr   : " + SessionUtil.printSessionAttributes(S, "; ") + "\n");
         Str.append("   ***  RequestURL     : " + Request.getRequestURL().toString() + "\n");
-        Str.append("   ***  RemoteAddr     : " + Request.getRemoteAddr() + ":" + Request.getRemotePort() + "\n");
-        Str.append("   ***  PathInfo/Trans : " + Request.getPathInfo() + " | " + Request.getPathTranslated() + "\n");
-        Str.append("   ***  Servlet/CtxPath: " + Request.getServletPath() + " | " + Request.getContextPath() + "\n");
+        if (minimal == false)
+          {
+            Str.append("   ***  RemoteAddr     : " + Request.getRemoteAddr() + ":" + Request.getRemotePort() + "\n");
+            Str.append("   ***  PathInfo/Trans : " + Request.getPathInfo() + " | " + Request.getPathTranslated() + "\n");
+            Str.append("   ***  Servlet/CtxPath: " + Request.getServletPath() + " | " + Request.getContextPath() + "\n");
+          }
         Str.append("   ***  Headers:\n");
         Enumeration<String> HeaderNames = Request.getHeaderNames();
         while (HeaderNames.hasMoreElements())
@@ -533,6 +547,8 @@ public class SessionFilter implements jakarta.servlet.Filter
             while (Headers.hasMoreElements() == true)
               {
                 String val = Headers.nextElement();
+                if (minimal == true && TextUtil.contains(_MINIMAL_HEADERS, Name, true, 0) == false)
+                  continue;
                 if (Name.equalsIgnoreCase("authorization") == true)
                   val = apiToken == null ? "*******************************" : "Bearer " + apiToken._partnerId + " ********";
                 Str.append("   ***    " + Name + ": " + val + "\n");
@@ -540,7 +556,8 @@ public class SessionFilter implements jakarta.servlet.Filter
           }
 
         StringBuilder Params = new StringBuilder();
-        Str.append("   ***  Parameters:\n");
+        if (minimal == false)
+          Str.append("   ***  Parameters:\n");
         Enumeration<String> ParamNames = Request.getParameterNames();
         while (ParamNames.hasMoreElements() == true)
           {
@@ -550,7 +567,8 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 if (p.matches("(?i)" + _MaskedNVPRegex) == true)
                   v = "****";
-                Str.append("   ***    " + p + "= " + v + "\n");
+                if (minimal == false)
+                  Str.append("   ***    " + p + "= " + v + "\n");
                 if (Params.length() != 0)
                   Params.append("&");
                 Params.append(p).append("=").append(URLEncoder.encode(v, java.nio.charset.StandardCharsets.UTF_8.toString()));

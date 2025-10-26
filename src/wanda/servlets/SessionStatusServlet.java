@@ -77,7 +77,7 @@ public class SessionStatusServlet extends jakarta.servlet.http.HttpServlet imple
             AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
             LOG.info("\n"
             + " ============================================================================================================================================================================\n"
-            + SessionFilter.getRequestHeaderLogStr(request, S, null, false, maskedMode, apiToken) + "\n"
+            + SessionFilter.getRequestHeaderLogStr(request, S, null, false, maskedMode, apiToken, true)
             + "   ***  Session status for '" + servletPath + "': " + SIP._V + "% -> " + SIP._N + "\n"
             + " ============================================================================================================================================================================\n"
             );

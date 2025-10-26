@@ -92,7 +92,7 @@ public class RequestUtil
     public String getParamString(String Name, boolean Mandatory, String DefaultValue, String[] ValidValues, boolean CaseInsensitive)
       {
         String Val = ParseUtil.parseString(Name, Mandatory, _Req.getParameter(Name), _Errors);
-        if (Mandatory == false && Val == null)
+        if (Mandatory == false && TextUtil.isNullOrEmpty(Val) == true)
           {
             Val = DefaultValue;
           }
