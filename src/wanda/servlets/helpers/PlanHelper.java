@@ -123,7 +123,7 @@ public class PlanHelper
           {
             Promo_Data P = Promo_Factory.lookupByCode(U.getPromoCode());
             if (P.read(C) == true)
-              return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths(), P.getAutoRenew());
+              return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths(), P.getDiscountYearPct(), P.getAutoRenew());
           }
 
         return null;

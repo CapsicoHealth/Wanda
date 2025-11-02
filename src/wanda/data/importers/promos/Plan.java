@@ -37,6 +37,7 @@ public class Plan implements JSONable
 
     transient short               _discountPct    = 0;
     transient short               _discountMonths = 0;
+    transient short               _discountPctYear= 0;
     transient boolean             _autoRenew      = false;
 
     public Plan(Plan_Data p)
@@ -44,12 +45,13 @@ public class Plan implements JSONable
         _Plan = p;
       }
 
-    public Plan(Plan P, short discountPct, short discountMonths, boolean autoRenew)
+    public Plan(Plan P, short discountPct, short discountMonths, short discountPctYear, boolean autoRenew)
       {
         _Plan = P._Plan;
         _Pricings = P._Pricings;
         _discountPct = discountPct;
         _discountMonths = discountMonths;
+        _discountPctYear = discountPctYear;
         _autoRenew = autoRenew;
       }
     
@@ -61,6 +63,11 @@ public class Plan implements JSONable
     public short getDiscountMonths()
       {
         return _discountMonths;
+      }
+
+    public short getDiscountPctYear()
+      {
+        return _discountPctYear;
       }
 
     public int write(Connection C)
@@ -98,6 +105,8 @@ public class Plan implements JSONable
         JSONUtil.print(out, "discountPct", true, _discountPct);
         out.write("\n" + lead + "     ");
         JSONUtil.print(out, "discountMonths", false, _discountMonths);
+        out.write("\n" + lead + "     ");
+        JSONUtil.print(out, "discountPctYear", false, _discountPctYear);
         out.write("\n" + lead + "     ");
         JSONUtil.print(out, "autoRenew", false, _autoRenew);
         out.write("\n" + lead + "     ");

@@ -50,14 +50,14 @@ public class Plan_Factory extends wanda.data._Tilda.TILDA__PLAN_Factory
           }
       }
 
-    public static List<Plan> getPlans(String[] planCodes, short discountPct, short discountMonths, boolean autoRenew)
+    public static List<Plan> getPlans(String[] planCodes, short discountPct, short discountMonths, short discountPctYear, boolean autoRenew)
       {
         List<Plan> L = new ArrayList<Plan>();
         if (planCodes != null)
           for (String pc : planCodes)
             for (Plan P : _PLANS)
               if (P._Plan.getCode().equals(pc) == true && P._Plan.isCurrentlyActiveToday() == true)
-                L.add(new Plan(P, discountPct, discountMonths, autoRenew));
+                L.add(new Plan(P, discountPct, discountMonths, discountPctYear, autoRenew));
         return L;
       }
 

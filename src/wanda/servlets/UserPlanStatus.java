@@ -16,12 +16,14 @@
 
 package wanda.servlets;
 
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
-import tilda.utils.DateTimeUtil;
 import tilda.utils.json.JSONPrinter;
 import wanda.data.UserBillingView_Data;
 import wanda.data.UserBillingView_Factory;
@@ -31,6 +33,7 @@ import wanda.servlets.helpers.PlanHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.config.Wanda;
 
 @WebServlet("/svc/user/plan/status")
 public class UserPlanStatus extends SimpleServlet
@@ -46,6 +49,10 @@ public class UserPlanStatus extends SimpleServlet
     public void init(ServletConfig Conf)
       {
       }
+    
+    String _ENTERPRISE_LEARNING_EMAIL = Wanda.getExtra("learning", "ENTERPRISE_LEARNING_EMAIL");
+    String _ENTERPRISE_LEARNING_LABEL = Wanda.getExtra("learning", "ENTERPRISE_LEARNING_LABEL");
+ 
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
@@ -53,7 +60,16 @@ public class UserPlanStatus extends SimpleServlet
       {
         List<Plan> plans = PlanHelper.getAvailablePlans(C, U);
         List<UserBillingView_Data> UBVL = U == null ? null : UserBillingView_Factory.lookupWhereUserRefnum(C, U.getRefnum(), 0, 24);
-        boolean current = isCurrent(UBVL); 
+        boolean current = isCurrent(UBVL);
+        if (plans != null)
+          for (Plan p : plans)
+            {
+              List<String> descrs = new ArrayList<String>();
+              Iterator<String> I = p._Plan.getDescr();
+              while (I.hasNext() == true)
+               descrs.add(I.next().replace("${ENTERPRISE_LEARNING_EMAIL}", "<A href=\"mailto:"+URLEncoder.encode(_ENTERPRISE_LEARNING_EMAIL, "UTF-8")+"\">"+_ENTERPRISE_LEARNING_LABEL+"</A>"));
+              p._Plan.setDescr(descrs);
+            }
         JSONPrinter j = new JSONPrinter();
         j.addElement("plans", plans, "");
         j.addElement("billingHistory", UBVL, "");

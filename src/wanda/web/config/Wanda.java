@@ -429,11 +429,17 @@ public class Wanda
 
     public static String getExtra(String configName, String elementName)
       {
+        return getExtra(configName, elementName, null);
+      }
+
+    public static String getExtra(String configName, String elementName, String defaultValue)
+      {
         if (_Config._extras == null)
-          return null;
+          return defaultValue;
 
         Map<String, String> config = _Config._extras.get(configName);
-        return config == null ? null : config.get(elementName);
+        String val = config == null ? null : config.get(elementName);
+        return val == null ? defaultValue : val;
       }
 
     /**

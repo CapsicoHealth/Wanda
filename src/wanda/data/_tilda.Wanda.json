@@ -36,7 +36,8 @@
          ,{ "name":"contents"       , "type":"STRING[]"    , "nullable":true                    , "description":"The default content codes for users registering with this promo." }
          ,{ "name":"plans"          , "type":"STRING[]"    , "nullable":true                    , "description":"The plans available for users registering with this promo." }
          ,{ "name":"discountPct"    , "type":"SHORT"       , "nullable":true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100%." }
-         ,{ "name":"discountMonths" , "type":"SHORT"       , "nullable":true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...." }
+         ,{ "name":"discountMonths" , "type":"SHORT"       , "nullable":true                    , "description":"The number of months the discount is applicable to, i.e., first month, first 3 months etc...., for monthly plans" }
+         ,{ "name":"discountYearPct", "type":"SHORT"       , "nullable":true                    , "description":"The discount percentage available, e.g., 25%, 50%, 100% for the first year of yearly plans" }
          ,{ "name":"autoRenew"      , "type":"BOOLEAN"     , "nullable":false, "default":"false", "description":"Setup auto-renew subscriptions." }
          ,{ "name":"allowedDomains" , "type":"STRING[]"    , "nullable":true                    , "description":"The domains allowed to use this promo code." }
          ,{ "name":"eulaUrl"        , "type":"STRING(1024)", "nullable":true                    , "description":"The URL for the EULA." }
@@ -735,6 +736,9 @@
           ,{ "name": "responseStatus", "type": "STRING", "size": 2048                 , "description": "HTTP Response status" }
           ,{ "name": "parameters"    , "type": "STRING", "size": 262144               , "description": "parameters sent with http request" }
           ,{ "name": "login"         , "type": "BOOLEAN"                              , "description": "Login status: null=not login, true=successfull login, false=failed login" }
+          ,{ "name": "registration"  , "type": "BOOLEAN"                              , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }
+          ,{ "name": "eula"          , "type": "BOOLEAN"                              , "description": "EULA status: null=not EULA, true=successfull EULA, false=failed EULA" }
+          ,{ "name": "payment"       , "type": "BOOLEAN"                              , "description": "Payment status: null=not payment, true=successfull payment, false=failed payment" }
           ,{ "name": "durationNanos" , "type": "LONG"                                 , "description": "Duration in nanoseconds for the request" }
     	],
       "primary": { "autogen": true },
@@ -1402,6 +1406,7 @@
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeError", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 401)" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrations"    , "aggregate":"COUNT", "filter":"AccessLog.registration=true" }
        ]
      ,"queries": [
           { "name"  :"Day",
