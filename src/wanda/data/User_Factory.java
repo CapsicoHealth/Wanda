@@ -71,6 +71,7 @@ public class User_Factory extends wanda.data._Tilda.TILDA__USER_Factory
             apiUser = User_Factory.create(email, email, _DEFAULT_API_ROLE, EncryptionUtil.getToken(24, true), EncryptionUtil.getToken(12, true));
             apiUser.setLockedNow();
             apiUser.setLoginType(User_Data._loginTypeAPI);
+            apiUser.setLoginDomain(partnerId);
           }
         apiUser.setLastipaddress(request.getRemoteAddr());
         apiUser.setLastLoginNow();
