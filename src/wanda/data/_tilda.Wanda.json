@@ -900,7 +900,19 @@
     ,{ "name": "Tour"
       ,"description": "Represents a tour"
       ,"columns": [
-           { "name": "id" , "type": "STRING(255)", "nullable": false, "description": "The name of the tour, which will map to the file <tourName>.tour.json" },
+           { "name": "id"             , "type": "STRING(255)", "nullable": false, "description": "The name of the tour, which will map to the file <tourName>.tour.json" },
+          ,{ "name": "title"          , "type": "STRING(255)", "nullable": false, "description": "The default title of the tour in the default language" }
+          ,{ "name": "defaultLanguage", "type": "STRING(  2)", "nullable": false, "description": "The default language of the tour" }
+          ,{ "name": "otherLanguages" , "type": "STRING[]"   , "nullable": true , "description": "Other languages supported by this tour" }
+          ,{ "name": "otherTitles"    , "type": "JSON[]"     , "nullable": true , "description": "Other translated titles"
+                                      , "jsonSchema": { "typeName": "MultiLanguageTitle" 
+                                                       ,"descr": "A Language and title pair"
+                                                       ,"fields": [
+                                                           {"name": "lang", "type": "STRING", "description":"ISO language code, e.g., 'en', 'fr'..." }
+                                                          ,{"name": "txt" , "type": "STRING", "description":"The title of the tour part in that language" }
+                                                         ]
+                                                      }
+           }
          ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -910,10 +922,14 @@
     ,{ "name": "TourPart"
       ,"description": "Represents a tour part"
       ,"columns": [
-          { "name": "tourRefnum", "sameAs": "Tour.refnum", "nullable": false, "description": "The tour this part belongs to" }
-         ,{ "name": "id"        , "type"  : "STRING(64)" , "nullable": false, "description": "The id of the tour part for class/folder names of assets" }
-         ,{ "name": "pos"       , "type"  : "SHORT"      , "nullable": false, "description": "The order of the step" }
-         ,{ "name": "title"     , "type"  : "STRING(255)", "nullable": false, "description": "The title of the tour" }
+          { "name": "tourRefnum" , "sameAs": "Tour.refnum", "nullable": false, "description": "The tour this part belongs to" }
+         ,{ "name": "id"         , "type"  : "STRING(64)" , "nullable": false, "description": "The id of the tour part for class/folder names of assets" }
+         ,{ "name": "pos"        , "type"  : "SHORT"      , "nullable": false, "description": "The order of the step" }
+         ,{ "name": "title"      , "type"  : "STRING(255)", "nullable": false, "description": "The default title of the tour part for the default language" }
+         ,{ "name": "otherTitles", "type": "JSON[]"       , "nullable": true , "description": "Other translated titles"
+                                 , "jsonSchema": { "typeName": "Tour.MultiLanguageTitle" 
+                                                 }
+          }
         ]
       ,"primary": { "autogen": true }
       ,"foreign": [
@@ -931,7 +947,11 @@
           { "name": "tourPartRefnum", "sameAs": "TourPart.refnum", "nullable": false, "description": "The tour part this step belongs to" }
          ,{ "name": "id"            , "type"  : "STRING( 64)"    , "nullable": false, "description": "The id of the step, for class/folder names of assets" }
          ,{ "name": "pos"           , "type"  : "SHORT"          , "nullable": false, "description": "The order of the step" }
-         ,{ "name": "title"         , "type"  : "STRING(255)"    , "nullable": false, "description": "The title of the step" }
+         ,{ "name": "title"         , "type"  : "STRING(255)"    , "nullable": false, "description": "The default title of the tour step for the default language" }
+         ,{ "name": "otherTitles", "type": "JSON[]"       , "nullable": true , "description": "Other translated titles"
+                                 , "jsonSchema": { "typeName": "Tour.MultiLanguageTitle" 
+                                                 }
+          }
          ,{ "name": "actions"       , "type"  : "JSON[]"         , "nullable": true , "description": "List of actions"
                                     , "jsonSchema": { "typeName": "TourStepAction" 
                                                      ,"descr": "An action"
@@ -1912,6 +1932,7 @@
         ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
         ,{ "object":"App"  , "columns":["icon"]   , "default":"false" }
         ,{ "object":"App"  , "columns":["directNav"]   , "default":"true" }
+        ,{ "object":"Tour" , "columns":["title", "defaultLanguage"], "default":"XX" }
         ,{ "object":"TourUserClick", "columns":["contextId"], "default":"_base" }
         ,{ "object":"TourUserClick", "columns":["type", "topic"], "default":"_generic" }
        ]
