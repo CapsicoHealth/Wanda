@@ -142,7 +142,7 @@ public class LoadAppsConfig
             if (Apps._apps != null)
               for (int i = 0; i < Apps._apps.size(); ++i)
                 {
-                  AppDef ad  = Apps._apps.get(i);
+                  AppDef ad = Apps._apps.get(i);
                   if (ad != null)
                     {
                       String srcFile = "wanda.app." + ad._id + ".json";
@@ -156,11 +156,11 @@ public class LoadAppsConfig
                       if (TextUtil.isNullOrEmpty(ad._label) == false)
                         ad._AppDefDetail._label = ad._label;
                       if (ad._AppDefDetail._subApps != null)
-                       for (SubApp sa : ad._AppDefDetail._subApps)
-                         {
-                           AppDef subApp = ad.createSubApp(sa);
-                           Apps._apps.add(++i, subApp);
-                         }
+                        for (SubApp sa : ad._AppDefDetail._subApps)
+                          {
+                            AppDef subApp = ad.createSubApp(sa);
+                            Apps._apps.add(++i, subApp);
+                          }
                     }
                 }
 
@@ -198,7 +198,7 @@ public class LoadAppsConfig
               App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home); // search by path and home
               A.setId(ad._id);
               if (ad._subAppOfId != null)
-               A.setSubOfId(ad._subAppOfId);
+                A.setSubOfId(ad._subAppOfId);
               A.setAdmin(ad._AppDefDetail._admin);
               A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
               A.setNullDeleted();
@@ -220,7 +220,7 @@ public class LoadAppsConfig
                       A = App_Factory.create(ad._id, ad._path, ad._AppDefDetail._home, ad._icon, ad._directNav);
                       A.setAdmin(ad._AppDefDetail._admin);
                       A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-                      if (A.write(C) == false)
+                      if (A.upsert(C) == false)
                         {
                           // LogUtil.resetLogLevel();
                           throw new Exception("Cannot insert/update App record");

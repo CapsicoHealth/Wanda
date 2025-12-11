@@ -61,6 +61,7 @@ public class UserListServlet extends SimpleServlet
         String[] roles = req.getParamsString("role", false);
         String status = req.getParamString("status", false, "");
         String promoCode = req.getParamString("promoCode", false, "");
+        int maxCount = req.getParamInt("maxCount", 5000);
         boolean csv = req.getParamBoolean("csv", false);
         long TenantRefnum = SystemValues.EVIL_VALUE;
         long TenantUserRefnum = req.getSessionLong(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
@@ -79,7 +80,7 @@ public class UserListServlet extends SimpleServlet
         req.throwIfErrors();
         if (ConnectionPool.isMultiTenant())
           {
-            ListResults<AdminUsersAndTenantsView_Data> L = AdminUsersAndTenantsView_Factory.filter(C, U, searchQuery, roles, TenantRefnum, status, promoCode, 0, 500);
+            ListResults<AdminUsersAndTenantsView_Data> L = AdminUsersAndTenantsView_Factory.filter(C, U, searchQuery, roles, TenantRefnum, status, promoCode, 0, maxCount);
             if (csv == true)
              Res.successCsv("Simple", L);
             else
@@ -87,7 +88,7 @@ public class UserListServlet extends SimpleServlet
           }
         else
           {
-            ListResults<AdminUsersView_Data> L = AdminUsersView_Factory.filter(C, U, searchQuery, roles, status, promoCode, 0, 500);
+            ListResults<AdminUsersView_Data> L = AdminUsersView_Factory.filter(C, U, searchQuery, roles, status, promoCode, 0, maxCount);
             if (csv == true)
               Res.successCsv("Simple", L);
              else

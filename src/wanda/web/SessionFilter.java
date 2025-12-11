@@ -530,7 +530,7 @@ public class SessionFilter implements jakarta.servlet.Filter
         if (dataMasking == true)
           Str.append("   ***  REQUEST SET WITH DATA MASKING ON !");
         if (minimal == false)
-        Str.append("   ***  Session Attr   : " + SessionUtil.printSessionAttributes(S, "; ") + "\n");
+          Str.append("   ***  Session Attr   : " + SessionUtil.printSessionAttributes(S, "; ") + "\n");
         Str.append("   ***  RequestURL     : " + Request.getRequestURL().toString() + "\n");
         if (minimal == false)
           {
@@ -688,21 +688,41 @@ public class SessionFilter implements jakarta.servlet.Filter
 
     private static boolean isGuestPath(User_Data user, HttpServletRequest Request)
       {
+//        LOG.debug("Checking if guest path: " + Request.getServletPath());
         if (user == null)
-          return false;
+          {
+            LOG.debug("User is null, cannot be guest path");
+            return false;
+          }
 
         String servletPath = Request.getServletPath();
+//        LOG.debug("Full servlet path: " + servletPath);
         for (AppView_Data app : Wanda.getApps())
           {
             // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
             // doesn't have access to. This is a larger issue of app service access control which we are still developing!
+//            LOG.debug("Checking app : " + app.getAppLabel() + " for guest path match.");
             if (app.getAppServices() != null)
-              for (ServiceDefinition sd : app.getAppServices())
-                {
-                  if (servletPath.equals(sd._path) == true && "GST".equals(sd._access) == true)
-                    return true;
-                }
+              {
+                for (ServiceDefinition sd : app.getAppServices())
+                  {
+//                    LOG.debug("Checking service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+                    if (servletPath.equals(sd._path) == true && "GST".equals(sd._access) == true)
+                      {
+//                        LOG.debug("   ==> MATCHING for guest service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+                        return true;
+                      }
+                    else
+                      {
+//                        LOG.debug("   ==> No match for service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+                      }
+                  }
+              }
+            else
+              LOG.debug("App " + app.getAppLabel() + " has no services defined.");
           }
+
+        LOG.debug("No guest path match found for '"+servletPath+"'");
         return false;
       }
 
