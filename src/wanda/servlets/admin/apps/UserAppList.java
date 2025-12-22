@@ -77,7 +77,7 @@ public class UserAppList extends SimpleServlet
           }
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        if(User.hasRoles(RoleHelper.SUPERADMIN) == true)
+        if(User.isSuperAdmin() == true)
           {
             ListResults<AppView_Data> apps = AppView_Factory.lookupWhereAll(C, Wanda.getHostName(), 0, 1000);
             JSONUtil.response(Out, "", apps);

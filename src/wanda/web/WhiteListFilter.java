@@ -127,7 +127,8 @@ public class WhiteListFilter implements jakarta.servlet.Filter
             Matcher M = P.matcher(X);
             if (M.find() == true)
               {
-                LOG.info("The URL " + X + " was allowed by the white-list entry " + P.pattern());
+                if (X.indexOf("/svcx/") == -1)
+                  LOG.info("The URL " + X + " was allowed by the white-list entry " + P.pattern());
                 chain.doFilter(req, res);
                 return;
               }

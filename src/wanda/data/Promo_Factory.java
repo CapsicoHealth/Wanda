@@ -64,6 +64,8 @@ public class Promo_Factory extends wanda.data._Tilda.TILDA__PROMO_Factory
         if (includeSystem == false)
           q.and().equals(COLS.SYSTEM, false);
         
+        q.orderBy(COLS.LASTUPDATED, false);
+        
         return runSelect(C, q, start, size);
       }
 

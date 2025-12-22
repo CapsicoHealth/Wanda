@@ -31,8 +31,8 @@ import wanda.web.config.Wanda;
 
 public class ActiveTicketNotification implements BeaconBit
   {
-    protected static long[] _ADMIN_REFNUMS = Wanda.getTicketAccountRefnums();
-    protected static int    _ALERT_TIMING  = Wanda.getTicketAlertMinutes();
+    protected final static long[] _ADMIN_REFNUMS = Wanda.getTicketAccountRefnums();
+    protected final static int    _ALERT_TIMING  = Wanda.getTicketAlertMinutes();
 
     @Override
     public String getTitle()
@@ -46,6 +46,9 @@ public class ActiveTicketNotification implements BeaconBit
     throws Exception
       {
         ZonedDateTime Now = DateTimeUtil.nowLocal();
+        if (_ALERT_TIMING <= 0)
+         return false;
+        
         ZonedDateTime SomeMinutesAgo = Now.truncatedTo(ChronoUnit.MINUTES).minusHours(_ALERT_TIMING);
 
         ListResults<TicketWaitingView_Data> L = TicketWaitingView_Factory.lookupWhereUnanswered(C, _ADMIN_REFNUMS, 0, 50);

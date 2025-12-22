@@ -16,7 +16,9 @@
 
 package wanda.servlets;
 
-import java.io.PrintWriter;
+import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,29 +26,23 @@ import org.apache.logging.log4j.Logger;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
-import tilda.utils.DateTimeUtil;
 import tilda.utils.EncryptionUtil;
-import tilda.utils.SystemValues;
 import tilda.utils.TextUtil;
-import tilda.utils.json.JSONUtil;
-import wanda.data.TenantView_Data;
-import wanda.data.TenantView_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
 import wanda.saml.ConfigSAML;
 import wanda.saml.SAMLUserProfile;
-import wanda.servlets.helpers.LoginCallbackInterface;
 import wanda.servlets.helpers.LoginHelper;
-import wanda.servlets.helpers.UserTenantSync;
+import wanda.servlets.helpers.PlanHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
 import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
-import wanda.web.config.Eula;
 import wanda.web.config.SSOConfig;
 import wanda.web.config.Wanda;
 import wanda.web.exceptions.AccessForbiddenException;
+import wanda.web.exceptions.ResourceNotAuthorizedException;
 
 /**
  * Servlet implementation class Login
@@ -72,144 +68,137 @@ public class Login extends SimpleServlet
         SessionFilter.addMaskedUrlNvp("SAMLResponse");
       }
 
-    private static void login(Connection C, String username, String password, LoginCallbackInterface loginCallback)
-    throws Exception
-      {
-        LOG.debug("Loging in user locally");
-        // Authenticate using local Login
-        username = username.toLowerCase();
-        User_Data u = User_Factory.lookupByEmail(username);
-        if (u.read(C) == false || u.getDeleted() != null || u.isLocked() == true || u.getInviteCancelled() == true)
-          {
-            LOG.error("User '" + username + "' not found in the local DB or not in a state where they can log in.");
-            loginCallback.onLoginFailure(u); // will throw
-            return;
-          }
-
-        if (EncryptionUtil.hash(password, u.getPswdSalt()).equals(u.getPswd()) == false)
-          {
-            LOG.error("Invalid password for User '" + username + "' in the local DB");
-            loginCallback.onLoginFailure(u); // will throw
-            return;
-          }
-
-        if (Wanda.validatePassword(password).size() > 0)
-          {
-            u.sendForgotPswdEmail(C);
-            throw new AccessForbiddenException("User", "Password invalid as per Password Rules");
-          }
-
-        // use the login process to migrate to using the salt if it hasn't been set before.
-        if (TextUtil.isNullOrEmpty(u.getPswdSalt()) == true)
-          {
-            String salt = u.getOrCreatePswdSalt();
-            String pswd = EncryptionUtil.hash(password, salt);
-            u.setPswdSalt(salt);
-            u.setPswd(pswd);
-          }
-
-        loginCallback.onLoginSuccess(u);
-      }
-
-
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
     throws Exception
       {
-        PrintWriter Out = res.setContentType(ResponseUtil.ContentType.JSON);
-        long TenantUserRefnum = req.getParamLong("tenantUserRefnum", false);
-        String eulaToken = req.getParamString("eulaToken", false);
-        int accept = req.getParamInt("accept", false);
         String ssoId = req.getParamString("ssoId", false);
-
-        if (TextUtil.isNullOrEmpty(eulaToken) == false && U != null)
-          { // Eula step
-            String EulaTokenSaved = req.getSessionString(SessionUtil.Attributes.EULA_CODE.name());
-            if (eulaToken.equals(EulaTokenSaved) == false)
-              {
-                req.addError("eulaToken", "is Invalid");
-                req.throwIfErrors();
-              }
-            if (accept != 1)
-              {
-                req.addError("accept", "You must accept the EULA before continuing.");
-                req.throwIfErrors();
-              }
-            req.setSessionTenantUser(TenantUserRefnum);
-            LoginHelper.ClearUserForEula(C, req, U, TenantUserRefnum);
-            if (TenantUserRefnum != SystemValues.EVIL_VALUE)
-              UserTenantSync.sync(C, U, TenantUserRefnum);
-            res.success();
-          }
-        else if (TenantUserRefnum != SystemValues.EVIL_VALUE && U != null)
-          { // User Selected a Tenant
-            TenantView_Data TV = TenantView_Factory.getTenantByTenantUserRefnum(C, U.getRefnum(), TenantUserRefnum);
-
-            if (TV == null)
-              {
-                req.addError("tenantUserRefnum", "is Invalid");
-                req.throwIfErrors();
-              }
-
-            Eula E = Wanda.getEula(TV.getName());
-            int days = DateTimeUtil.computeDaysToNow(TV.getTenantUserLastEula());
-            if (E != null && TextUtil.isNullOrEmpty(E._eulaUrl) == false && (days < 0 || days > E._days))
-              {
-                LoginHelper.doEula(Out, req, C, TenantUserRefnum, E, U);
-              }
-            else
-              {
-                req.setSessionTenantUser(TV.getTenantUserRefnum());
-                LoginHelper.ClearUserForEula(C, req, U, TenantUserRefnum);
-                UserTenantSync.sync(C, U, TenantUserRefnum);
-                JSONUtil.response(Out, "tenantUserJson", TV);
-              }
-          }
-        else if (TextUtil.isNullOrEmpty(ssoId) == false) // SSO
+        // SSO Login
+        if (TextUtil.isNullOrEmpty(ssoId) == false)
           {
-            LOG.debug("SSO login!");
-            SAMLUserProfile userProfile = ConfigSAML.processCallback(req.getHttpServletRequest(), res.getHttpServletResponse(), C, ssoId);
-            if (userProfile == null)
-              return;
-            req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
-            U = User_Factory.lookupByEmail(userProfile._email);
-            if (U.read(C) == false)
-             throw new Exception("SSO user '" + userProfile._email + "' not found in the local DB.");
-            SSOConfig ssoConfig = Wanda.getSsoConfig(ssoId);
-            if (ssoConfig._eula == false)
-             req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
-            LoginHelper.onBasicLoginSuccess(req, C, U);
-            U.syncUpApps(C, U, ssoConfig._defaultPromoCode, ssoId);
-            String returnUrl = userProfile._returnUrl != null ? userProfile._returnUrl : Wanda.getUrlRedirectPostLogin();
-            LOG.debug("SSO login successful. Redirecting to " + returnUrl);
-            res.sendRedirect(returnUrl);
+            LOG.debug("Loging in user by SSO");
+            loginSSO(req, res, C, ssoId);
+            return;
           }
-        else // User trying to login
+
+        LOG.debug("Loging in user locally");
+        loginRegular(req, res, C, U);
+
+      }
+
+    protected static void loginSSO(RequestUtil req, ResponseUtil res, Connection C, String ssoId)
+    throws Exception, CloneNotSupportedException, ResourceNotAuthorizedException, AccessForbiddenException, IOException
+      {
+        SAMLUserProfile userProfile = ConfigSAML.processCallback(req.getHttpServletRequest(), res.getHttpServletResponse(), C, ssoId);
+        if (userProfile == null)
+          return;
+        req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
+        User_Data U = User_Factory.lookupByEmail(userProfile._email);
+        if (U.read(C) == false)
+          throw new Exception("SSO user '" + userProfile._email + "' not found in the local DB.");
+        SSOConfig ssoConfig = Wanda.getSsoConfig(ssoId);
+        if (ssoConfig._eula == false)
+          req.setSessionInt(SessionUtil.Attributes.EULA_CLEAR.toString(), 1);
+        // Automatically clearing users for plan on SSO login.
+        PlanHelper.clearUserForPlan(C, req, U, false);
+        LoginHelper.basicLoginSuccess(req, C, U);
+        U.write(C);
+        U.syncUpApps(C, U, ssoConfig._defaultPromoCode, ssoId);
+        String returnUrl = userProfile._returnUrl != null ? userProfile._returnUrl : Wanda.getUrlRedirectPostLogin();
+        LOG.debug("SSO login successful. Redirecting to " + returnUrl);
+        res.sendRedirect(returnUrl);
+      }
+
+    protected static void loginRegular(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
+    throws Exception
+      {
+        if (U == null) // actual login operation
           {
-            String Email = req.getParamString("email", true);
-            String Pswd = req.getParamString("pswd", true);
+            String email = req.getParamString("email", true);
+            String pswd = req.getParamString("pswd", true);
             req.throwIfErrors();
+
             // To override the DB rollback
             req.setSessionInt(SessionUtil.Attributes.FORCE_COMMIT.name(), SessionUtil.FORCE_COMMIT);
-            login(C, Email, Pswd, new LoginCallbackInterface()
+
+            // Look up user by email
+            LOG.debug("Getting user");
+            email = email.toLowerCase();
+            U = User_Factory.lookupByEmail(email);
+            // If we cannot read the user, of the user has been soft-deleted, locked or the invite has been cancelled, we cannot proceed.
+            String errMsg = null; 
+            if (U.read(C) == false)
+             errMsg = "User '" + email + "' not found in the local DB.";
+            else if (U.isNullDeleted() == false)
+             errMsg = "User '" + email + "' is soft-deleted.";
+            else if (U.isLocked() == true)
+             errMsg = "User '" + email + "' is locked.";
+            else if (U.getInviteCancelled() == true)
+             errMsg = "User '" + email + "' has a canceled invitation.";
+            // Check password is correct
+            else if (EncryptionUtil.hash(pswd, U.getPswdSalt()).equals(U.getPswd()) == false)
+             errMsg = "Invalid password for User '" + email + "' in the local DB";
+
+            if (errMsg != null)
               {
-                @Override
-                public void onLoginSuccess(User_Data U)
-                throws Exception
-                  {
-                    LoginHelper.onLoginSuccess(req, res, C, Out, TenantUserRefnum, Email, Pswd, U);
-                  }
+                LOG.error(errMsg);
+                LoginHelper.loginFailure(C, U);
+                return;
+              }
 
-                @Override
-                public void onLoginFailure(User_Data U)
-                throws Exception
-                  {
-                    LoginHelper.onLoginFailure(C, U);
-                  }
+            // Check the password is still valid (the rules for password validation may have changed)
+            LOG.debug("Validating password");
+            if (Wanda.validatePassword(pswd).size() > 0)
+              {
+                U.sendForgotPswdEmail(C);
+                throw new AccessForbiddenException("User", "Password invalid as per Password Rules. A password reset email has been sent.");
+              }
 
-              }); // End of login() method
+            // Has the password expired?
+            LOG.debug("Checking if password expired");
+            if (hasPasswordExpired(U) == true)
+              {
+                U.sendForgotPswdEmail(C);
+                throw new AccessForbiddenException("User", "Your password has expired. A password reset email has been sent.");
+              }
+
+            // use the login process to migrate to using the salt if it hasn't been set before.
+            if (TextUtil.isNullOrEmpty(U.getPswdSalt()) == true)
+              {
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // !!! NOTE: WE ARE RELYING ON THE "loginSuccess" TO COMMIT EVENTUALLY THE USER OBJECT. !!!
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                LOG.debug("Upgrading user's salt.");
+                String salt = U.getOrCreatePswdSalt();
+                pswd = EncryptionUtil.hash(pswd, salt);
+                U.setPswdSalt(salt);
+                U.setPswd(pswd);
+              }
+          }
+        
+        try
+          {
+            // NOTE: The AppData construct was used to sign a client-side database on mobile devices. This is no longer in use.
+            //      We keep this code for reference.
+            LoginHelper.loginSuccess(req, res, C, U/*, U.getAppDataJson(email + "@@" + pswd)*/);
+          }
+        finally
+          {
+            U.write(C);
           }
       }
+
+    /**
+     * Checks if the user's password has expired. Mostly used for the login servlet. Wondering if it should be elsewhere.
+     * 
+     * @param U
+     * @return
+     */
+    protected static boolean hasPasswordExpired(User_Data U)
+      {
+        return U.getPswdCreate() != null && ChronoUnit.DAYS.between(U.getPswdCreate(), ZonedDateTime.now()) > Wanda.getPasswordExpiry();
+      }
+
 
   }

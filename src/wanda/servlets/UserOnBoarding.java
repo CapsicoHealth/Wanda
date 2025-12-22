@@ -22,7 +22,6 @@ import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
-
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.json.JSONUtil;
@@ -30,6 +29,8 @@ import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
 import wanda.data.User_Factory;
+import wanda.data.importers.promos.Plan;
+import wanda.servlets.helpers.PlanHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SessionFilter;
@@ -46,7 +47,7 @@ public class UserOnBoarding extends SimpleServlet
       {
         super(false, true);
       }
-    
+
     @Override
     public void init(ServletConfig Conf)
       {
@@ -60,24 +61,26 @@ public class UserOnBoarding extends SimpleServlet
         String email = Req.getParamString("email", true);
         String token = Req.getParamString("token", true);
         String password = Req.getParamString("password", true);
+        String company = Req.getParamString("company", false);
+        String title = Req.getParamString("title", false);
         String phone = Req.getParamString("phone", false);
+        String country = Req.getParamString("country", false);
+        String stateProv = Req.getParamString("stateProv", false);
+
         List<String> passwordHistory = new ArrayList<String>();
         List<String> errors = Wanda.validatePassword(password);
-        if (!errors.isEmpty())
-          {
-            for (String error : errors)
-              {
-                Req.addError("password", error);
-              }
-          }
+        if (errors.isEmpty() == false)
+          for (String error : errors)
+            Req.addError("password", error);
+
         Req.throwIfErrors();
 
-        User_Data user = User_Factory.lookupByPswdResetCode(token);
-        if (user.read(C) == false)
-          throw new NotFoundException("User Token", "" + token);
-        
-        if (user.getEmail().equalsIgnoreCase(email) == false)
-          throw new NotFoundException("User email", "" + email);
+        U = User_Factory.lookupByEmail(email);
+        if (U.read(C) == false)
+          throw new NotFoundException("User email", email);
+
+        if (U.checkTokenValidity(token) == false)
+          throw new NotFoundException("User token", "Invalid or expired token");
 
         /*
          * find user with +token
@@ -90,33 +93,49 @@ public class UserOnBoarding extends SimpleServlet
          * add +password to user.pswdHist
          * 
          */
-        String salt = user.getOrCreatePswdSalt();
+        String salt = U.getOrCreatePswdSalt();
         String hashedPassword = EncryptionUtil.hash(password, salt);
-        if (user.hasPswdHist(hashedPassword))
+        if (U.hasPswdHist(hashedPassword))
           {
-            throw new Exception("Password Already used");
+            // Is this a user who has already logged in, or a user still in the process of registering?
+            if (U.getLoginCount() > 0)                       // an existing established user changing their password and failing
+             throw new Exception("Password Already used");   // the already-used-password check.
           }
-        passwordHistory.add(hashedPassword);
-        if (phone != null && phone.length() > 0)
+        else
           {
-            UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(user.getRefnum());
-            contact.setTelMobile(phone);
-            contact.write(C);
+            passwordHistory.add(hashedPassword);
           }
-        user.setPswd(hashedPassword);
-        user.setPswdSalt(salt);
-        user.setPswdCreateNow();
-        user.setNullPswdResetCode();
-        user.setNullPswdResetCreate();
-        user.setInvitedUser(false);
-        user.setPswdHist(passwordHistory);
-        user.write(C);
+
+        UserDetail_Data contact = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
+        contact.setCompany(company);
+        contact.setProfTitle(title);
+        contact.setTelMobile(phone);
+        contact.setCountry(country);
+        contact.setStateProv(stateProv);
+        contact.write(C);
+
+        U.setPswd(hashedPassword);
+        U.setPswdSalt(salt);
+        U.setPswdCreateNow();
+        U.setInvitedUser(false);
+        U.setPswdHist(passwordHistory);
+        U.write(C);
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');
-        JSONUtil.print(Out, "message", true, "Successfully registered. Please Login.");
+        List<Plan> plans = PlanHelper.getAvailablePlans(C, U);
+        if (plans != null && plans.isEmpty() == false)
+          {
+            JSONUtil.print(Out, "mustPickPlan", true, true);
+            JSONUtil.print(Out, "email", false, email);
+            JSONUtil.print(Out, "token", false, token);
+            JSONUtil.print(Out, "message", false, "Successfully registered. Please pick a plan now.");
+          }
+        else
+          {
+            JSONUtil.print(Out, "message", true, "Successfully registered. Please Login.");
+          }
         JSONUtil.end(Out, '}');
-
       }
 
   }

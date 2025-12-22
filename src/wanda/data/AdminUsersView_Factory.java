@@ -91,7 +91,7 @@ public class AdminUsersView_Factory extends wanda.data._Tilda.TILDA__ADMINUSERSV
     throws Exception
       {
         SelectQuery Q = newWhereQuery(C);
-        if (U.hasRoles(RoleHelper.SUPERADMIN) == false)
+        if (U.isSuperAdmin() == false)
           {
             Q.not().any(COLS.ROLES, RoleHelper.SUPERADMIN);
             Q.and();

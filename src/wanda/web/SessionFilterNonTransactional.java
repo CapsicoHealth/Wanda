@@ -75,7 +75,7 @@ public class SessionFilterNonTransactional implements jakarta.servlet.Filter
             QueryDetails.setThreadMaskMode_DO_NOT_USE_IN_GENERAL_APP_CODE(maskedMode);
             AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
             
-            LOG.info(SessionFilter.getRequestHeaderLogStr(request, null, true, maskedMode, apiToken));
+            LOG.info(SessionFilter.getRequestHeaderLogStr(request, S, null, true, maskedMode, apiToken));
             if (request.getScheme().equals("https") == false)
               {
                 LOG.error("The server only accepts HTTPS requests.");

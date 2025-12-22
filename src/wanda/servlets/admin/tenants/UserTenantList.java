@@ -76,7 +76,7 @@ public class UserTenantList extends SimpleServlet
             throw new NotFoundException("User", UserRefnum);
           }
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        if(User.hasRoles(RoleHelper.SUPERADMIN) == true)
+        if(User.isSuperAdmin() == true)
           {
             ListResults<Tenant_Data> tenants = Tenant_Factory.getAll(C, 0, 1000);
             JSONUtil.response(Out, "", tenants);

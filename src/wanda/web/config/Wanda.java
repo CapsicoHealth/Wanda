@@ -249,6 +249,11 @@ public class Wanda
         return _Config._guestRegistration == null ? GuestRegistration.GuestType.NONE : _Config._guestRegistration._type;
       }
 
+    public static String getGuestRegistrationDefaultPromoCode()
+      {
+        return _Config._guestRegistration == null ? null : _Config._guestRegistration._defaultPromoCode;
+      }
+    
     public static long[] getGuestRegistrationAppRefnums()
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;
@@ -259,6 +264,11 @@ public class Wanda
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._tenantRefnums;
       }
 
+    public static boolean isGuestRegistrationAllowerDomain(String userEmail)
+      {
+        return _Config._guestRegistration == null ? true : _Config._guestRegistration.isAllowedDomain(userEmail);
+      }
+    
     public static List<String> getEmailVerificationTexts()
       {
         return _Config._emailVerificationTexts;
@@ -284,6 +294,11 @@ public class Wanda
         return _Config._sessionConfig._forceReLoginMins;
       }
 
+    public static boolean isAppDashboardPostLogin()
+      {
+        return _Config._laf._appDashboardPostLogin;
+      }
+    
 
     public static String getUrlRedirectPostLogin()
       {
@@ -346,20 +361,49 @@ public class Wanda
         return _Config._laf._overrideCssFile;
       }
 
-    public static Eula getEula(String TenantName)
+    /**
+     * Returns a Eula object if there is an active EULA for the given tenant name.
+     * 
+     * @param TenantName
+     * @return
+     */
+    public static EulaActivation getEula(String TenantName)
       {
         if (TenantName == null)
           TenantName = "";
-        Eula e = null;
         for (Eula E : _Config._eulas)
-          if (E != null)
-            {
-              if (E._tenantName.equals(TenantName) == true)
-                return E;
-              if (E._tenantName.equals("") == true)
-                e = E;
-            }
-        return e;
+          if (E != null && E._activations != null)
+            for (EulaActivation EA : E._activations)
+              if (EA._renewalDays > 0 && EA._tenantName.equals(TenantName) == true)
+                return EA;
+        return null;
+      }
+
+    /**
+     * Returns a list of eulas for a forms element.
+     * 
+     * @return
+     */
+    public static String[][] getEulas()
+      {
+        if (_Config._eulas == null || _Config._eulas.size() == 0)
+          return null;
+
+        String[][] eulas = new String[_Config._eulas.size() + 1][];
+        int i = 0;
+        eulas[0] = new String[] { "", "No EULA", "No active EULA for this promo code" };
+        for (Eula E : _Config._eulas)
+          eulas[++i] = new String[] { E._url, E._name, E._descr
+          };
+        return eulas;
+      }
+    
+    public static PaymentSystem getPaymentSystem(String id)
+      {
+        for (PaymentSystem PS : _Config._paymentSystems)
+          if (PS._id.equals(id) == true)
+            return PS;
+        return null;
       }
 
     public static LoginSystem getLoginSystem()
@@ -385,11 +429,17 @@ public class Wanda
 
     public static String getExtra(String configName, String elementName)
       {
+        return getExtra(configName, elementName, null);
+      }
+
+    public static String getExtra(String configName, String elementName, String defaultValue)
+      {
         if (_Config._extras == null)
-          return null;
+          return defaultValue;
 
         Map<String, String> config = _Config._extras.get(configName);
-        return config == null ? null : config.get(elementName);
+        String val = config == null ? null : config.get(elementName);
+        return val == null ? defaultValue : val;
       }
 
     /**
@@ -404,14 +454,12 @@ public class Wanda
       }
 
     /**
-     * Returns the list of notification administrator accounts for answering to tickets if the wanda.config.json
-     * file specifies such a thing, and the subsystem is enabled, and admin accounts are specified.
-     * 
+     * Returns the number of minutes before a ticket is due when an alert should be sent out, or null if the ticketing
      * @return
      */
     public static int getTicketAlertMinutes()
       {
-        return _Config._ticketSystem._enabled == true ? _Config._ticketSystem._notifications._alertMinutes : null;
+        return _Config._ticketSystem._enabled == true ? _Config._ticketSystem._notifications._alertMinutes : -1;
       }
 
     /**

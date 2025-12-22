@@ -27,6 +27,7 @@ import wanda.data.Promo_Data;
 public class RootImporter implements Importer
   {
     /*@formatter:off*/
+    @SerializedName("plans"  ) public List<Plan> _Plans = new ArrayList<Plan>();
     @SerializedName("promos" ) public List<Promo_Data> _Promos = new ArrayList<Promo_Data>();
     /*@formatter:on*/
 
@@ -34,16 +35,19 @@ public class RootImporter implements Importer
     public int process(Connection C)
     throws Exception
       {
-        int Count = 0;
+        int count = 0;
+
+        for (Plan obj : _Plans)
+          count+= obj.write(C);
 
         for (Promo_Data obj : _Promos)
           {
-            ++Count;
+            ++count;
             if (obj.upsert(C) == false)
               throw new Exception("Cannot upsert Promo record");
           }
 
-        return Count;
+        return count;
       }
     /*@formatter:on*/
   }

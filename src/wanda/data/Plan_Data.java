@@ -4,10 +4,13 @@
 
 package wanda.data;
 
+import java.time.ZonedDateTime;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.Connection;
+import tilda.utils.DateTimeUtil;
 
 /**
 This is the application class <B>Data_Plan</B> mapped to the table <B>WANDA.Plan</B>.
@@ -38,5 +41,12 @@ public class Plan_Data extends wanda.data._Tilda.TILDA__PLAN
        // Do things after an object has just been read form the data store, for example, take care of AUTO fields.
        return true;
      }
+
+   public boolean isCurrentlyActiveToday()
+    {
+      if (getActive() == false)
+       return false;
+      return DateTimeUtil.isTodayBetween(getStart(), getEnd());
+    }
 
  }

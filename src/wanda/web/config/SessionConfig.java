@@ -29,6 +29,58 @@ public class SessionConfig
     @SerializedName("resetCodeExpiryMins" ) public int _resetCodeExpiryMins  = 30;
     @SerializedName("passwordExpiryDays"  ) public int _passwordExpiryDays   = 60;
     @SerializedName("maxPswdHistory"      ) public int _maxPswdHistory       = 3;
-    @SerializedName("forceReLoginMins"    ) public int _forceReLoginMins     = 60;
+    @SerializedName("forceReLoginMins"    ) public int _forceReLoginMins     = 240;
     /*@formatter:on*/
+
+    public boolean validate(boolean OK)
+      {
+        if (_passwordExpiryDays < 60)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'passwordExpiryDays' value of " + _passwordExpiryDays + " < 60.");
+            OK = false;
+          }
+
+        if (_loginOrResetAttempts < 3)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a '_loginOrResetAttempts' value of" + _loginOrResetAttempts + " < 3.");
+            OK = false;
+          }
+        if (_withinMins < 3)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'withinMins' value of " + _withinMins + " < 3.");
+            OK = false;
+          }
+        if (_lockForMins < 1)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'lockForMins' value of " + _lockForMins + " < 10.");
+            OK = false;
+          }
+        if (_failedLoginCycle < 2)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'failedLoginCycle' value of " + _failedLoginCycle + " < 2.");
+            OK = false;
+          }
+        if (_lockForeverDays < 1)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'lockForeverDays' value of " + _lockForeverDays + " < 360.");
+            OK = false;
+          }
+        if (_resetCodeExpiryMins < 10)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'resetCodeExpiryMins' value of " + _resetCodeExpiryMins + " < 10.");
+            OK = false;
+          }
+        if (_maxPswdHistory < 2)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'maxPswdHistory' value of " + _maxPswdHistory + " < 2.");
+            OK = false;
+          }
+        if (_forceReLoginMins == 0)
+          {
+            Wanda.LOG.error("The Wanda configuration file defines a 'sessionConfig' property with a 'forceReLoginMins' value of " + _forceReLoginMins + " == 0.");
+            OK = false;
+          }
+        
+        return OK;
+      }
   }

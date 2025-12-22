@@ -28,9 +28,11 @@ import tilda.utils.json.JSONUtil;
 public class AppDef implements JSONable
   {
     /*@formatter:off*/
-    @SerializedName("id"   ) public String _id   = null;
-    @SerializedName("label") public String _label= null;
-    @SerializedName("path" ) public String _path = null;
+    @SerializedName("id"       ) public String  _id        = null;
+    @SerializedName("label"    ) public String  _label     = null;
+    @SerializedName("path"     ) public String  _path      = null;
+    @SerializedName("icon"     ) public boolean _icon      = false;
+    @SerializedName("directNav") public boolean _directNav = true;
     /*@formatter:on*/
 
     transient public String _subAppOfId = null;
@@ -46,11 +48,13 @@ public class AppDef implements JSONable
     throws Exception
       {
         Out.write("{");
-        JSONUtil.print(Out, "path", true, this._path);
-        JSONUtil.print(Out, "home", false, this._AppDefDetail._home);
-        JSONUtil.print(Out, "admin", false, this._AppDefDetail._admin);
+        JSONUtil.print(Out, "path"     , true, this._path);
+        JSONUtil.print(Out, "home"     , false, this._AppDefDetail._home);
+        JSONUtil.print(Out, "admin"    , false, this._AppDefDetail._admin);
         JSONUtil.print(Out, "adminRole", false, TextUtil.isNullOrEmpty(this._AppDefDetail._admin) == true ? "" : "Admin"+this._id);
-        JSONUtil.print(Out, "label", false, this._AppDefDetail._label);
+        JSONUtil.print(Out, "label"    , false, this._AppDefDetail._label);
+        JSONUtil.print(Out, "icon"     , false, this._icon);
+        JSONUtil.print(Out, "directNav", false, this._directNav);
         Out.write("}");
 
       }
@@ -69,6 +73,7 @@ public class AppDef implements JSONable
         a._label = sa._label;
         a._path = _path;
         a._subAppOfId = _id;
+        a._icon = sa._icon;
         a._AppDefDetail = new AppDefDetails();
         a._AppDefDetail._label = sa._label;
         a._AppDefDetail._home = sa._home;

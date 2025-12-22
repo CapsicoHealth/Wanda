@@ -25,7 +25,9 @@ import org.apache.logging.log4j.Logger;
 
 import jakarta.servlet.http.HttpServletRequest;
 import tilda.db.Connection;
+import tilda.db.processors.ScalarRP;
 import tilda.utils.EncryptionUtil;
+import tilda.utils.TextUtil;
 
 /**
  * This is the application class <B>Data_USER</B> mapped to the table <B>WANDA.USER</B>.
@@ -69,6 +71,7 @@ public class User_Factory extends wanda.data._Tilda.TILDA__USER_Factory
             apiUser = User_Factory.create(email, email, _DEFAULT_API_ROLE, EncryptionUtil.getToken(24, true), EncryptionUtil.getToken(12, true));
             apiUser.setLockedNow();
             apiUser.setLoginType(User_Data._loginTypeAPI);
+            apiUser.setLoginDomain(partnerId);
           }
         apiUser.setLastipaddress(request.getRemoteAddr());
         apiUser.setLastLoginNow();
@@ -80,5 +83,12 @@ public class User_Factory extends wanda.data._Tilda.TILDA__USER_Factory
         return apiUser;
       }
 
+    public static long countUsersByPromoCode(Connection C, String promoCode) throws Exception
+      {
+        ScalarRP rp = new ScalarRP();
+        String q = "select count(*) from "+SCHEMA_TABLENAME_LABEL+" where \"promoCode\"="+TextUtil.escapeSingleQuoteForSQL(promoCode);
+        C.executeSelect(SCHEMA_LABEL, TABLENAME_LABEL, q, rp);
+        return rp.getResult();
+      }
 
   }

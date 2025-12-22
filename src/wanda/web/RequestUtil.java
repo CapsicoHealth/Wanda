@@ -18,6 +18,7 @@ package wanda.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -91,7 +92,7 @@ public class RequestUtil
     public String getParamString(String Name, boolean Mandatory, String DefaultValue, String[] ValidValues, boolean CaseInsensitive)
       {
         String Val = ParseUtil.parseString(Name, Mandatory, _Req.getParameter(Name), _Errors);
-        if (Mandatory == false && Val == null)
+        if (Mandatory == false && TextUtil.isNullOrEmpty(Val) == true)
           {
             Val = DefaultValue;
           }
@@ -322,6 +323,7 @@ public class RequestUtil
             S.removeAttribute(SessionUtil.Attributes.TENANTUSERREFNUM.toString());
             S.removeAttribute(SessionUtil.Attributes.EULA_CODE.toString());
             S.removeAttribute(SessionUtil.Attributes.EULA_CLEAR.toString());
+            S.removeAttribute(SessionUtil.Attributes.PLAN_CLEAR.toString());
           }
       }
 
@@ -354,22 +356,8 @@ public class RequestUtil
 
     public String getSessionAttributes()
       {
-        StringBuilder Str = new StringBuilder();
         HttpSession S = SessionUtil.getSession(_Req);
-        if (S == null)
-          return null;
-        Enumeration<String> E = S.getAttributeNames();
-        boolean First = true;
-        while (E.hasMoreElements() == true)
-          {
-            String name = E.nextElement();
-            if (First == false)
-              Str.append("; ");
-            else
-              First = false;
-            Str.append(name + ":" + S.getAttribute(name));
-          }
-        return Str.toString();
+        return S == null ? null : SessionUtil.printSessionAttributes(S, "; ");
       }
 
     public String getSessionString(String Name)
@@ -477,11 +465,6 @@ public class RequestUtil
         return _Req.getServletPath();
       }
 
-    public Collection<? extends ServletRegistration> getServletList()
-      {
-        return _Req.getServletContext().getServletRegistrations().values();
-      }
-
     public Object getAttribute(String name)
       {
         return _Req.getAttribute(name);
@@ -521,13 +504,31 @@ public class RequestUtil
       {
         try
           {
-            return context.getResource(resourcePath) != null;
+            URL url = context.getResource(resourcePath);
+            return url!= null;
           }
         catch (Exception e)
           {
             return false; // Handle invalid paths or other exceptions
           }
       }
+    
+    public Collection<? extends ServletRegistration> getServletList()
+      {
+        return _Req.getServletContext().getServletRegistrations().values();
+      }
+    
+    public boolean isServletMapped()
+      {
+        String servletPath = _Req.getServletPath();
+        Collection<? extends ServletRegistration> servlets = getServletList();
+        for (ServletRegistration registration : servlets)
+          for (String mapping : registration.getMappings())
+           if (mapping.equals(servletPath) == true)
+            return true;
+        return false;
+      }
+
 
     public ServletContext getServletContext()
       {
@@ -555,5 +556,6 @@ public class RequestUtil
 
         return null;
       }
+
 
   }

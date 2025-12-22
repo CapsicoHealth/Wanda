@@ -19,6 +19,8 @@ package wanda.web;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+import java.util.Enumeration;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,7 +37,7 @@ public class SessionUtil
 
     public static enum Attributes
       {
-      USERREFNUM, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR, MASKING_MODE;
+      USERREFNUM, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR, MASKING_MODE, PLAN_CLEAR;
       }
 
 
@@ -77,6 +79,25 @@ public class SessionUtil
                   LOG.info("Invalidating existing session: session was already invalidated.");
                 }
             }
+      }
+
+    public static String printSessionAttributes(HttpSession S, String sep)
+      {
+        if (S == null)
+         return "<null session>";
+        StringBuilder Str = new StringBuilder();
+        Enumeration<String> E = S.getAttributeNames();
+        boolean First = true;
+        while (E.hasMoreElements() == true)
+          {
+            String name = E.nextElement();
+            if (First == false)
+              Str.append(sep);
+            else
+              First = false;
+            Str.append(name + ":" + S.getAttribute(name));
+          }
+        return Str.toString();
       }
 
   }

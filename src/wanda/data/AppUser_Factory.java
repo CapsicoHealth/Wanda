@@ -59,7 +59,8 @@ public class AppUser_Factory extends wanda.data._Tilda.TILDA__APPUSER_Factory
         return Q.execute();
       }
 
-    public static void addUserAccess(Connection C, long appRefnum, long[] userRefnums) throws Exception
+    public static void addUserAccess(Connection C, long appRefnum, long[] userRefnums)
+    throws Exception
       {
         for (long userRefnum : userRefnums)
           {

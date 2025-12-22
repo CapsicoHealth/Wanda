@@ -53,7 +53,7 @@ public class TenantListServlet extends SimpleServlet
     throws Exception
       {
         throwIfUserInvalidRole(U, RoleHelper.ADMINROLES);
-        if (U.hasRoles(RoleHelper.SUPERADMIN) == true)
+        if (U.isSuperAdmin() == true)
           {
             ListResults<Tenant_Data> tenants = Tenant_Factory.getAll(C, 0, 1000);
             PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);

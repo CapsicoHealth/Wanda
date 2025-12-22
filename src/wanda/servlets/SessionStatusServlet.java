@@ -70,14 +70,14 @@ public class SessionStatusServlet extends jakarta.servlet.http.HttpServlet imple
           maskedMode = false;
         QueryDetails.setThreadMaskMode_DO_NOT_USE_IN_GENERAL_APP_CODE(maskedMode);
         
-        LOG.debug("Session Attributes: "+req.getSessionAttributes());
+//        LOG.debug("Session Attributes: "+req.getSessionAttributes());
         
         try
           {
             AuthApiToken apiToken = AuthApiToken.getAuthToken(request);
             LOG.info("\n"
             + " ============================================================================================================================================================================\n"
-            + SessionFilter.getRequestHeaderLogStr(request, null, false, maskedMode, apiToken) + "\n"
+            + SessionFilter.getRequestHeaderLogStr(request, S, null, false, maskedMode, apiToken, true)
             + "   ***  Session status for '" + servletPath + "': " + SIP._V + "% -> " + SIP._N + "\n"
             + " ============================================================================================================================================================================\n"
             );

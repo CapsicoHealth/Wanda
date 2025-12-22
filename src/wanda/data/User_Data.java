@@ -394,7 +394,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         return NewObject;
       }
 
-    public void updateEmail(Connection C, String newEmail)
+    public void updateEmailIfChanged(Connection C, String newEmail)
     throws Exception
       {
         if (TextUtil.isNullOrEmpty(newEmail) == false)
@@ -540,11 +540,6 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         return hasRoles(RoleHelper.SUPERADMIN);
       }
 
-    public static boolean isUserSuperAdmin(User_Data U)
-      {
-        return U.isSuperAdmin();
-      }
-
     public boolean isGuest()
       {
         return hasRoles(RoleHelper.GUEST);
@@ -667,5 +662,51 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             throw new Exception("No applications found for this user.");
           }
         updateAppAccess(C, U, CollectionUtil.toPrimitiveArray(p.getAppsAsArray()));
+      }
+    
+
+    /**
+     * Updates and salts the new password and related attributes. Will skip if newPassword is null or empty.
+     * This method will check the password history and will throw an exception if the new password was already used.
+     * NOTE: This method doesn't check if the password meets the complexity rules. This should be done before calling this method.
+     * 
+     * @param newPassword
+     * @throws Exception
+     */
+    public void updatePassword(String newPassword)
+    throws Exception
+      {
+        // If new password, do the dance
+        if (TextUtil.isNullOrEmpty(newPassword) == true)
+          return;
+
+        String salt = getOrCreatePswdSalt();
+        String newPasswordHashed = EncryptionUtil.hash(newPassword, salt);
+        if (hasPswdHist(newPasswordHashed))
+          throw new Exception("Password Already used");
+
+        setPswd(newPasswordHashed);
+        setPswdSalt(salt);
+        setPswdCreateNow();
+        setNullPswdResetCode();
+        setNullPswdResetCreate();
+
+        pushToPswdHistory(newPasswordHashed);
+      }
+
+
+    public boolean checkTokenValidity(String token)
+      {
+        if (token == null || token.equals(getPswdResetCode()) == false)
+          {
+            LOG.error("Invalid token for user");
+            return false;
+          }
+        if (ChronoUnit.MINUTES.between(getPswdResetCreate(), ZonedDateTime.now()) > Wanda.getResetCodeTTL())
+          {
+            LOG.error("Token for user expired");
+            return false;
+          }
+        return true;
       }
   }

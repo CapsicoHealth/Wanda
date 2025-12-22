@@ -29,7 +29,7 @@ public class SAMLServlet extends HttpServlet
           {
             AuthApiToken apiToken = AuthApiToken.getAuthToken(req);
             ConfigSAML.LOG.info("\n\n\n");
-            ConfigSAML.LOG.info(SessionFilter.getRequestHeaderLogStr(req, null, true, true, apiToken));
+            ConfigSAML.LOG.info(SessionFilter.getRequestHeaderLogStr(req, null, null, true, true, apiToken));
             String ssoId = req.getParameter("ssoId");
             String returnUrl = req.getParameter("returnUrl");
             if (TextUtil.isNullOrEmpty(ssoId) == true)

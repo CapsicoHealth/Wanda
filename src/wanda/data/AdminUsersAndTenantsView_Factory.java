@@ -81,7 +81,7 @@ public class AdminUsersAndTenantsView_Factory extends wanda.data._Tilda.TILDA__A
             Q.equals(COLS.TENANTREFNUM, TenantRefnum);
             Q.and();
           }
-        if (U.hasRoles(RoleHelper.SUPERADMIN) == false)
+        if (U.isSuperAdmin() == false)
           {
             Q.not().any(COLS.ROLES, RoleHelper.SUPERADMIN);
             Q.and();

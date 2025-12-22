@@ -60,13 +60,13 @@ public class TestDB
             if (AC.upsert(C) == false)
              throw new Exception("Cannot upsert AppConfig record");
             
-            App_Data A = App_Factory.create("aaa", "bbb", "ccc");
+            App_Data A = App_Factory.create("aaa", "bbb", "ccc", false, true);
             LOG.debug("refnum: "+A.getRefnum());
             if (A.upsert(C) == false)
               throw new Exception("Cannot upsert App record");
             LOG.debug("refnum: "+A.getRefnum());
 
-            A = App_Factory.create("aaa", "bbb", "eee");
+            A = App_Factory.create("aaa", "bbb", "eee", false, true);
             LOG.debug("refnum: "+A.getRefnum());
             if (A.upsert(C) == false)
               throw new Exception("Cannot upsert App record");
