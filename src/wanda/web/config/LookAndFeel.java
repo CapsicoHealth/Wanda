@@ -28,6 +28,7 @@ public class LookAndFeel
 
 
     @SerializedName("appDashboardPostLogin"      ) public boolean _appDashboardPostLogin      = false;
+    @SerializedName("htmlUrlPostLogin"           ) public String _htmlUrlPostLogin            = null;
     @SerializedName("urlRedirectPostLogin"       ) public String _urlRedirectPostLogin        = null;
     @SerializedName("pageTitlePostLogin"         ) public String _pageTitlePostLogin          = null;
     @SerializedName("logoBigPostLogin"           ) public String _logoBigPostLogin            = null;

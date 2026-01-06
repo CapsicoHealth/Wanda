@@ -298,7 +298,16 @@ public class Wanda
       {
         return _Config._laf._appDashboardPostLogin;
       }
-    
+
+    public static boolean isHtmlUrlPostLogin()
+      {
+        return _Config._laf._htmlUrlPostLogin != null;
+      }
+
+    public static String getHtmlUrlPostLogin()
+      {
+        return _Config._laf._htmlUrlPostLogin;
+      }
 
     public static String getUrlRedirectPostLogin()
       {
