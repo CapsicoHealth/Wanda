@@ -27,6 +27,7 @@ import tilda.db.Connection;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.exceptions.NotFoundException;
 
 @WebServlet("/svc/user/forgotPswd")
 public class ForgotPassword extends SimpleServlet
@@ -49,9 +50,9 @@ public class ForgotPassword extends SimpleServlet
         email = email.toLowerCase();
         User_Data u = User_Factory.lookupByEmail(email);
         if (u.read(C) && (u.isNullLocked() || ChronoUnit.MILLIS.between(ZonedDateTime.now(), u.getLocked()) < 1))
-          {
-            u.sendForgotPswdEmail(C);
-          }
+         u.sendForgotPswdEmail(C);
+        else
+          throw new NotFoundException("User", email, "Unknown error occured: user may not exist, be locked out, or have an invalid email.");
         Res.success();
       }
   }
