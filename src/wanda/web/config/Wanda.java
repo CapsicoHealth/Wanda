@@ -299,14 +299,14 @@ public class Wanda
         return _Config._laf._appDashboardPostLogin;
       }
 
-    public static boolean isHtmlUrlPostLogin()
+    public static boolean isHtmlUrlPreLogin()
       {
-        return _Config._laf._htmlUrlPostLogin != null;
+        return _Config._laf._htmlUrlPreLogin != null;
       }
 
-    public static String getHtmlUrlPostLogin()
+    public static String getHtmlUrlPreLogin()
       {
-        return _Config._laf._htmlUrlPostLogin;
+        return _Config._laf._htmlUrlPreLogin;
       }
 
     public static String getUrlRedirectPostLogin()

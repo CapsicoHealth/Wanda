@@ -164,12 +164,6 @@ public class WandaDefConfig
 
             if (_laf._urlRedirectPostLogin == null)
               _laf._urlRedirectPostLogin = _appPath + _homePagePath;
-            
-            if (_laf._appDashboardPostLogin == true && TextUtil.isNullOrEmpty(_laf._htmlUrlPostLogin) == false)
-              {
-                Wanda.LOG.error("The properties 'lookAndFeel.appDashboardPostLogin' and 'lookAndFeel.htmlUrlPostLogin' in the Wanda configuration file are mutually exclusive. Only one can be set.");
-                OK = false;
-              }
           }
 
         OK = Eula.validate(_eulas, OK);
