@@ -134,7 +134,8 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
       {
         setPswdResetCode(EncryptionUtil.getToken(18, true));
         setPswdResetCreateNow();
-        write(C);
+        if (write(C) == false)
+         throw new Exception("Cannot update record: database error.");
         String[] to = { getEmail()
         }, cc = {}, bcc = {};
         new Thread()

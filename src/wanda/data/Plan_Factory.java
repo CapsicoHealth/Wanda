@@ -61,4 +61,13 @@ public class Plan_Factory extends wanda.data._Tilda.TILDA__PLAN_Factory
         return L;
       }
 
+    public static List<Plan> getPlans()
+      {
+        List<Plan> L = new ArrayList<Plan>();
+        for (Plan P : _PLANS)
+          if (P._Plan.isCurrentlyActiveToday() == true)
+            L.add(new Plan(P, (short) 0, (short) 0, (short) 0, false));
+        return L;
+      }
+
   }

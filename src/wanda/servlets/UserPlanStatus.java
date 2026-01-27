@@ -42,7 +42,7 @@ public class UserPlanStatus extends SimpleServlet
 
     public UserPlanStatus()
       {
-        super(true, false, true);
+        super(false, false, true);
       }
 
     @Override
