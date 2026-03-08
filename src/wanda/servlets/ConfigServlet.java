@@ -51,21 +51,13 @@ public class ConfigServlet extends SimpleServlet
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        List<String> authPassthroughs = new ArrayList<String>();
-        Iterator<String> IAuthPassthroughs = Wanda.getAuthPassthroughs();
-        while (IAuthPassthroughs.hasNext())
-          {
-            authPassthroughs.add(IAuthPassthroughs.next());
-          }
-        String[] authPassthroughsArr = new String[authPassthroughs.size()];
-        authPassthroughs.toArray(authPassthroughsArr);
         List<PasswordRule> passwordRules = Wanda.getPasswordRules();
         List<AppUserView_Data> AUVL = U == null ? null : AppUserView_Factory.getUserApps(C, U, U.getRefnum(), 0, -1);
 
+        PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');
         JSONUtil.print(Out, "passwordRules", "", true, passwordRules, " ");
-        JSONUtil.print(Out, "authPassthroughs", false, authPassthroughsArr);
+        JSONUtil.print(Out, "authPassthroughs", false, Wanda.getAuthPassthroughs());
         Out.println();
         JSONUtil.print(Out, "isMultiTenant", false, ConnectionPool.isMultiTenant());
         Out.println();

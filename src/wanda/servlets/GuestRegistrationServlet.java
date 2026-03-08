@@ -123,9 +123,9 @@ public class GuestRegistrationServlet extends SimpleServlet
         long[] tenantRefnums = Wanda.getGuestRegistrationTenantRefnums();
 
         if (previousUser == false)
-          User_Data.inviteUser(C, promoCode, email, fName, lName, guestRole, tenantRefnums, appRefnums, contents);
+          User_Data.inviteUser(C, promoCode, null, null, email, fName, lName, guestRole, tenantRefnums, appRefnums, contents);
         else
-          User_Data.updateDetailsAndInvite(C, user, promoCode, email, fName, lName, guestRole, appRefnums, CollectionUtil.toList(tenantRefnums), new long[] {}, contents);
+          User_Data.updateDetailsAndInvite(C, user, promoCode, null, null, email, fName, lName, guestRole, appRefnums, CollectionUtil.toList(tenantRefnums), new long[] {}, contents);
 
         Res.success();
       }
