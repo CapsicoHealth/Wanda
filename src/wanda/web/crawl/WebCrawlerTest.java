@@ -25,25 +25,25 @@ public class WebCrawlerTest
         
         CrawlResult result;
         
-//        LOG.info("\n\n\n\n#######################################################################\nStarting crawling...");
-//        result = WebCrawler.crawl(
-//            "https://www.drugs.com/lutetium-lu-177-dotatate.html",
-//            1,
-//            false,
-//            "C:\\projects\\crawler\\lutetium-lu-177-dotatate.pdf",
-//            allowedDomains
-//        );
-//        printReport(result);
-        
         LOG.info("\n\n\n\n#######################################################################\nStarting crawling...");
         result = WebCrawler.crawl(
-            "https://clinicaltrials.gov/study/NCT0397248",
+            "https://www.drugs.com/lutetium-lu-177-dotatate.html",
             1,
             false,
-            "C:\\projects\\crawler\\NCT0397248.pdf",
+            "C:\\projects\\crawler\\lutetium-lu-177-dotatate.pdf",
             allowedDomains
         );
         printReport(result);
+        
+//        LOG.info("\n\n\n\n#######################################################################\nStarting crawling...");
+//        result = WebCrawler.crawl(
+//            "https://clinicaltrials.gov/study/NCT0397248",
+//            1,
+//            false,
+//            "C:\\projects\\crawler\\NCT0397248.pdf",
+//            allowedDomains
+//        );
+//        printReport(result);
 
         LOG.info("Crawling completed.");
         
