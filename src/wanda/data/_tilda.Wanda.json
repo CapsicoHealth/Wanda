@@ -544,7 +544,7 @@
    ,{ "name": "App"
      ,"description": "App Details, on a per-host basis"
      ,"columns": [
-        ,{"name":"id"       , "type":"STRING(250)", "nullable":false, "description":"App unique Id"   }
+         {"name":"id"       , "type":"STRING(250)", "nullable":false, "description":"App unique Id"   }
         ,{"name":"path"     , "type":"STRING(250)", "nullable":false, "description":"App web path"    }
         ,{"name":"home"     , "type":"STRING(250)", "nullable":false, "description":"App home page"   }
         ,{"name":"icon"     , "type":"BOOLEAN"    , "nullable":false, "description":"Whether the app has an icon"   }
@@ -726,20 +726,23 @@
    ,{	"name": "AccessLog",
     	"description": "Logs HTTP URL, Params & Response",
     	"columns": [
-           { "name": "requestUUID"   , "type": "STRING", "size": 50, "nullable": false, "description": "HTTP Request UUID" }
- 		  ,{ "name": "user_rn"       , "sameas": "User.refnum"     , "nullable": true , "description": "User foreign key" }
-          ,{ "name": "userEmail"     , "type": "STRING", "size": 256                  , "description": "User Email for failed login attempts" }
-   		  ,{ "name": "ipAddress"     , "type": "STRING", "size": 40                   , "description": "User Login IP Address" }
-          ,{ "name": "servlet"       , "type": "STRING", "size": 256                  , "description": "Servlet Path" }
-          ,{ "name": "url"           , "type": "STRING", "size": 256                  , "description": "HTTP Url" }
-          ,{ "name": "responseCode"  , "type": "SHORT"                                , "description": "HTTP Response Code" }
-          ,{ "name": "responseStatus", "type": "STRING", "size": 2048                 , "description": "HTTP Response status" }
-          ,{ "name": "parameters"    , "type": "STRING", "size": 262144               , "description": "parameters sent with http request" }
-          ,{ "name": "login"         , "type": "BOOLEAN"                              , "description": "Login status: null=not login, true=successfull login, false=failed login" }
-          ,{ "name": "registration"  , "type": "BOOLEAN"                              , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }
-          ,{ "name": "eula"          , "type": "BOOLEAN"                              , "description": "EULA status: null=not EULA, true=successfull EULA, false=failed EULA" }
-          ,{ "name": "payment"       , "type": "BOOLEAN"                              , "description": "Payment status: null=not payment, true=successfull payment, false=failed payment" }
-          ,{ "name": "durationNanos" , "type": "LONG"                                 , "description": "Duration in nanoseconds for the request" }
+           { "name": "requestUUID"          , "type": "STRING(   50)", "nullable": false, "description": "HTTP Request UUID" }
+ 		  ,{ "name": "user_rn"              , "sameas": "User.refnum", "nullable": true , "description": "User foreign key, which could be null in case of failed login" }
+          ,{ "name": "userEmail"            , "type": "STRING(  256)"                   , "description": "User Email should always be there, even for failed login attempts" }
+          ,{ "name": "userEmailImpersonator", "type": "STRING(  256)"                   , "description": "User Email for impersonator (should be admin) if applicable)" }
+   		  ,{ "name": "ipAddress"            , "type": "STRING(   40)"                   , "description": "User Login IP Address" }
+          ,{ "name": "servlet"              , "type": "STRING(  256)"                   , "description": "Servlet Path" }
+          ,{ "name": "url"                  , "type": "STRING(  256)"                   , "description": "HTTP Url" }
+          ,{ "name": "responseCode"         , "type": "SHORT"                           , "description": "HTTP Response Code" }
+          ,{ "name": "responseStatus"       , "type": "STRING( 2048)"                   , "description": "HTTP Response status" }
+          ,{ "name": "parameters"           , "type": "STRING(32765)"                   , "description": "parameters sent with http request" }
+          ,{ "name": "login"                , "type": "BOOLEAN"                         , "description": "Login status: null=not login, true=successfull login, false=failed login" }
+          ,{ "name": "registrationGuest"    , "type": "BOOLEAN"                         , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }
+          ,{ "name": "registrationInvite"   , "type": "BOOLEAN"                         , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }
+          ,{ "name": "eula"                 , "type": "BOOLEAN"                         , "description": "EULA status: null=not EULA, true=successfull EULA, false=failed EULA" }
+          ,{ "name": "paymentCreate"        , "type": "BOOLEAN"                         , "description": "Payment status: null=not payment, true=successfull payment, false=failed payment" }
+          ,{ "name": "paymentCapture"       , "type": "BOOLEAN"                         , "description": "Payment status: null=not payment, true=successfull payment, false=failed payment" }
+          ,{ "name": "durationNanos"        , "type": "LONG"                            , "description": "Duration in nanoseconds for the request" }
     	],
       "primary": { "autogen": true },
         "foreign": [
@@ -1094,11 +1097,11 @@
         ,{ "sameas": "User.locked"                                           }
         ,{ "sameas": "User.roles"                                            }
         ,{ "sameas": "User.profRoles"                                        }
-        ,{ "sameas": "User.promoCode"                                        }
         ,{ "sameas": "User.inviteCancelled"                                  }
         ,{ "sameas": "User.loginCount"                                       }
         ,{ "sameas": "User.loginType"                                        }
         ,{ "sameas": "User.loginDomain"                                      }
+        ,{ "sameas": "User.promoCode"                                        }
         ,{ "sameas": "User.lastLogin"                                        }
         ,{ "sameas": "User.lastEula"                                         }
         ,{ "sameas": "UserDetail.nameTitle"                                  }
@@ -1118,7 +1121,7 @@
          }
        ]
      ,"outputMaps": [
-         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "lastLogin", "lastEula"] }
+         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "promoCode", "lastLogin", "lastEula"] }
         ,{ "name": "Simple", "outTypes":["CSV" ], "columns": [                "personId", "nameTitle", "nameFirst", "nameMiddle", "nameLast", "profRoles", "loginCount", "lastLogin", "loginDomain", "lastEula", "locked"] }
        ]       
     }
@@ -1164,9 +1167,9 @@
          }
        ]
      ,"outputMaps": [
-         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "lastLogin", "lastEula", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"] }
+         { "name": ""      , "outTypes":["JSON"], "columns": ["personRefnum", "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "telMobile", "locked", "roles", "profRoles", "inviteCancelled", "invitedUser", "loginCount", "loginType", "loginDomain", "promoCode", "lastLogin", "lastEula", "tenantUserRefnum", "tenantUserActive", "tenantName", "tenantRefnum"] }
         ,{ "name": "Simple", "outTypes":["CSV" ], "columns": [                "personId", "nameTitle", "nameLast", "nameFirst", "nameMiddle", "profRoles", "loginCount", "lastLogin", "loginDomain", "lastEula", "locked"] }
-       ]       
+       ]
     }
    ,{ "name": "TenantView",
       "description": "View that has Tenant + TenantUser",
@@ -1383,18 +1386,23 @@
    ,{ "name":"AccessLogMonthlyView",
       "description":"View that has Tenant + TenantUser",
       "columns":[
-         { "sameAs":"AccessLog.created"    , "name":"month"                 , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
-        ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"        , "aggregate":"COUNT", "distinct":true }
-        ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"           , "aggregate":"COUNT", "distinct":true }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"         , "aggregate":"COUNT" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+         { "sameAs":"AccessLog.created"    , "name":"month"                   , "expression":"date_trunc('month', ?)::DATE", "type":"DATE" }
+        ,{ "sameAs":"AccessLog.requestUUID", "name":"uniqueSessions"          , "aggregate":"COUNT", "distinct":true }
+        ,{ "sameAs":"AccessLog.user_rn"    , "name":"uniqueUsers"             , "aggregate":"COUNT", "distinct":true }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countRequests"           , "aggregate":"COUNT" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode200"    , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 200" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode400"    , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 400" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode401"    , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 401" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"    , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"    , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther"  , "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"             , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"        , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countEulas"              , "aggregate":"COUNT", "filter":"AccessLog.eula=true" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsGuest" , "aggregate":"COUNT", "filter":"AccessLog.registrationGuest=true" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsInvite", "aggregate":"COUNT", "filter":"AccessLog.registrationInvite=true" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCreate"      , "aggregate":"COUNT", "filter":"AccessLog.paymentCreate=true" }
+        ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCapture"     , "aggregate":"COUNT", "filter":"AccessLog.paymentCapture=true" }
        ]
      ,"queries": [
          { "name"  :"Month",
@@ -1424,9 +1432,13 @@
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeError", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 401)" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrations"    , "aggregate":"COUNT", "filter":"AccessLog.registration=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"             , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"        , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countEulas"              , "aggregate":"COUNT", "filter":"AccessLog.eula=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsGuest" , "aggregate":"COUNT", "filter":"AccessLog.registrationGuest=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsInvite", "aggregate":"COUNT", "filter":"AccessLog.registrationInvite=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCreate"      , "aggregate":"COUNT", "filter":"AccessLog.paymentCreate=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCapture"     , "aggregate":"COUNT", "filter":"AccessLog.paymentCapture=true" }
        ]
      ,"queries": [
           { "name"  :"Day",
@@ -1455,8 +1467,13 @@
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode404"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 404" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCode500"  , "aggregate":"COUNT", "filter":"AccessLog.responseCode = 500" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countResponseCodeOther", "aggregate":"COUNT", "filter":"COALESCE(AccessLog.responseCode,0) NOT IN (200, 400, 401, 500)" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"           , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
-         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"      , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLogins"             , "aggregate":"COUNT", "filter":"AccessLog.login=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countLoginErrors"        , "aggregate":"COUNT", "filter":"AccessLog.login=false" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countEulas"              , "aggregate":"COUNT", "filter":"AccessLog.eula=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsGuest" , "aggregate":"COUNT", "filter":"AccessLog.registrationGuest=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsInvite", "aggregate":"COUNT", "filter":"AccessLog.registrationInvite=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCreate"      , "aggregate":"COUNT", "filter":"AccessLog.paymentCreate=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCapture"     , "aggregate":"COUNT", "filter":"AccessLog.paymentCapture=true" }
        ]
      ,"queries": [
           { "name"  :"Hour",
@@ -1921,6 +1938,8 @@
  ,"migrations":{
       "renames":[
          { "object":"User", "column":"contentIds", "oldNames":["programs"] }
+        ,{ "object":"AccessLog", "column":"paymentCapture", "oldNames":["payment"] }
+        ,{ "object":"AccessLog", "column":"registrationGuest", "oldNames":["registration"] }
        ]
      ,"moves":[
          { "schema":"ADMIN", "objects":["SystemEmail"] }
