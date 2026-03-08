@@ -135,7 +135,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         setPswdResetCode(EncryptionUtil.getToken(18, true));
         setPswdResetCreateNow();
         if (write(C) == false)
-         throw new Exception("Cannot update record: database error.");
+          throw new Exception("Cannot update record: database error.");
         String[] to = { getEmail()
         }, cc = {}, bcc = {};
         new Thread()
@@ -167,7 +167,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }.start();
       }
 
-    public static void inviteUser(Connection C, String promoCode, String email, String firstName, String lastName, String[] roles, long[] tenantRefnums, long[] appRefnums, String[] contentIds)
+    public static void inviteUser(Connection C, String promoCode, String loginType, String loginDomain, String email, String firstName, String lastName, String[] roles, long[] tenantRefnums, long[] appRefnums, String[] contentIds)
     throws Exception
       {
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
@@ -183,8 +183,24 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.setNullLocked();
         if (TextUtil.isNullOrEmpty(promoCode) == false)
           U.setPromoCode(promoCode);
+        else
+          U.setNullPromoCode();
+        
+        if (TextUtil.isNullOrEmpty(loginType) == false)
+          {
+            if (User_Data.checkLoginType(loginType) == false)
+              throw new Exception("Invalid loginType value: " + loginType);
+            U.setLoginType(loginType);
+          }
+        
+        if (TextUtil.isNullOrEmpty(loginDomain) == false)
+          U.setLoginDomain(loginDomain);
+        else
+          U.setNullLoginDomain();
+
         if (TextUtil.isNullOrEmpty(contentIds) == false)
           U.setContentIds(Arrays.asList(contentIds));
+        
         if (U.write(C) == false)
           Errors.add(new StringStringPair("User", "Unable to save changes"));
 
@@ -230,9 +246,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
       }
 
-    public static void updateDetailsAndInvite(Connection C, User_Data U, String promoCode, String email,
-    String firstName, String lastName, String[] roles, long[] appRefnums, List<Long> tenantRefnumList,
-    long[] oldTenantRefnums, String[] contentIds)
+    public static void updateDetailsAndInvite(Connection C, User_Data U, String promoCode, String loginType, String loginDomain, String email, String firstName, String lastName, String[] roles, long[] appRefnums, List<Long> tenantRefnumList, long[] oldTenantRefnums, String[] contentIds)
     throws Exception
       {
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
@@ -252,8 +266,24 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.setRoles(new HashSet<String>(Arrays.asList(roles)));
         if (TextUtil.isNullOrEmpty(promoCode) == false)
           U.setPromoCode(promoCode);
+        else
+          U.setNullPromoCode();
+        
+        if (TextUtil.isNullOrEmpty(loginType) == false)
+          {
+            if (User_Data.checkLoginType(loginType) == false)
+              throw new Exception("Invalid loginType value: " + loginType);
+            U.setLoginType(loginType);
+          }
+        
+        if (TextUtil.isNullOrEmpty(loginDomain) == false)
+          U.setLoginDomain(loginDomain);
+        else
+          U.setNullLoginDomain();
+
         if (TextUtil.isNullOrEmpty(contentIds) == false)
           U.setContentIds(Arrays.asList(contentIds));
+        
         if (isResetPassword)
           {
             U.setPswdResetCode(EncryptionUtil.getToken(18, true));
@@ -664,7 +694,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
         updateAppAccess(C, U, CollectionUtil.toPrimitiveArray(p.getAppsAsArray()));
       }
-    
+
 
     /**
      * Updates and salts the new password and related attributes. Will skip if newPassword is null or empty.

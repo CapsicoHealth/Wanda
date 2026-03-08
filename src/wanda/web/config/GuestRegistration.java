@@ -63,7 +63,7 @@ public class GuestRegistration
               }
             else
               {
-                String[] appIds = Stream.of(gr._defaultApps).map(e -> e._id).toArray(String[]::new);
+                String[] appIds = Stream.of(gr._defaultApps).filter(e -> e != null && e._id != null).map(e -> e._id).toArray(String[]::new);
 
                 List<AppView_Data> AL = AppView_Factory.lookupWhereIds(C, Wanda.getHostName(), appIds, 0, -1);
                 if (AL.size() != appIds.length)
