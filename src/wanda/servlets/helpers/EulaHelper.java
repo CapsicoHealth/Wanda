@@ -149,6 +149,26 @@ public class EulaHelper
         return null;
       }
 
+    public static String getEulaUrl(Connection C, User_Data U, TenantView_Data TV)
+    throws Exception
+      {
+        String promo = U.getPromoCode();
+        if (TextUtil.isNullOrEmpty(promo) == false)
+          {
+            Promo_Data p = Promo_Factory.lookupByCode(promo);
+            // Promo record must exist, and Eula URL must be defined, and either the user never signed a EULA or the last EULA is older than the renewal days.
+            if (p.read(C) == true)
+             return p.getEulaUrl();
+          }
+
+        // Let's check the global scope
+        EulaActivation EA = Wanda.getEula(TV == null ? null : TV.getName());
+        if (EA != null)
+         return EA._eulaUrl;
+
+        return null;
+      }
+    
 
     protected static void clearUserForEula(Connection C, RequestUtil Req, User_Data U, TenantView_Data TV, boolean refreshTS)
     throws Exception

@@ -17,24 +17,20 @@
 package wanda.servlets;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import jakarta.servlet.annotation.WebServlet;
-
-import wanda.data.AppUserView_Data;
-import wanda.data.AppUserView_Factory;
-import wanda.data.User_Data;
-import wanda.web.config.PasswordRule;
-import wanda.web.config.Wanda;
-
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.utils.json.JSONUtil;
+import wanda.data.AppUserView_Data;
+import wanda.data.AppUserView_Factory;
+import wanda.data.User_Data;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.config.PasswordRule;
+import wanda.web.config.Wanda;
 
 @WebServlet("/svc/config")
 public class ConfigServlet extends SimpleServlet

@@ -210,6 +210,11 @@
      ,"primary": { "autogen": true }
      ,"foreign": [
        ]
+     ,"indices":[ 
+          { "name":"Id"          , "columns":["id"]    , "db": true }
+         ,{ "name":"Email"       , "columns":["email"] , "db": true }
+         ,{ "name":"Promo"       , "columns":["promoCode"], "orderBy":["created desc"], "db": true }
+       ]
      ,"queries": [
           { "name": "PswdResetCode"
            ,"description": "User with Given Reset Password Code"
@@ -233,12 +238,6 @@
        ]
      ,"outputMaps": [
            { "name":"", "outTypes":["JSON"], "columns": ["refnum", "email", "id", "lastLogin", "roles", "rolesEnumValue", "loginType", "loginDomain"] }
-       ]
-     ,"indices":[ 
-          { "name":"Id"          , "columns":["id"]    , "db": true }
-         ,{ "name":"Email"       , "columns":["email"] , "db": true }
-         ,{ "name":"Promo"       , "columns":["promoCode"], "orderBy":["created desc"], "db": true }
-//         ,{ "name":"PersonRefNum", "columns":["refnum"], "db": true }
        ]
      ,"masks":[
          { "columns":["email", "id"], "mask":"******" }

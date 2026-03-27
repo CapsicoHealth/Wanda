@@ -36,6 +36,7 @@ public class LookAndFeel
     @SerializedName("overlayTextPostLogin" ) public String  _overlayTextPostLogin  = "";
 
     @SerializedName("poweredBy"            ) public String  _poweredBy             = "";
+    @SerializedName("dataConfidentiality"  ) public String  _dataConfidentiality   = "The license to use this application does not authorize you to download its data.";
     @SerializedName("copyright"            ) public String  _copyright             = "";
 
     @SerializedName("overrideCssFile"      ) public String  _overrideCssFile       = null;
