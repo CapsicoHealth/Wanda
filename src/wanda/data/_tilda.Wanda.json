@@ -1506,7 +1506,7 @@
          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
        ]       
     }
-    
+
    ,{ "name":"AccessLogPerformanceDayView"
      ,"description":"View of logs geared towards performance analysis per day per servlet"
      ,"columns":[
@@ -1516,8 +1516,9 @@
         ,{ "sameAs":"AccessLog.durationNanos", "name":"minNanos"    , "aggregate":"MIN", "formulaOnly":true }
         ,{ "sameAs":"AccessLog.durationNanos", "name":"avgNanos"    , "aggregate":"AVG", "formulaOnly":true }
         ,{ "sameAs":"AccessLog.durationNanos", "name":"maxNanos"    , "aggregate":"MAX", "formulaOnly":true }
+        ,{ "sameAs":"AccessLog.durationNanos", "name":"totalNanos"  , "aggregate":"SUM", "formulaOnly":true }
        ]
-     ,"subWhere":"AccessLog.servlet not in ('/apps/home.jsp', '/svc/user/token') and AccessLog.responseCode not in ('302','401','404')"
+     ,"subWhere":"AccessLog.servlet not like '%.jsp' and AccessLog.servlet <> '/svc/user/token' and AccessLog.responseCode not in ('302','401','404')"
      ,"formulaColumns":[
            { "name": "minMillis", "type": "LONG"
             ,"formula":[ "minNanos/1000000" ]
@@ -1540,12 +1541,87 @@
                 "The maximum duration in milliseconds of the requests."
               ]
            }
+          ,{ "name": "totalMillis", "type": "LONG"
+            ,"formula":[ "totalNanos/1000000" ]
+            ,"title": "Total duration"
+            ,"description":[
+                "The total duration in milliseconds of the requests."
+              ]
+           }
          ]
+     ,"queries": [
+          { "name"  :"ServletDay",
+            "description":"Get the logs info by day from >= start and < end.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"servlet=?() and day >= ?(Start) and day < ?(End)" }
+             ],
+            "orderBy": ["day asc"]
+          }
+       ]
      ,"outputMaps":[
          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
        ]       
     }
     
+    
+    
+    
+    ,{ "name":"AccessLogPerformance90DayView"
+      ,"description":"View of aggregate servlet performance over a 90-day period"
+      ,"columns":[
+          { "sameAs":"AccessLog.servlet"      , "name":"servlet"  }
+         ,{ "sameAs":"AccessLog.refnum"       , "name":"requestCount", "aggregate":"COUNT" }
+         ,{ "sameAs":"AccessLog.durationNanos", "name":"minNanos"    , "aggregate":"MIN", "formulaOnly":true }
+         ,{ "sameAs":"AccessLog.durationNanos", "name":"avgNanos"    , "aggregate":"AVG", "formulaOnly":true }
+         ,{ "sameAs":"AccessLog.durationNanos", "name":"maxNanos"    , "aggregate":"MAX", "formulaOnly":true }
+         ,{ "sameAs":"AccessLog.durationNanos", "name":"totalNanos"  , "aggregate":"SUM", "formulaOnly":true }
+        ]
+      ,"subWhere":"AccessLog.servlet not like '%.jsp' and AccessLog.servlet <> '/svc/user/token' and AccessLog.responseCode not in ('302','401','404') and created >= current_date - interval '90' day"
+      ,"formulaColumns":[
+            { "name": "minMillis", "type": "LONG"
+             ,"formula":[ "minNanos/1000000" ]
+             ,"title": "Minimum duration"
+             ,"description":[
+                 "The minimum duration in milliseconds of the requests."
+               ]
+            }
+           ,{ "name": "avgMillis", "type": "LONG"
+             ,"formula":[ "avgNanos/1000000" ]
+             ,"title": "Average duration"
+             ,"description":[
+                 "The average duration in milliseconds of the requests."
+               ]
+            }
+           ,{ "name": "maxMillis", "type": "LONG"
+             ,"formula":[ "maxNanos/1000000" ]
+             ,"title": "Maximum duration"
+             ,"description":[
+                 "The maximum duration in milliseconds of the requests."
+               ]
+            }
+           ,{ "name": "totalMillis", "type": "LONG"
+             ,"formula":[ "totalNanos/1000000" ]
+             ,"title": "Total duration"
+             ,"description":[
+                 "The total duration in milliseconds of the requests."
+               ]
+            }
+          ]
+      ,"queries": [
+           { "name"  :"All",
+             "description":"Get the logs info by day from >= start and < end.",
+             "from"  : [], 
+             "wheres": [
+                 { "db":"*", "clause":"1=1" }
+              ],
+             "orderBy": ["totalMillis desc"]
+           }
+        ]
+      ,"outputMaps":[
+          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+        ]       
+     }    
 
    ,{ "name":"AccessLogHistoryView",
       "description":"View that has Tenant + TenantUser",

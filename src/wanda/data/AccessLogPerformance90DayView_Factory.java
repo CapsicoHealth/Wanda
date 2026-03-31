@@ -10,14 +10,14 @@ import org.apache.logging.log4j.Logger;
 import tilda.db.*;
 
 /**
-This is the application class <B>Data_AccessLogPerformanceDayView</B> mapped to the table <B>WANDA.AccessLogPerformanceDayView</B>.
-@see wanda.data._Tilda.TILDA__ACCESSLOGPERFORMANCEDAYVIEW
+This is the application class <B>Data_AccessLogPerformance90DayView</B> mapped to the table <B>WANDA.AccessLogPerformance90DayView</B>.
+@see wanda.data._Tilda.TILDA__ACCESSLOGPERFORMANCE90DAYVIEW
 */
-public class AccessLogPerformanceDayView_Factory extends wanda.data._Tilda.TILDA__ACCESSLOGPERFORMANCEDAYVIEW_Factory
+public class AccessLogPerformance90DayView_Factory extends wanda.data._Tilda.TILDA__ACCESSLOGPERFORMANCE90DAYVIEW_Factory
  {
-   protected static final Logger LOG = LogManager.getLogger(AccessLogPerformanceDayView_Factory.class.getName());
+   protected static final Logger LOG = LogManager.getLogger(AccessLogPerformance90DayView_Factory.class.getName());
 
-   protected AccessLogPerformanceDayView_Factory() { }
+   protected AccessLogPerformance90DayView_Factory() { }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
