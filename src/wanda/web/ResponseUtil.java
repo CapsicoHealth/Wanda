@@ -60,7 +60,7 @@ public class ResponseUtil
 
     public enum ContentType
       {
-      JSON("text/json"), XML("text/xml"), CSV("text/csv"), HTML("text/html"), TXT("text/plain");
+      JSON("text/json"), XML("text/xml"), CSV("text/csv"), HTML("text/html"), TXT("text/plain"), MARKDOWN("text/markdown; charset=UTF-8"), YAML("application/yaml; charset=UTF-8");
 
         protected String _ContentType;
 
@@ -215,7 +215,24 @@ public class ResponseUtil
     public void SystemError(HttpStatus Code, String Msg)
     throws IOException, ServletException
       {
-        _Res.sendError(Code._Code, Msg);
+        SystemError(_Res, Code, Msg);
+      }
+    /**
+     * This is meant for a serious system issue and will return a traditional error sequence for HTTP.
+     * This is expected mostly to be used by frameworks on top of Wanda. If you have an application
+     * error from a simpleServlet, you should use the standard {@link SimpleServletException} mechanism
+     * to return a regular HTTPStatus=200 response, but with a JSON error payload.
+     * 
+     * @param response
+     * @param code
+     * @param msg
+     * @throws ServletException
+     * @throws IOException
+     */
+    public static void SystemError(HttpServletResponse res, HttpStatus Code, String Msg)
+    throws IOException, ServletException
+      {
+        res.sendError(Code._Code, Msg);
         throw new ServletException(Msg);
       }
 

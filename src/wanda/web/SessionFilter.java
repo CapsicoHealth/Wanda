@@ -164,7 +164,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                     if (isApiKeyAccessEnabled(request) == false) // Is this request endpoint API-enabled?
                       {
                         LOG.info("API call for an endpoint that is not api-enabled in its wanda configuration file.");
-                        response.sendError(HttpStatus.BadRequest._Code, "Invalid API Key for requested endpoint");
+                        ResponseUtil.SystemError(response, HttpStatus.BadRequest, "Invalid API Key for requested endpoint");
                         return;
                       }
                     LOG.info("Anonymous access with apiKey-enabled service.");
@@ -191,13 +191,13 @@ public class SessionFilter implements jakarta.servlet.Filter
                         catch (Exception e)
                           {
                             ConfigSAML.LOG.debug("Error during SAML processing: " + e.getMessage() + "\n", e);
-                            response.sendError(HttpStatus.InternalServerError._Code, "Internal Server Error Setting Up SAML SSO Connection");
+                            ResponseUtil.SystemError(response, HttpStatus.InternalServerError, "Internal Server Error Setting Up SAML SSO Connection");
                             return;
                           }
 
                         return;
                       }
-                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                    ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session");
                     return;
                   }
               }
@@ -207,7 +207,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                 if (isUserLocked(MasterDbUser))
                   {
                     req.removeSessionUser();
-                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthorized User");
+                    ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthorized User");
                     return;
                   }
                 UserDetail_Data UD = getUserDetail(MasterConnection, MasterDbUser, response);
@@ -216,7 +216,7 @@ public class SessionFilter implements jakarta.servlet.Filter
 
             if (isAuthPassthrough == false && isAppAuthorized(request, MasterConnection, MasterDbUser) == false)
               {
-                response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                ResponseUtil.SystemError(response, HttpStatus.ResourceNotFound, "Unauthorized Application Access");
                 return;
               }
 
@@ -236,7 +236,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                           {
                             LOG.info("Unable to load TenantUser from Session.");
                             SessionUtil.InvalidateSession(request);
-                            response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                            ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session");
                             return;
                           }
                       }
@@ -263,8 +263,8 @@ public class SessionFilter implements jakarta.servlet.Filter
                   }
               }
 
-            if (checkAccountRequirements(request, response, req, isAuthPassthrough, apiToken) == false)
-              return;
+            // May throw if error
+            checkAccountRequirements(request, response, req, isAuthPassthrough, apiToken);
 
             User_Data mainUser = null;
             // Skip for SuperAdmin
@@ -289,12 +289,12 @@ public class SessionFilter implements jakarta.servlet.Filter
                     // There is a conflict here between 404's and non-authorized guest requests.
                     if (req.isResourceMapped() == false && req.isServletMapped() == false)
                       {
-                        response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                        ResponseUtil.SystemError(response, HttpStatus.ResourceNotFound, "Unauthorized Application Access");
                         return;
                       }
 
                     LOG.info("User is a guest and is not cleared for this url (" + request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
-                    response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
+                    ResponseUtil.SystemError(response, HttpStatus.BadRequest, "Unauthorized Guest Access");
                     return;
                   }
                 else
@@ -304,7 +304,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                     if (roles == null || roles.length == 0)
                       {
                         LOG.info("User is role-less.");
-                        response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
+                        ResponseUtil.SystemError(response, HttpStatus.BadRequest, "Unauthorized User Access: role-less user");
                         return;
                       }
                   }
@@ -426,8 +426,8 @@ public class SessionFilter implements jakarta.servlet.Filter
           AL.setPaymentCapture(flag);
       }
 
-    private static boolean checkAccountRequirements(HttpServletRequest request, HttpServletResponse response, RequestUtil req, boolean isAuthPassthrough, AuthApiToken apiToken)
-    throws IOException
+    private static void checkAccountRequirements(HttpServletRequest request, HttpServletResponse response, RequestUtil req, boolean isAuthPassthrough, AuthApiToken apiToken)
+    throws IOException, ServletException
       {
         int EulaClear = req.getSessionInt(SessionUtil.Attributes.EULA_CLEAR.name());
         if (EulaClear == SystemValues.EVIL_VALUE)
@@ -436,8 +436,8 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 LOG.info("User not cleared for EULA.");
                 SessionUtil.InvalidateSession(request);
-                response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session due to incomplete EULA");
-                return false;
+                ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session due to incomplete EULA");
+                return;
               }
           }
         int PlanClear = req.getSessionInt(SessionUtil.Attributes.PLAN_CLEAR.name());
@@ -447,11 +447,10 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 LOG.info("User not cleared for Paymnt Plan.");
                 SessionUtil.InvalidateSession(request);
-                response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session due to missing Payment Plan");
-                return false;
+                ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session due to missing Payment Plan");
+                return;
               }
           }
-        return true;
       }
 
     /**
@@ -829,10 +828,7 @@ public class SessionFilter implements jakarta.servlet.Filter
 
         UserDetail_Data UD = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
         if (UD.read(C) == false)
-          {
-            Response.sendError(HttpStatus.InternalServerError._Code, "Cannot load Person object based on User info");
-            throw new ServletException("System error: unmatched Person and User");
-          }
+         ResponseUtil.SystemError(Response, HttpStatus.InternalServerError, "Cannot load UserDetail info");
         return UD;
       }
 

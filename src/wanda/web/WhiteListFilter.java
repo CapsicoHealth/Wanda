@@ -118,8 +118,7 @@ public class WhiteListFilter implements jakarta.servlet.Filter
             if (M.find() == true)
               {
                 LOG.error("The URL " + X + " was blocked by the black-list entry " + P.pattern());
-                Response.sendError(HttpStatus.ResourceNotFound._Code, "Invalid URL");
-                throw new ServletException("Invalid URL");
+                ResponseUtil.SystemError(Response, HttpStatus.ResourceNotFound, "Invalid URL");
               }
           }
         for (Pattern P : _WHITE_LIST)
@@ -134,7 +133,6 @@ public class WhiteListFilter implements jakarta.servlet.Filter
               }
           }
         LOG.error("The URL " + X + " was blocked by the white-list as no entry was found to match th eincoming URL.");
-        Response.sendError(HttpStatus.ResourceNotFound._Code, "Invalid URL");
-        throw new ServletException("Invalid URL");
+        ResponseUtil.SystemError(Response, HttpStatus.ResourceNotFound, "Invalid URL");
       }
   }
