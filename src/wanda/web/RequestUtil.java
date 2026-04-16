@@ -166,6 +166,31 @@ public class RequestUtil
       {
         return ParseUtil.parseInteger(_Req.getParameter(Name), Default);
       }
+    
+    /**
+     * Returns the parsed value as an integer. If the value is less than minVal, of the 
+     * parameter is optional and no value was found,
+     * minVal is returned. If the value is greater than maxVal, maxVal is returned. 
+     * If the value cannot be parsed and the parameter is mandatory, SystemValues.EVIL_VALUE 
+     * is returned and an error is added to the list of errors.
+     *
+     * @param Name
+     * @param Mandatory
+     * @param minVal
+     * @param maxVal
+     * @return
+     */
+    public int getParamInt(String Name, boolean Mandatory, int minVal, int maxVal)
+      {
+        int val = ParseUtil.parseInteger(Name, Mandatory, _Req.getParameter(Name), _Errors);
+        if (Mandatory == true && val == SystemValues.EVIL_VALUE)
+          return val;
+        if (val < minVal)
+         return minVal;
+        else if (val > maxVal)
+          return maxVal;
+        return val;
+      }
 
     public int[] getParamsInt(String Name, boolean Mandatory)
       {

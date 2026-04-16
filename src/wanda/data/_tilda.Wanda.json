@@ -734,7 +734,7 @@
           ,{ "name": "url"                  , "type": "STRING(  256)"                   , "description": "HTTP Url" }
           ,{ "name": "responseCode"         , "type": "SHORT"                           , "description": "HTTP Response Code" }
           ,{ "name": "responseStatus"       , "type": "STRING( 2048)"                   , "description": "HTTP Response status" }
-          ,{ "name": "parameters"           , "type": "STRING(32765)"                   , "description": "parameters sent with http request" }
+          ,{ "name": "parameters"           , "type": "STRING(132000)"                  , "description": "parameters sent with http request" }
           ,{ "name": "login"                , "type": "BOOLEAN"                         , "description": "Login status: null=not login, true=successfull login, false=failed login" }
           ,{ "name": "registrationGuest"    , "type": "BOOLEAN"                         , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }
           ,{ "name": "registrationInvite"   , "type": "BOOLEAN"                         , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }
@@ -1014,7 +1014,9 @@
          ,{ "sameAs":"User.id"                  }
          ,{ "sameAs":"User.pswdCreate"          }
          ,{ "sameAs":"User.lastLogin"           }
+         ,{ "sameAs":"User.lastLogin"           , "name":"isActive", "expression":"WANDA.User.lastLogin is not null", "type":"BOOLEAN" }
          ,{ "sameAs":"User.locked"              }
+         ,{ "sameAs":"User.locked"              , "name":"isLocked", "expression":"WANDA.User.locked is not null", "type":"BOOLEAN" }
          ,{ "sameAs":"User.loginCount"          }
          ,{ "sameAs":"User.roles"               }
          ,{ "sameAs":"User.promoCode"           }
@@ -1052,10 +1054,17 @@
               { "db": "*", "clause": "id = ?()" }
             ]
          }
+        ,{ "name": "Active"
+          ,"description": "Active users (not deleted) from same domain, except self"
+          ,"wheres": [
+              { "db": "*", "clause": "email like ?() and refnum <> ?() and deleted is null and locked is null" }
+            ]
+          ,"orderBy": ["nameLast ASC", "nameFirst ASC", "email ASC"]
+         }
        ]
      ,"json": [
          { "name": "", "columns": ["*"], "exclude":["refnum"] }     
-        ,{ "name": "Mini", "columns": ["refnum", "id", "email", "nameFirst", "nameLast"] }     
+        ,{ "name": "Mini", "columns": ["refnum", "id", "email", "nameFirst", "nameLast", "isActive", "isLocked"] }     
        ]
     }
     
