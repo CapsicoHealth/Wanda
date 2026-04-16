@@ -3,7 +3,6 @@ package wanda.servlets;
 import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
-import java.util.List;
 
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;

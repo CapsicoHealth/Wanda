@@ -119,6 +119,9 @@ public class PlanHelper
     public static List<Plan> getAvailablePlans(Connection C, User_Data U)
     throws Exception
       {
+        if (U == null)
+         return Plan_Factory.getPlans();
+
         if (U.isNullPromoCode() == false)
           {
             Promo_Data P = Promo_Factory.lookupByCode(U.getPromoCode());

@@ -17,24 +17,20 @@
 package wanda.servlets;
 
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import jakarta.servlet.annotation.WebServlet;
-
-import wanda.data.AppUserView_Data;
-import wanda.data.AppUserView_Factory;
-import wanda.data.User_Data;
-import wanda.web.config.PasswordRule;
-import wanda.web.config.Wanda;
-
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
 import tilda.utils.json.JSONUtil;
+import wanda.data.AppUserView_Data;
+import wanda.data.AppUserView_Factory;
+import wanda.data.User_Data;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
+import wanda.web.config.PasswordRule;
+import wanda.web.config.Wanda;
 
 @WebServlet("/svc/config")
 public class ConfigServlet extends SimpleServlet
@@ -51,21 +47,13 @@ public class ConfigServlet extends SimpleServlet
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
-        List<String> authPassthroughs = new ArrayList<String>();
-        Iterator<String> IAuthPassthroughs = Wanda.getAuthPassthroughs();
-        while (IAuthPassthroughs.hasNext())
-          {
-            authPassthroughs.add(IAuthPassthroughs.next());
-          }
-        String[] authPassthroughsArr = new String[authPassthroughs.size()];
-        authPassthroughs.toArray(authPassthroughsArr);
         List<PasswordRule> passwordRules = Wanda.getPasswordRules();
         List<AppUserView_Data> AUVL = U == null ? null : AppUserView_Factory.getUserApps(C, U, U.getRefnum(), 0, -1);
 
+        PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');
         JSONUtil.print(Out, "passwordRules", "", true, passwordRules, " ");
-        JSONUtil.print(Out, "authPassthroughs", false, authPassthroughsArr);
+        JSONUtil.print(Out, "authPassthroughs", false, Wanda.getAuthPassthroughs());
         Out.println();
         JSONUtil.print(Out, "isMultiTenant", false, ConnectionPool.isMultiTenant());
         Out.println();

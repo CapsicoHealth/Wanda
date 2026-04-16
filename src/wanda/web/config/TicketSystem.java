@@ -20,7 +20,9 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.output.StringBuilderWriter;
 
@@ -28,6 +30,7 @@ import com.google.gson.annotations.SerializedName;
 
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
+import tilda.utils.concurrent.JVMHookHelper;
 import wanda.Beacon;
 import wanda.beacons.ActiveTicketNotification;
 import wanda.data.User_Data;
@@ -70,18 +73,35 @@ public class TicketSystem
     public void launch()
       {
         if (_enabled == false)
-         return;
+          return;
 
-        ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+        // Create a thread factory that produces daemon threads so JVM can exit when main() ends
+        ThreadFactory daemonThreadFactory = new ThreadFactory()
+          {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            
+            @Override
+            public Thread newThread(Runnable r)
+              {
+                Thread t = new Thread(r, "TicketSystem-Notification-" + threadNumber.getAndIncrement());
+                t.setDaemon(true); // Make threads daemon so they don't prevent JVM shutdown
+                return t;
+              }
+          };
+        
+        ScheduledExecutorService service = Executors.newScheduledThreadPool(1, daemonThreadFactory);
+        JVMHookHelper.addShutdownHook(service, "Ticket System", 30);
+        Beacon.LOG.info("TicketSystem notification scheduler launched successfully. First run in 10 minutes, then every " + _notifications._scheduleMinutes + " minutes.");
+
         Runnable task = () -> {
           Connection C = null;
           try
             {
               C = ConnectionPool.get("MAIN");
               ActiveTicketNotification ATN = new ActiveTicketNotification();
-              StringBuilderWriter out = new StringBuilderWriter(); 
+              StringBuilderWriter out = new StringBuilderWriter();
               if (ATN.run(new PrintWriter(out), C, 0, null) == true)
-               EMailSender.sendMailSys(_notifications._accounts, null, null, "Outstanding Tickets - "+Wanda.getAppName() , out.toString(), false, true);
+                EMailSender.sendMailSys(_notifications._accounts, null, null, "Outstanding Tickets - " + Wanda.getAppName(), out.toString(), false, true);
               C.commit();
             }
           catch (Exception E)
@@ -89,7 +109,7 @@ public class TicketSystem
               Beacon.LOG.error("The Ticketing System's notification beacon failed execution\n", E);
             }
           if (C != null)
-           C.closeNoThrow();
+            C.closeNoThrow();
         };
         service.scheduleAtFixedRate(task, 10, _notifications._scheduleMinutes, TimeUnit.MINUTES);
       }

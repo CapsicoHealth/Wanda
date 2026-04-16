@@ -31,28 +31,37 @@ public class LoginHelper
 
     /**
      * Note: clientAppDataKeys was used to sign a client-side database on a mobile device. This is no longer in use.
-     *      We keep this for reference only.
+     * We keep this for reference only.
+     * 
      * @param req
      * @param res
      * @param C
      * @param U
      * @throws Exception
      */
-    public static void loginSuccess(RequestUtil req, ResponseUtil res, Connection C, User_Data U) //, String[] clientAppDataKeys)
+    public static void loginSuccess(RequestUtil req, ResponseUtil res, Connection C, User_Data U, User_Data impersonatedU)
     throws Exception
       {
-        basicLoginSuccess(req, C, U);
+        basicLoginSuccess(req, C, U.isSuperAdmin() == true && impersonatedU != null ? impersonatedU : U);
 
         // SuperAdmin Check
         if (U.isSuperAdmin() == true)
           {
             LOG.debug("SuperAdmin let through!");
-            EulaHelper.clearUserForEula(C, req, U, null, false);
-            PlanHelper.clearUserForPlan(C, req, U, false);
-            PrintWriter out = res.setContentType(ResponseUtil.ContentType.JSON);
-            JSONUtil.startOK(out, '{');
-            //JSONUtil.print(out, "appData", true, clientAppDataKeys);
-            JSONUtil.end(out, '}');
+            if (impersonatedU != null)
+              {
+                LOG.debug("Impersonation in effect: " + U.getEmail()+" is impersonating "+ impersonatedU.getEmail()+".");
+                EulaHelper.clearUserForEula(C, req, impersonatedU, null, false);
+                PlanHelper.clearUserForPlan(C, req, impersonatedU, false);
+                req.setSessionString(SessionUtil.Attributes.USER_IMPERSONATOR_EMAIL.toString(), U.getEmail());
+              }
+            else
+              {
+                EulaHelper.clearUserForEula(C, req, U, null, false);
+                PlanHelper.clearUserForPlan(C, req, U, false);
+              }
+
+            res.success();
             return;
           }
 
@@ -94,7 +103,7 @@ public class LoginHelper
                 JSONUtil.startOK(out, '{');
                 JSONUtil.print(out, "tenants", "tenantJson", true, list, " ");
                 JSONUtil.print(out, "message", false, "Please select a tenant");
-//                JSONUtil.print(out, "appData", true, clientAppDataKeys);
+                // JSONUtil.print(out, "appData", true, clientAppDataKeys);
                 JSONUtil.end(out, '}');
                 return;
               }
@@ -120,7 +129,7 @@ public class LoginHelper
         PrintWriter out = res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(out, '{');
         JSONUtil.print(out, "tenantUser", "tenantUserJson", true, TV, " ");
-//        JSONUtil.print(out, "appData", false, clientAppDataKeys);
+        // JSONUtil.print(out, "appData", false, clientAppDataKeys);
         JSONUtil.end(out, '}');
       }
 

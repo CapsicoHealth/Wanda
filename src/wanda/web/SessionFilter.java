@@ -164,11 +164,12 @@ public class SessionFilter implements jakarta.servlet.Filter
                     if (isApiKeyAccessEnabled(request) == false) // Is this request endpoint API-enabled?
                       {
                         LOG.info("API call for an endpoint that is not api-enabled in its wanda configuration file.");
-                        response.sendError(HttpStatus.BadRequest._Code, "Invalid API Key for requested endpoint");
+                        ResponseUtil.SystemError(response, HttpStatus.BadRequest, "Invalid API Key for requested endpoint");
                         return;
                       }
                     LOG.info("Anonymous access with apiKey-enabled service.");
                     MasterDbUser = User_Factory.createAPiUser(request, MasterConnection, apiToken._partnerId);
+                    MasterConnection.commit();
                   }
                 else if (isAuthPassthrough == false)
                   {
@@ -190,13 +191,13 @@ public class SessionFilter implements jakarta.servlet.Filter
                         catch (Exception e)
                           {
                             ConfigSAML.LOG.debug("Error during SAML processing: " + e.getMessage() + "\n", e);
-                            response.sendError(HttpStatus.InternalServerError._Code, "Internal Server Error Setting Up SAML SSO Connection");
+                            ResponseUtil.SystemError(response, HttpStatus.InternalServerError, "Internal Server Error Setting Up SAML SSO Connection");
                             return;
                           }
 
                         return;
                       }
-                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                    ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session");
                     return;
                   }
               }
@@ -206,7 +207,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                 if (isUserLocked(MasterDbUser))
                   {
                     req.removeSessionUser();
-                    response.sendError(HttpStatus.Unauthorized._Code, "Unauthorized User");
+                    ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthorized User");
                     return;
                   }
                 UserDetail_Data UD = getUserDetail(MasterConnection, MasterDbUser, response);
@@ -215,7 +216,7 @@ public class SessionFilter implements jakarta.servlet.Filter
 
             if (isAuthPassthrough == false && isAppAuthorized(request, MasterConnection, MasterDbUser) == false)
               {
-                response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                ResponseUtil.SystemError(response, HttpStatus.ResourceNotFound, "Unauthorized Application Access");
                 return;
               }
 
@@ -235,7 +236,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                           {
                             LOG.info("Unable to load TenantUser from Session.");
                             SessionUtil.InvalidateSession(request);
-                            response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session");
+                            ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session");
                             return;
                           }
                       }
@@ -262,8 +263,8 @@ public class SessionFilter implements jakarta.servlet.Filter
                   }
               }
 
-            if (checkAccountRequirements(request, response, req, isAuthPassthrough, apiToken) == false)
-              return;
+            // May throw if error
+            checkAccountRequirements(request, response, req, isAuthPassthrough, apiToken);
 
             User_Data mainUser = null;
             // Skip for SuperAdmin
@@ -288,12 +289,12 @@ public class SessionFilter implements jakarta.servlet.Filter
                     // There is a conflict here between 404's and non-authorized guest requests.
                     if (req.isResourceMapped() == false && req.isServletMapped() == false)
                       {
-                        response.sendError(HttpStatus.ResourceNotFound._Code, "Unauthorized Application Access");
+                        ResponseUtil.SystemError(response, HttpStatus.ResourceNotFound, "Unauthorized Application Access");
                         return;
                       }
 
                     LOG.info("User is a guest and is not cleared for this url (" + request.getServletPath() + ") or the url is not listed as guest-allowed in the application definition information.");
-                    response.sendError(HttpStatus.BadRequest._Code, "Unauthorized Guest Access");
+                    ResponseUtil.SystemError(response, HttpStatus.BadRequest, "Unauthorized Guest Access");
                     return;
                   }
                 else
@@ -303,7 +304,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                     if (roles == null || roles.length == 0)
                       {
                         LOG.info("User is role-less.");
-                        response.sendError(HttpStatus.BadRequest._Code, "Unauthorized User Access: role-less user");
+                        ResponseUtil.SystemError(response, HttpStatus.BadRequest, "Unauthorized User Access: role-less user");
                         return;
                       }
                   }
@@ -323,8 +324,8 @@ public class SessionFilter implements jakarta.servlet.Filter
                 req.removeSessionAttribute(SessionUtil.Attributes.FORCE_RELOAD_USER.name());
                 MasterDbUser = getUser(request, MasterConnection);
               }
-            if (req.getServletPath().equals("/svc/Login") == true)
-              AL.setLogin(true);
+
+            setAccessLogServletFlags(req, AL, true);
             AL.setDurationNanos(System.nanoTime() - T0);
             writeAccessLogs(MasterConnection, MasterDbUser, AL, response);
             if (TenantConnection != null)
@@ -346,8 +347,8 @@ public class SessionFilter implements jakarta.servlet.Filter
             skipRollback = isSkipRollback(req);
             try
               {
-                if (req.getServletPath().equals("/svc/Login") == true)
-                  AL.setLogin(false);
+                setAccessLogServletFlags(req, AL, false);
+                AL.setDurationNanos(System.nanoTime() - T0);
                 writeAccessLogs(MasterConnection, MasterDbUser, AL, response, T, skipRollback);
                 if (MasterConnection != null)
                   MasterConnection.commit();// TO Write ACCESS LOGS INTO MASTER DB
@@ -405,8 +406,28 @@ public class SessionFilter implements jakarta.servlet.Filter
           }
       }
 
-    private static boolean checkAccountRequirements(HttpServletRequest request, HttpServletResponse response, RequestUtil req, boolean isAuthPassthrough, AuthApiToken apiToken)
-    throws IOException
+    private static void setAccessLogServletFlags(RequestUtil req, AccessLog_Data AL, boolean flag)
+    throws Exception
+      {
+        if (req.getServletPath().equals("/svc/Login") == true)
+          {
+            if (AL.getParameters().indexOf("eulaToken=") >= 0)
+              AL.setEula(flag);
+            else
+              AL.setLogin(flag);
+          }
+        else if (req.getServletPath().equals("/svc/user/guest/registration") == true)
+          AL.setRegistrationGuest(flag);
+        else if (req.getServletPath().equals("/svc/user/onboarding") == true)
+          AL.setRegistrationInvite(flag);
+        else if (req.getServletPath().equals("/svc/payments/order/create") == true)
+          AL.setPaymentCreate(flag);
+        else if (req.getServletPath().equals("/svc/payments/order/capture") == true)
+          AL.setPaymentCapture(flag);
+      }
+
+    private static void checkAccountRequirements(HttpServletRequest request, HttpServletResponse response, RequestUtil req, boolean isAuthPassthrough, AuthApiToken apiToken)
+    throws IOException, ServletException
       {
         int EulaClear = req.getSessionInt(SessionUtil.Attributes.EULA_CLEAR.name());
         if (EulaClear == SystemValues.EVIL_VALUE)
@@ -415,8 +436,8 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 LOG.info("User not cleared for EULA.");
                 SessionUtil.InvalidateSession(request);
-                response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session due to incomplete EULA");
-                return false;
+                ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session due to incomplete EULA");
+                return;
               }
           }
         int PlanClear = req.getSessionInt(SessionUtil.Attributes.PLAN_CLEAR.name());
@@ -426,11 +447,10 @@ public class SessionFilter implements jakarta.servlet.Filter
               {
                 LOG.info("User not cleared for Paymnt Plan.");
                 SessionUtil.InvalidateSession(request);
-                response.sendError(HttpStatus.Unauthorized._Code, "Unauthenticated session due to missing Payment Plan");
-                return false;
+                ResponseUtil.SystemError(response, HttpStatus.Unauthorized, "Unauthenticated session due to missing Payment Plan");
+                return;
               }
           }
-        return true;
       }
 
     /**
@@ -519,6 +539,7 @@ public class SessionFilter implements jakarta.servlet.Filter
     public static String getRequestHeaderLogStr(HttpServletRequest Request, HttpSession S, AccessLog_Data AL, boolean LineMarkers, boolean dataMasking, AuthApiToken apiToken, boolean minimal)
     throws UnsupportedEncodingException, Exception
       {
+
         StringBuilder Str = new StringBuilder();
         if (LineMarkers == true)
           {
@@ -538,6 +559,15 @@ public class SessionFilter implements jakarta.servlet.Filter
             Str.append("   ***  PathInfo/Trans : " + Request.getPathInfo() + " | " + Request.getPathTranslated() + "\n");
             Str.append("   ***  Servlet/CtxPath: " + Request.getServletPath() + " | " + Request.getContextPath() + "\n");
           }
+
+        String impersonator = (String) S.getAttribute(SessionUtil.Attributes.USER_IMPERSONATOR_EMAIL.toString());
+        if (TextUtil.isNullOrEmpty(impersonator) == false)
+          {
+            AL.setUserEmailImpersonator(impersonator);
+            Str.append("   ***  User Impersonation:\n");
+            Str.append("          - admin impersonator: " + impersonator + "\n");
+          }
+
         Str.append("   ***  Headers:\n");
         Enumeration<String> HeaderNames = Request.getHeaderNames();
         while (HeaderNames.hasMoreElements())
@@ -688,7 +718,7 @@ public class SessionFilter implements jakarta.servlet.Filter
 
     private static boolean isGuestPath(User_Data user, HttpServletRequest Request)
       {
-//        LOG.debug("Checking if guest path: " + Request.getServletPath());
+        // LOG.debug("Checking if guest path: " + Request.getServletPath());
         if (user == null)
           {
             LOG.debug("User is null, cannot be guest path");
@@ -696,25 +726,25 @@ public class SessionFilter implements jakarta.servlet.Filter
           }
 
         String servletPath = Request.getServletPath();
-//        LOG.debug("Full servlet path: " + servletPath);
+        // LOG.debug("Full servlet path: " + servletPath);
         for (AppView_Data app : Wanda.getApps())
           {
             // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
             // doesn't have access to. This is a larger issue of app service access control which we are still developing!
-//            LOG.debug("Checking app : " + app.getAppLabel() + " for guest path match.");
+            // LOG.debug("Checking app : " + app.getAppLabel() + " for guest path match.");
             if (app.getAppServices() != null)
               {
                 for (ServiceDefinition sd : app.getAppServices())
                   {
-//                    LOG.debug("Checking service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+                    // LOG.debug("Checking service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
                     if (servletPath.equals(sd._path) == true && "GST".equals(sd._access) == true)
                       {
-//                        LOG.debug("   ==> MATCHING for guest service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+                        // LOG.debug(" ==> MATCHING for guest service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
                         return true;
                       }
                     else
                       {
-//                        LOG.debug("   ==> No match for service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+                        // LOG.debug(" ==> No match for service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
                       }
                   }
               }
@@ -722,7 +752,7 @@ public class SessionFilter implements jakarta.servlet.Filter
               LOG.debug("App " + app.getAppLabel() + " has no services defined.");
           }
 
-        LOG.debug("No guest path match found for '"+servletPath+"'");
+        LOG.debug("No guest path match found for '" + servletPath + "'");
         return false;
       }
 
@@ -798,10 +828,7 @@ public class SessionFilter implements jakarta.servlet.Filter
 
         UserDetail_Data UD = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
         if (UD.read(C) == false)
-          {
-            Response.sendError(HttpStatus.InternalServerError._Code, "Cannot load Person object based on User info");
-            throw new ServletException("System error: unmatched Person and User");
-          }
+         ResponseUtil.SystemError(Response, HttpStatus.InternalServerError, "Cannot load UserDetail info");
         return UD;
       }
 

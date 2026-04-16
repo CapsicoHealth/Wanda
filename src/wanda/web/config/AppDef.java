@@ -79,8 +79,6 @@ public class AppDef implements JSONable
         a._AppDefDetail._home = sa._home;
         a._AppDefDetail._admin = sa._admin;
         a._AppDefDetail._tour = sa._tour;
-        a._AppDefDetail._policies = _AppDefDetail._policies;
-        a._AppDefDetail._requiredRoles = _AppDefDetail._requiredRoles;
         a._AppDefDetail._services = _AppDefDetail._services;
         return a;
       }

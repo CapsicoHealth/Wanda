@@ -74,12 +74,11 @@ public class User_Factory extends wanda.data._Tilda.TILDA__USER_Factory
             apiUser.setLoginDomain(partnerId);
           }
         apiUser.setLastipaddress(request.getRemoteAddr());
-        apiUser.setLastLoginNow();
         apiUser.setLoginCount(apiUser.getLoginCount() + 1);
 
         if (apiUser.write(C) == false)
           throw new Exception("Cannot create API user for partner " + partnerId + "!");
-
+        
         return apiUser;
       }
 

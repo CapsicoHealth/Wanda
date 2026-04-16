@@ -21,22 +21,24 @@ import com.google.gson.annotations.SerializedName;
 public class LookAndFeel
   {
     /*@formatter:off*/
-    @SerializedName("pageTitle"                  ) public String _pageTitle                   = null;
-    @SerializedName("logoBig"                    ) public String _logoBig                     = null;
-    @SerializedName("logoSmall"                  ) public String _logoSmall                   = null;
-    @SerializedName("overlayText"                ) public String _overlayText                 = "";
+    @SerializedName("pageTitle"            ) public String _pageTitle              = null;
+    @SerializedName("logoBig"              ) public String _logoBig                = null;
+    @SerializedName("logoSmall"            ) public String _logoSmall              = null;
+    @SerializedName("overlayText"          ) public String _overlayText            = "";
 
 
-    @SerializedName("appDashboardPostLogin"      ) public boolean _appDashboardPostLogin      = false;
-    @SerializedName("urlRedirectPostLogin"       ) public String _urlRedirectPostLogin        = null;
-    @SerializedName("pageTitlePostLogin"         ) public String _pageTitlePostLogin          = null;
-    @SerializedName("logoBigPostLogin"           ) public String _logoBigPostLogin            = null;
-    @SerializedName("logoSmallPostLogin"         ) public String _logoSmallPostLogin          = null;
-    @SerializedName("overlayTextPostLogin"       ) public String _overlayTextPostLogin        = "";
+    @SerializedName("appDashboardPostLogin") public boolean _appDashboardPostLogin = false;
+    @SerializedName("htmlUrlPreLogin"      ) public String  _htmlUrlPreLogin       = null;
+    @SerializedName("urlRedirectPostLogin" ) public String  _urlRedirectPostLogin  = null;
+    @SerializedName("pageTitlePostLogin"   ) public String  _pageTitlePostLogin    = null;
+    @SerializedName("logoBigPostLogin"     ) public String  _logoBigPostLogin      = null;
+    @SerializedName("logoSmallPostLogin"   ) public String  _logoSmallPostLogin    = null;
+    @SerializedName("overlayTextPostLogin" ) public String  _overlayTextPostLogin  = "";
 
-    @SerializedName("poweredBy"                  ) public String _poweredBy                   = "";
-    @SerializedName("copyright"                  ) public String _copyright                   = "";
+    @SerializedName("poweredBy"            ) public String  _poweredBy             = "";
+    @SerializedName("dataConfidentiality"  ) public String  _dataConfidentiality   = "The license to use this application does not authorize you to download its data.";
+    @SerializedName("copyright"            ) public String  _copyright             = "";
 
-    @SerializedName("overrideCssFile"            ) public String _overrideCssFile             = null;
+    @SerializedName("overrideCssFile"      ) public String  _overrideCssFile       = null;
     /*@formatter:on*/
   }

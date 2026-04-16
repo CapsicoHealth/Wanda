@@ -298,7 +298,16 @@ public class Wanda
       {
         return _Config._laf._appDashboardPostLogin;
       }
-    
+
+    public static boolean isHtmlUrlPreLogin()
+      {
+        return _Config._laf._htmlUrlPreLogin != null;
+      }
+
+    public static String getHtmlUrlPreLogin()
+      {
+        return _Config._laf._htmlUrlPreLogin;
+      }
 
     public static String getUrlRedirectPostLogin()
       {
@@ -330,6 +339,11 @@ public class Wanda
         return _Config._laf._poweredBy;
       }
 
+    public static String getDataConfidentiality()
+      {
+        return _Config._laf._dataConfidentiality;
+      }
+    
     public static String getCopyright()
       {
         return _Config._laf._copyright.replace("%%CURRENT_YEAR%%", "" + DateTimeUtil.nowUTC().getYear());

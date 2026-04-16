@@ -22,7 +22,8 @@ package wanda.servlets.admin;
 import java.util.List;
 
 import jakarta.servlet.annotation.WebServlet;
-
+import wanda.data.Promo_Data;
+import wanda.data.Promo_Factory;
 import wanda.data.Role_Data;
 import wanda.data.Role_Factory;
 import wanda.data.TenantUser_Factory;
@@ -33,6 +34,7 @@ import wanda.servlets.helpers.RoleHelper;
 import tilda.db.Connection;
 import tilda.utils.CollectionUtil;
 import tilda.utils.SystemValues;
+import tilda.utils.TextUtil;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
@@ -56,35 +58,46 @@ public class InviteUserServlet extends SimpleServlet
         String email = Req.getParamString("email", true);
         String firstName = Req.getParamString("firstName", true);
         String lastName = Req.getParamString("lastName", true);
+        String loginType = Req.getParamString("loginType", false);
+        if (TextUtil.isNullOrEmpty(loginType) == false && User_Data.checkLoginType(loginType) == false)
+          Req.addError("loginType", "invalid login type '" + loginType + "'");
+        String loginDomain = Req.getParamString("loginDomain", false);
         String[] roles = Req.getParamsString("role", true);
         long Refnum = Req.getParamLong("refnum", false);
 
         long[] tenantRefnums = Req.getParamsLong("tenant", false);
         long[] oldTenantRefnums = Req.getParamsLong("oldTenant", false);
-        if(tenantRefnums == null)
-            tenantRefnums = new long[]{};
-        if(oldTenantRefnums == null)
-            oldTenantRefnums = new long[]{};
+        if (tenantRefnums == null)
+          tenantRefnums = new long[] {};
+        if (oldTenantRefnums == null)
+          oldTenantRefnums = new long[] {};
         List<Long> tenantRefnumList = CollectionUtil.toList(tenantRefnums);
 
         long[] appRefnums = Req.getParamsLong("app", false);
-        if(appRefnums == null)
-            appRefnums = new long[]{};
+        if (appRefnums == null)
+          appRefnums = new long[] {};
 
-        String promoCode  = Req.getParamString("promoCode", false);
+        String promoCode = Req.getParamString("promoCode", false);
+        if (promoCode != null)
+          {
+            Promo_Data promo = Promo_Factory.lookupByCode(promoCode);
+            if (promo.read(C) == false)
+              Req.addError("promoCode", "Promo code '" + promoCode + "' not found");
+          }
+
         String[] contentIds = Req.getParamsString("contentIds", false);
 
         Req.throwIfErrors();
         if (U.isSuperAdmin() == false)
           {
-            for(long tenantRefnum : oldTenantRefnums)
-             if(TenantUser_Factory.hasTenant(C, U.getRefnum(), tenantRefnum) == false)
-              Req.addError("oldTenant["+tenantRefnum+"]", "User refnum="+U.getRefnum()+" does not have access to tenant refnum="+tenantRefnum);
+            for (long tenantRefnum : oldTenantRefnums)
+              if (TenantUser_Factory.hasTenant(C, U.getRefnum(), tenantRefnum) == false)
+                Req.addError("oldTenant[" + tenantRefnum + "]", "User refnum=" + U.getRefnum() + " does not have access to tenant refnum=" + tenantRefnum);
             Req.throwIfErrors();
-            for(long tenantRefnum : tenantRefnumList)
-             if(TenantUser_Factory.hasTenant(C, U.getRefnum(), tenantRefnum) == true)
-              Req.addError("tenant["+tenantRefnum+"]", "User refnum="+U.getRefnum()+" does not have access to tenant refnum="+tenantRefnum);
-            Req.throwIfErrors();            
+            for (long tenantRefnum : tenantRefnumList)
+              if (TenantUser_Factory.hasTenant(C, U.getRefnum(), tenantRefnum) == true)
+                Req.addError("tenant[" + tenantRefnum + "]", "User refnum=" + U.getRefnum() + " does not have access to tenant refnum=" + tenantRefnum);
+            Req.throwIfErrors();
           }
 
         for (String role : roles)
@@ -96,13 +109,13 @@ public class InviteUserServlet extends SimpleServlet
               throwIfUserInvalidRole(U, RoleHelper.SUPERADMIN);
           }
         Req.throwIfErrors();
-       
+
         if (Refnum != SystemValues.EVIL_VALUE)
           { // valid refnum
             User_Data refnumUser = User_Factory.lookupByPrimaryKey(Refnum);
             if (refnumUser.read(C) == false)
               {
-                if(refnumUser.hasRoles(RoleHelper.SUPERADMIN) == true)
+                if (refnumUser.hasRoles(RoleHelper.SUPERADMIN) == true)
                   {
                     Req.addError("refnum", "User not allowed to update");
                   }
@@ -110,7 +123,7 @@ public class InviteUserServlet extends SimpleServlet
               }
             Req.throwIfErrors();
             LOG.debug("Updating existing user access");
-            User_Data.updateDetailsAndInvite(C, refnumUser, promoCode, email, firstName, lastName, roles, appRefnums, tenantRefnumList, oldTenantRefnums, contentIds);
+            User_Data.updateDetailsAndInvite(C, refnumUser, promoCode, loginType, loginDomain, email, firstName, lastName, roles, appRefnums, tenantRefnumList, oldTenantRefnums, contentIds);
           }
         else
           {
@@ -119,11 +132,11 @@ public class InviteUserServlet extends SimpleServlet
               Req.addError("email", "User already exists with email '" + email + "'");
             Req.throwIfErrors();
             LOG.debug("Inviting new user");
-            User_Data.inviteUser(C, promoCode, email, firstName, lastName, roles, tenantRefnums, appRefnums, contentIds);
+            User_Data.inviteUser(C, promoCode, loginType, loginDomain, email, firstName, lastName, roles, tenantRefnums, appRefnums, contentIds);
           }
-        
+
         Req.throwIfErrors();
-        Res.success();        
+        Res.success();
       }
 
   }

@@ -20,10 +20,15 @@
 
 package wanda.data;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.*;
+import tilda.db.processors.StringListRP;
+import tilda.utils.DateTimeUtil;
 
 /**
 This is the application class <B>Data_ACCESSLOG</B> mapped to the table <B>PEOPLE.ACCESSLOG</B>.
@@ -45,5 +50,36 @@ public class AccessLog_Factory extends wanda.data._Tilda.TILDA__ACCESSLOG_Factor
     {
       // Add logic to initialize your object, for example, caching some values, or validating some things.
     }
+   
+   
+   /**
+    * returns the distinct list of servlets that were active at least once between dayStart (inclusive)
+    * and dayEnd (exclusive). Results are ordered by servlet name.
+    * @param C
+    * @param dayStart
+    * @param dayEnd
+    * @param start
+    * @param size
+    * @return
+    * @throws Exception
+    */
+   public static List<String> getDistinctServlets(Connection C, LocalDate dayStart, LocalDate dayEnd, int start, int size) throws Exception
+   {
+     String q = """
+                SELECT DISTINCT servlet FROM %s
+                 WHERE created >= %s
+                   AND created::DATE < %s
+                   AND servlet not like '%%.jsp'
+                   AND servlet <> '/svc/user/token'
+                   AND "responseCode" not in ('302','401','404')
+                 ORDER BY servlet
+                """.formatted(SCHEMA_TABLENAME_LABEL
+                             ,DateTimeUtil.printDateForSQLQuoted(dayStart)
+                             ,DateTimeUtil.printDateForSQLQuoted(dayEnd)
+                             );
+    StringListRP RP = new StringListRP();
+    C.executeSelect(SCHEMA_LABEL, TABLENAME_LABEL, q, RP, start, size);
+    return RP.getResult();
+   }
 
  }

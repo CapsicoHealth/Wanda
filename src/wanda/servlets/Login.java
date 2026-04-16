@@ -113,10 +113,13 @@ public class Login extends SimpleServlet
     protected static void loginRegular(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
     throws Exception
       {
+        User_Data impersonatedU = null;
+        
         if (U == null) // actual login operation
           {
             String email = req.getParamString("email", true);
             String pswd = req.getParamString("pswd", true);
+            String emailImpersonation = req.getParamString("emailImpersonation", false);
             req.throwIfErrors();
 
             // To override the DB rollback
@@ -175,17 +178,25 @@ public class Login extends SimpleServlet
                 U.setPswdSalt(salt);
                 U.setPswd(pswd);
               }
+            
+            // Check impersonation only if the user is a super admin
+            if (U.isSuperAdmin() == true && TextUtil.isNullOrEmpty(emailImpersonation) == false)
+              {
+                impersonatedU = User_Factory.lookupByEmail(emailImpersonation);
+                if (impersonatedU.read(C) == false)
+                 throw new AccessForbiddenException("User", "Your password has expired. A password reset email has been sent.");
+              }
           }
         
         try
           {
-            // NOTE: The AppData construct was used to sign a client-side database on mobile devices. This is no longer in use.
-            //      We keep this code for reference.
-            LoginHelper.loginSuccess(req, res, C, U/*, U.getAppDataJson(email + "@@" + pswd)*/);
+            LoginHelper.loginSuccess(req, res, C, U, impersonatedU);
           }
         finally
           {
             U.write(C);
+            if (impersonatedU != null)
+             impersonatedU.write(C);
           }
       }
 

@@ -37,8 +37,7 @@ public class AppDefDetails implements JSONable
     @SerializedName("tour"         ) public boolean             _tour          = false;
     @SerializedName("subApps"      ) public List<SubApp>        _subApps       = null;    
     @SerializedName("services"     ) public List<AppDefService> _services      = null;
-    @SerializedName("policies"     ) public List<AppDefPolicy>  _policies      = null;
-    @SerializedName("requiredRoles") public List<String>        _requiredRoles = null; // Still to be worked on
+    @SerializedName("roles"        ) public List<AppDefRole>    _roles         = null;
     /*@formatter:on*/
 
     @Override
@@ -97,20 +96,7 @@ public class AppDefDetails implements JSONable
                 OK = false;
               }
           }
-        
-        values.clear();
-        if (_policies != null)
-          for (AppDefPolicy p : _policies)
-           {
-             if (p.validate(_label) == false)
-              OK = false;
-             else if (values.add(p._name) == false)
-               {
-                 Wanda.LOG.error("The Wanda app configuration file " + srcFile + " defined the policy '"+p._name+"' more than once.");
-                 OK = false;
-               }
-           }
-        
+
         return OK;
       }
   }
