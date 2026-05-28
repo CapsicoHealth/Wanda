@@ -1031,6 +1031,7 @@
          ,{ "sameAs":"UserDetail.nameStandard"  }
          ,{ "sameAs":"UserDetail.ageGroup"      }
          ,{ "sameAs":"UserDetail.gender"        }
+         ,{ "sameAs":"UserDetail.orgId"         }
          ,{ "sameAs":"UserDetail.company"       }
          ,{ "sameAs":"UserDetail.industry"      }
          ,{ "sameAs":"UserDetail.profTitle"     }
