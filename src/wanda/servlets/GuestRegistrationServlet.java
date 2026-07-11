@@ -60,6 +60,10 @@ public class GuestRegistrationServlet extends SimpleServlet
         if (Wanda.isGuestRegistrationAllowed() == false)
           Req.addError("email", "Guest registrations are not allowed");
 
+        // all emails to lower case
+        if (TextUtil.isNullOrEmpty(email) == false)
+          email = email.toLowerCase();
+        
         if (Wanda.isGuestRegistrationAllowerDomain(email) == false)
           Req.addError("email", "This email domain is not allowed for guest registrations");
 
@@ -71,6 +75,7 @@ public class GuestRegistrationServlet extends SimpleServlet
                 Req.addError("promoCode", "An event/promotion code is required");
                 Req.throwIfErrors();
               }
+            promoCode = TextUtil.trimFull(promoCode);
             // Validate the promo code
             p = Promo_Factory.lookupByCode(promoCode);
             if (p.read(C) == false || p.isActiveAndValid() == false)
