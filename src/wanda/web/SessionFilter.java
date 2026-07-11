@@ -521,6 +521,7 @@ public class SessionFilter implements jakarta.servlet.Filter
       {
         AccessLog_Data AL = AccessLog_Factory.create(SessionUtil.getSession(Request).getId());
         AL.setIpAddress(Request.getRemoteAddr() + ":" + Request.getRemotePort());
+        AL.setUserAgent(Request.getHeader("user-agent"));
         AL.setUrl(Request.getRequestURL().toString());
         AL.setServlet(Request.getServletPath());
         LOG.info(getRequestHeaderLogStr(Request, S, AL, true, dataMasking, apiToken));

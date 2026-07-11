@@ -730,6 +730,7 @@
           ,{ "name": "userEmail"            , "type": "STRING(  256)"                   , "description": "User Email should always be there, even for failed login attempts" }
           ,{ "name": "userEmailImpersonator", "type": "STRING(  256)"                   , "description": "User Email for impersonator (should be admin) if applicable)" }
    		  ,{ "name": "ipAddress"            , "type": "STRING(   40)"                   , "description": "User Login IP Address" }
+          ,{ "name": "userAgent"            , "type": "STRING( 1024)"                   , "description": "User Agent string" }
           ,{ "name": "servlet"              , "type": "STRING(  256)"                   , "description": "Servlet Path" }
           ,{ "name": "url"                  , "type": "STRING(  256)"                   , "description": "HTTP Url" }
           ,{ "name": "responseCode"         , "type": "SHORT"                           , "description": "HTTP Response Code" }
@@ -749,8 +750,11 @@
         ]
       ,"indices":[ 
          { "name":"user_rn"    , "columns":["user_rn"    ], "orderBy":["created desc"], "db": true }
-        ,{ "name":"requestUUID", "columns":["requestUUID"], "orderBy":["created"], "db": true }
+        ,{ "name":"requestUUID", "columns":["requestUUID"], "orderBy":["created desc"], "db": true }
        ]
+      ,"queries": [
+        ]
+       
      ,"masks":[
          { "columns":["userEmail", "ipAddress", "parameters"], "mask":"******" }
        ]
@@ -1446,6 +1450,7 @@
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countEulas"              , "aggregate":"COUNT", "filter":"AccessLog.eula=true" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsGuest" , "aggregate":"COUNT", "filter":"AccessLog.registrationGuest=true" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrationsInvite", "aggregate":"COUNT", "filter":"AccessLog.registrationInvite=true" }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"countRegistrations"      , "aggregate":"COUNT", "filter":"AccessLog.registrationGuest=true OR AccessLog.registrationInvite=true" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCreate"      , "aggregate":"COUNT", "filter":"AccessLog.paymentCreate=true" }
          ,{ "sameAs":"AccessLog.refnum"     , "name":"countPaymentCapture"     , "aggregate":"COUNT", "filter":"AccessLog.paymentCapture=true" }
        ]
@@ -1502,21 +1507,54 @@
 
 
    ,{ "name":"AccessLogSessionView"
-     ,"description":"View that has Tenant + TenantUser"
+     ,"description":"View of access logs per session"
      ,"columns":[
          { "sameAs":"AccessLog.requestUUID", "name":"sessionUUID"  }
-        ,{ "sameAs":"AccessLog.user_rn"    , "aggregate":"MAX" } 
-        ,{ "sameAs":"AccessLog.userEmail"  , "aggregate":"MAX" }
-        ,{ "sameAs":"AccessLog.refnum"     , "name":"sessionId"   , "aggregate":"ROW_NUM", "orderBy":["sessionUUID"]  }
-        ,{ "sameAs":"AccessLog.created"    , "name":"sessionStart", "aggregate":"FIRST"  , "orderBy":["created"]    }
-        ,{ "sameAs":"AccessLog.created"    , "name":"sessionEnd"  , "aggregate":"LAST"   , "orderBy":["created"] }
+        ,{ "sameAs":"AccessLog.user_rn"    , "aggregate":"ARRAY", "distinct":true, "filter":"? is not null" }
+        ,{ "sameAs":"AccessLog.userEmail"  , "aggregate":"ARRAY", "distinct":true , "filter":"coalesce(TRIM(?), '') <> ''" }
+        ,{ "sameAs":"AccessLog.created"    , "name":"sessionStart", "aggregate":"MIN"   }
+        ,{ "sameAs":"AccessLog.created"    , "name":"sessionEnd"  , "aggregate":"MAX"   }
         ,{ "sameAs":"AccessLog.refnum"     , "name":"requestCount", "aggregate":"COUNT"  }
+       ]
+     ,"queries": [
+         { "name"  :"DaysBack",
+           "description":"Get the logs info by day from >= start and < end.",
+           "from"  : [], 
+           "wheres": [
+               { "db":"*", "clause":"sessionStart >= ?()" }
+            ],
+           "orderBy": ["sessionStart desc"]
+         }
        ]
      ,"outputMaps":[
          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
        ]       
     }
 
+    ,{ "name":"AccessLogUserView"
+      ,"description":"View of access logs per user"
+      ,"columns":[
+          { "sameAs":"AccessLog.user_rn"    }
+         ,{ "sameAs":"AccessLog.userEmail"  }
+         ,{ "sameAs":"AccessLog.requestUUID", "name":"sessionsCount"    , "aggregate":"COUNT", "distinct":true  }
+         ,{ "sameAs":"AccessLog.refnum"     , "name":"requestCount"     , "aggregate":"COUNT" }
+         ,{ "sameAs":"AccessLog.created"    , "name":"mostRecentRequest", "aggregate":"MAX"   }
+        ]
+      ,"queries": [
+          { "name"  :"DaysBack",
+            "description":"Get the logs info by day from >= start and < end.",
+            "from"  : [], 
+            "wheres": [
+                { "db":"*", "clause":"mostRecentRequest >= ?()" }
+             ],
+            "orderBy": ["mostRecentRequest desc"]
+          }
+        ]
+      ,"outputMaps":[
+          { "name": "", "outTypes":["CSV","JSON"], "columns": ["*"] }
+        ]       
+     }
+    
    ,{ "name":"AccessLogPerformanceDayView"
      ,"description":"View of logs geared towards performance analysis per day per servlet"
      ,"columns":[
@@ -1673,7 +1711,7 @@
           { "name": "User"
            ,"description": "TBD"
            ,"wheres": [
-               { "db": "*", "clause": "user_rn = ?()" }
+               { "db": "*", "clause": "TILDA.in(user_rn, ?())" }
              ]
            ,"orderBy":["sessionStart desc", "sessionUUID", "requestDT"]
           }

@@ -301,7 +301,7 @@ public class Wanda
 
     public static boolean isHtmlUrlPreLogin()
       {
-        return _Config._laf._htmlUrlPreLogin != null;
+        return TextUtil.isNullOrEmpty(_Config._laf._htmlUrlPreLogin) == false;
       }
 
     public static String getHtmlUrlPreLogin()
