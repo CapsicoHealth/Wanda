@@ -906,7 +906,7 @@
     ,{ "name": "Tour"
       ,"description": "Represents a tour"
       ,"columns": [
-           { "name": "id"             , "type": "STRING(255)", "nullable": false, "description": "The name of the tour, which will map to the file <tourName>.tour.json" },
+           { "name": "id"             , "type": "STRING(255)", "nullable": false, "description": "The name of the tour, which will map to the file <tourName>.tour.json" }
           ,{ "name": "title"          , "type": "STRING(255)", "nullable": false, "description": "The default title of the tour in the default language" }
           ,{ "name": "defaultLanguage", "type": "STRING(  2)", "nullable": false, "description": "The default language of the tour" }
           ,{ "name": "otherLanguages" , "type": "STRING[]"   , "nullable": true , "description": "Other languages supported by this tour" }
@@ -983,30 +983,73 @@
         ]
      }
 
-     ,{ "name": "TourUserClick"
-       ,"lc":"WORM"
-       ,"description": "Represents a step in a tour that a user took, maybe multiple times"
-       ,"columns": [
-           { "name":"userRefnum", "sameas":"User.refnum", "nullable":false,                          "description":"The user PK"}
-          ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The context/project/app for this tour"}
-          ,{ "name":"type"      , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
-          ,{ "name":"topic"     , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The topic of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
-          ,{ "name":"tourId"    , "sameas":"Tour.id"    , "nullable":false,                          "description":"The tour id"}
-          ,{ "name":"partId"    , "sameAs":"TourPart.id", "nullable":false,                          "description":"The tour part id" }
-          ,{ "name":"stepId"    , "sameAs":"TourStep.id", "nullable":false,                          "description":"List tour part step id" }
-         ]
-       ,"primary": { "autogen": true, "keyBatch": 5000 }
-       ,"foreign": [
-           { "name":"User",  "srcColumns":["userRefnum"], "destObject":"User" }
-         ]
-       ,"indices":[ 
-          { "name":"User"     , "columns":["userRefnum"], "orderBy":["created desc"], "db": true }
-//          ,{ "name":"TourId"   , "columns":["tourId"    ], "orderBy":["created desc"], "db": true }
-//          ,{ "name":"ContextId", "columns":["contextId" ], "orderBy":["created desc"], "db": true }
-          ,{ "name":"Created"  , "columns":[]            , "orderBy":["created desc"], "db": true }
-         ]
-      }     
-
+    ,{ "name": "TourUserClick"
+      ,"lc":"WORM"
+      ,"description": "Represents a step in a tour that a user took, maybe multiple times"
+      ,"columns": [
+          { "name":"userRefnum", "sameas":"User.refnum", "nullable":false,                          "description":"The user PK"}
+         ,{ "name":"contextId" , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The context/project/app for this tour"}
+         ,{ "name":"type"      , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The type of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
+         ,{ "name":"topic"     , "sameas":"Tour.id"    , "nullable":false, "protection":"ABSOLUTE", "description":"The topic of this Tour click. The same tour can be used in multiple contexts, such as a a 'Cohorts', or 'LLMs' app for example, and for multiple topics, e.g., CARDIOLOGY, ONCOLOGY..." }
+         ,{ "name":"tourId"    , "sameas":"Tour.id"    , "nullable":false,                          "description":"The tour id"}
+         ,{ "name":"partId"    , "sameAs":"TourPart.id", "nullable":false,                          "description":"The tour part id" }
+         ,{ "name":"stepId"    , "sameAs":"TourStep.id", "nullable":false,                          "description":"List tour part step id" }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 5000 }
+      ,"foreign": [
+          { "name":"User",  "srcColumns":["userRefnum"], "destObject":"User" }
+        ]
+      ,"indices":[ 
+         { "name":"User"     , "columns":["userRefnum"], "orderBy":["created desc"], "db": true }
+//         ,{ "name":"TourId"   , "columns":["tourId"    ], "orderBy":["created desc"], "db": true }
+//         ,{ "name":"ContextId", "columns":["contextId" ], "orderBy":["created desc"], "db": true }
+         ,{ "name":"Created"  , "columns":[]            , "orderBy":["created desc"], "db": true }
+        ]
+     }
+      
+    ,{ "name": "ExpressionTemplate"
+      ,"mode":"CODE_ONLY"
+      ,"description": "Reusable template to drive boolean expressions in a json format for the FLORIA Expression Editor component"
+      ,"columns": [
+          { "name":"e", "type"  :"JSON[]", "nullable":true, "description":"Boolean expression with variables, operators, functions and values"
+                      , "jsonSchema": {
+                           "typeName": "ValidationRule"
+                          ,"description": "A recursive boolean-logic tree for validating the agent response. Each rule's 'expr' may define its own leaf test (op+vals) and/or a 'subRule' chain; both may be present at once. The effective chain for a given 'expr' is: [its own leaf test, if 'vals' is set] followed by [each 'subRule' entry, in order]. Within that chain, the first element's 'op' is ignored (there is nothing before it to combine with); every subsequent element's 'op' ('and'/'or') combines it with the running result so far, strictly left-to-right (no operator precedence). To force grouping/precedence (e.g., 'A and (B or C)'), nest the lower-precedence combination inside a child rule's 'subRule' rather than listing it as a sibling."
+                          ,"fields": [
+                              {"name":"op", "type":"STRING"  , "description":"Operator for the expression, being OR or AND. Note: The first 'sibling' in a list would have no operator)."
+                                          , "values": [
+                                                { "name":"and", "description":"And clause"   }
+                                               ,{ "name":"or" , "description":"Or clause" }
+                                              ]
+                              }
+                             ,{"name":"expr"  , "type":"JSON", "description":"An expression that could contain sub-rules and/or a leaf validation expression"
+                                              , "jsonSchema": {
+                                                   "typeName": "ValidationExpression"
+                                                  ,"description": "A An expression node that can contain a leaf value test, or sub-expressions."
+                                                  ,"fields": [
+                                                      { "name":"var" , "type":"STRING"  , "description":"The variable this expression applies to" }
+                                                     ,{ "name":"f"   , "type":"STRING"  , "description":"A function name, e.g., 'any' for matching any value, or 'all' for matching all values." }
+                                                     ,{ "name":"vals", "type":"STRING[]", "description":"One or more values (case-insensitive 'indexOf' matching)" }
+                                                     ,{ "name":"sub" , "type":"JSON[]"  , "description":"Sub clause"
+                                                                     , "jsonSchema": {
+                                                                           "typeName": "ExpressionTemplate.ValidationRule"
+                                                                        }
+                                                      }
+                                                    ]
+                                                 }
+                              }
+                            ]
+                          ,"validation": { 
+                              "descr":"A rule has an optional op and must have an expr"
+                             ,"rule": [
+                                 "expr is not null and (op is NOE or op in ('and','or'))" 
+                               ]
+                            }
+                         }
+          }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 5000 }        
+     }
  ]
   
  ,"views":[
