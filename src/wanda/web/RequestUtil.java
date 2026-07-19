@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -142,6 +143,45 @@ public class RequestUtil
         return getParamsString(Name, Mandatory, null, null, false);
       }
 
+
+    public UUID getParamUUID(String name, boolean mandatory)
+      {
+        String val = getParamString(name, mandatory);
+        if (TextUtil.isNullOrEmpty(val) == true)
+          return null;
+        try
+          {
+            return UUID.fromString(val);
+          }
+        catch (IllegalArgumentException e)
+          {
+            _Errors.add(new StringStringPair(name, "Invalid UUID value '" + val + "'."));
+            return null;
+          }
+      }
+
+    public UUID[] getParamsUUID(String name, boolean mandatory)
+      {
+        String[] vals = getParamsString(name, mandatory);
+        if (vals == null || vals.length == 0)
+          return null;
+        UUID[] uuids = new UUID[vals.length];
+        for (int i = 0; i < vals.length; i++)
+          {
+            try
+              {
+                uuids[i] = UUID.fromString(vals[i]);
+              }
+            catch (IllegalArgumentException e)
+              {
+                _Errors.add(new StringStringPair(name, "Invalid UUID value '" + vals[i] + "'."));
+                return null;
+              }
+          }
+        return uuids;
+      }
+
+
     public short getParamShort(String Name, boolean Mandatory)
       {
         return ParseUtil.parseShort(Name, Mandatory, _Req.getParameter(Name), _Errors);
@@ -166,12 +206,12 @@ public class RequestUtil
       {
         return ParseUtil.parseInteger(_Req.getParameter(Name), Default);
       }
-    
+
     /**
-     * Returns the parsed value as an integer. If the value is less than minVal, of the 
+     * Returns the parsed value as an integer. If the value is less than minVal, of the
      * parameter is optional and no value was found,
-     * minVal is returned. If the value is greater than maxVal, maxVal is returned. 
-     * If the value cannot be parsed and the parameter is mandatory, SystemValues.EVIL_VALUE 
+     * minVal is returned. If the value is greater than maxVal, maxVal is returned.
+     * If the value cannot be parsed and the parameter is mandatory, SystemValues.EVIL_VALUE
      * is returned and an error is added to the list of errors.
      *
      * @param Name
@@ -186,7 +226,7 @@ public class RequestUtil
         if (Mandatory == true && val == SystemValues.EVIL_VALUE)
           return val;
         if (val < minVal)
-         return minVal;
+          return minVal;
         else if (val > maxVal)
           return maxVal;
         return val;
@@ -530,27 +570,27 @@ public class RequestUtil
         try
           {
             URL url = context.getResource(resourcePath);
-            return url!= null;
+            return url != null;
           }
         catch (Exception e)
           {
             return false; // Handle invalid paths or other exceptions
           }
       }
-    
+
     public Collection<? extends ServletRegistration> getServletList()
       {
         return _Req.getServletContext().getServletRegistrations().values();
       }
-    
+
     public boolean isServletMapped()
       {
         String servletPath = _Req.getServletPath();
         Collection<? extends ServletRegistration> servlets = getServletList();
         for (ServletRegistration registration : servlets)
           for (String mapping : registration.getMappings())
-           if (mapping.equals(servletPath) == true)
-            return true;
+            if (mapping.equals(servletPath) == true)
+              return true;
         return false;
       }
 
@@ -581,6 +621,5 @@ public class RequestUtil
 
         return null;
       }
-
 
   }
