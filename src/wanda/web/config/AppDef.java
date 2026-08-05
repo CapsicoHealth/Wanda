@@ -53,6 +53,7 @@ public class AppDef implements JSONable
         JSONUtil.print(Out, "admin"    , false, this._AppDefDetail._admin);
         JSONUtil.print(Out, "adminRole", false, TextUtil.isNullOrEmpty(this._AppDefDetail._admin) == true ? "" : "Admin"+this._id);
         JSONUtil.print(Out, "label"    , false, this._AppDefDetail._label);
+        JSONUtil.print(Out, "descr"    , false, this._AppDefDetail._descr);
         JSONUtil.print(Out, "icon"     , false, this._icon);
         JSONUtil.print(Out, "directNav", false, this._directNav);
         Out.write("}");
@@ -76,6 +77,7 @@ public class AppDef implements JSONable
         a._icon = sa._icon;
         a._AppDefDetail = new AppDefDetails();
         a._AppDefDetail._label = sa._label;
+        a._AppDefDetail._descr = sa._descr;
         a._AppDefDetail._home = sa._home;
         a._AppDefDetail._admin = sa._admin;
         a._AppDefDetail._tour = sa._tour;

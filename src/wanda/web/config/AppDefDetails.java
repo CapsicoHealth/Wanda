@@ -32,6 +32,7 @@ public class AppDefDetails implements JSONable
   {
     /*@formatter:off*/
     @SerializedName("label"        ) public String              _label         = null;
+    @SerializedName("descr"        ) public String              _descr         = null;
     @SerializedName("home"         ) public String              _home          = null;
     @SerializedName("admin"        ) public String              _admin         = null;
     @SerializedName("tour"         ) public boolean             _tour          = false;
@@ -53,6 +54,7 @@ public class AppDefDetails implements JSONable
       {
         Out.write("{");
         JSONUtil.print(Out, "label", true, this._label);
+        JSONUtil.print(Out, "descr", false, this._descr);
         JSONUtil.print(Out, "home", false, this._home);
         JSONUtil.print(Out, "admin", false, this._admin);
         JSONUtil.print(Out, "tour", false, this._tour);

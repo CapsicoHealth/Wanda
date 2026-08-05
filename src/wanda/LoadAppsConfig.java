@@ -244,6 +244,7 @@ public class LoadAppsConfig
                 }
               AC.setHostName(Wanda.getHostName());
               AC.setLabel(ad._AppDefDetail._label);
+              AC.setDescr(ad._AppDefDetail._descr);
               AC.setSeq(i);
               AC.setNullDeleted();
               if (AC.touch(C) == false)
