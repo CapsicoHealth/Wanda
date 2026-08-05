@@ -619,9 +619,10 @@
           {"name":"appRefnum", "sameas":"App.refnum", "nullable":false, "description":"App Foreign Key"                             }
          ,{"name":"hostName" , "type":"STRING(250)" , "nullable":false, "description":"Web host name, e.g., https://xyz.myco.com.", "allowEmpty":true  }
          ,{"name":"label"    , "type":"STRING(250)" , "nullable":false, "description":"Label for the application header"            }
+         ,{"name":"descr"    , "type":"STRING(8192)", "nullable":true , "description":"Description for the application header"            }
          ,{"name":"seq"      , "type":"INTEGER"     , "nullable":false, "description":"Sequence for the app in a list"              }
          ,{"name":"icon"     , "type":"STRING(250)" ,                   "description":"Icon for the application"                    }
-         ,{"name":"active"   , "type":"BOOLEAN"     ,                   "description":"App's actioe status"                         }
+         ,{"name":"active"   , "type":"BOOLEAN"     ,                   "description":"App's active status"                         }
         ]
       ,"foreign": [
           { "name":"App" , "srcColumns":["appRefnum" ], "destObject":"App"  }
@@ -657,7 +658,7 @@
           }
         ]
       ,"json": [
-          { "name":"", "columns":["appRefnum", "hostName", "label", "seq", "icon", "active"] }
+          { "name":"", "columns":["appRefnum", "hostName", "label", "descr", "seq", "icon", "active"] }
         ]
      }
 
@@ -1050,6 +1051,108 @@
         ]
       ,"primary": { "autogen": true, "keyBatch": 5000 }        
      }
+     
+     
+    ,{ "name":"Project"
+      ,"description":"A project to pull resources and work together"
+      ,"columns":[
+          { "name":"appScope"          , "type"  :"STRING(32)"     , "nullable":false                   , "description":"The app scope for the project"                 }
+         ,{ "name":"title"             , "type"  :"STRING(1024)"   , "nullable":false                   , "description":"The title of the project"                 }
+         ,{ "name":"description"       , "type"  :"STRING(4096)"   , "nullable":true                    , "description":"A free-text description of the project"   }
+         ,{ "name":"area"              , "type"  :"STRING( 256)"   , "nullable":true                    , "description":"Primary area for the project"  }
+         ,{ "name":"tags"              , "type"  :"STRING{}"       , "nullable":true                    , "description":"User-defined tags attached to the project" }
+         ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"    , "nullable":false                   , "description":"Project initial creator refnum"           }
+         ,{ "name":"creatorId"         , "sameas":"User.id"        , "nullable":false                   , "description":"Project initial creator id"               }
+         ,{ "name":"lastUpdatorRefnum" , "sameas":"User.refnum"    , "nullable":false                   , "description":"Project last updater refnum"              }
+         ,{ "name":"lastUpdatorId"     , "sameas":"User.id"        , "nullable":false                   , "description":"Project last updater id"                  }
+         ,{ "name":"status"            , "type"  :"STRING(2)"      , "nullable":false                   , "description":"Project lifecycle status"
+                                       , "values": [ { "name":"Active"  , "value":"AC", "description":"Active"   , "default":"CREATE"}
+                                                    ,{ "name":"Archived", "value":"AR", "description":"Archived" }
+                                                    ,{ "name":"Deleted" , "value":"DE", "description":"Deleted" }
+                                                   ]
+          }
+         ,{ "name":"hardDeleted"       , "type"  :"DATETIME"       , "nullable":true                    , "description":"When this record was hard-deleted: ready to be removed completely from DB at some later time, not undeletable."        }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 1000 }
+      ,"foreign": [
+          { "name":"Creator"    , "srcColumns":["creatorRefnum"]    , "destObject":"User" }
+         ,{ "name":"LastUpdator", "srcColumns":["lastUpdatorRefnum"], "destObject":"User" }
+        ]
+      ,"indices": [
+          { "name":"Creator"           , "columns":["appScope", "creatorRefnum"         ], "orderBy":["lastUpdated desc"] }
+         ,{ "name":"CreatorTitleActive", "columns":["appScope", "creatorRefnum", "title"], "subWhere":"hardDeleted is null" }
+        ]
+      ,"queries": [
+          { "name"  :"UserByTitle"
+           ,"description":"Get all active projects for a user, ordered by title"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+           ,"orderBy":["title"]
+          }
+         ,{ "name"  :"UserByLastUpdated"
+           ,"description":"Get all active projects for a user, ordered by last updated"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name":""      , "outTypes":["JSON","CSV"], "columns":["*"] }
+         ,{ "name":"Simple", "outTypes":["JSON"]      , "columns":["refnum", "appScope", "title", "description", "area", "tags", "status", "creatorId", "lastUpdated"] }
+        ]
+     }
+
+
+    ,{ "name":"ProjectACL"
+      ,"description":"Access-control list entries that allow the project creator to share a project with other users at a given role level"
+      ,"columns":[
+          { "name":"projectRefnum"   , "sameAs":"Project.refnum"  , "nullable":false, "invariant":true , "description":"The project being shared"                      }
+         ,{ "name":"userRefnum"      , "sameas":"User.refnum"     , "nullable":false, "invariant":true , "description":"The user being granted access"                 }
+         ,{ "name":"userId"          , "sameas":"User.id"         , "nullable":false                   , "description":"The user id being granted access (denorm)"    }
+         ,{ "name":"role"            , "type"  :"CHAR"                           , "nullable":false                   , "description":"Role granted to the user on this project"
+                                      , "values": [ { "name":"Owner" , "value":"O", "description":"Owner (can delete)"  }
+                                                   ,{ "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)"  }
+                                                   ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit project content" }
+                                                   ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
+                                                  ]
+          }
+         ,{ "name":"grantedByRefnum" , "sameas":"User.refnum"     , "nullable":false                   , "description":"The user who granted this access entry"       }
+         ,{ "name":"grantedById"     , "sameas":"User.id"         , "nullable":false                   , "description":"The user id who granted this access (denorm)" }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 1000 }
+      ,"foreign": [
+          { "name":"Project"  , "srcColumns":["projectRefnum"  ], "destObject":"Project" }
+         ,{ "name":"User"     , "srcColumns":["userRefnum"     ], "destObject":"User" }
+         ,{ "name":"GrantedBy", "srcColumns":["grantedByRefnum"], "destObject":"User" }
+        ]
+      ,"indices": [
+          { "name":"ProjectUser"  , "columns":["projectRefnum", "userRefnum"], "db":true }
+         ,{ "name":"UserProjects" , "columns":["userRefnum"                 ], "orderBy":["created desc"] }
+        ]
+      ,"queries": [
+          { "name"  :"ProjectActiveByUser"
+           ,"description":"Get all active ACL entries for a project"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and deleted is null" } ]
+           ,"orderBy":["userId"]
+          }
+         ,{ "name"  :"ProjectActiveByRecent"
+           ,"description":"Get all active ACL entries for a project"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and deleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name"  :"UserProjectsActive"
+           ,"description":"Get all active projects shared with a user"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and deleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
+        ]
+     }     
  ]
   
  ,"views":[
@@ -1316,11 +1419,12 @@
          ,{ "sameas":"AppConfig.hostName", "name":"appHostName" }
          ,{ "sameas":"AppConfig.seq"     , "name":"appSeq"      }
          ,{ "sameas":"AppConfig.label"   , "name":"appLabel"    }
+         ,{ "sameas":"AppConfig.descr"   , "name":"appDescr"    }
          ,{ "sameas":"AppConfig.active"  , "name":"appActive"   }
        ]
      ,"subWhere": "App.deleted is null and AppConfig.deleted is null"
      ,"json":[
-          { "name": "", "columns": ["appRefnum", "appHostName", "appSeq", "appLabel", "appHome", "appAdmin", "appId", "appTour", "appSubOfId", "appPath", "appActive" ] }
+          { "name": "", "columns": ["appRefnum", "appHostName", "appSeq", "appLabel", "appDescr", "appHome", "appAdmin", "appId", "appTour", "appSubOfId", "appPath", "appActive" ] }
        ]
      ,"queries": [
           { "name"  :"All",
@@ -1366,6 +1470,7 @@
          ,{ "sameas":"AppConfig.hostName"  , "name":"appHostName"   }
          ,{ "sameas":"AppConfig.seq"       , "name":"appSeq"        }
          ,{ "sameas":"AppConfig.label"     , "name":"appLabel"      }
+         ,{ "sameas":"AppConfig.descr"     , "name":"appDescr"      }
          ,{ "sameas":"AppConfig.active"    , "name":"appActive"     }
          ,{ "sameas":"User.refnum"         , "name":"userRefnum"    }
          ,{ "sameas":"User.id"             , "name":"userId"        }
@@ -1433,7 +1538,7 @@
        ]
      ,"outputMaps":[
           { "name": ""      , "outTypes":["JSON"], "columns": ["*"] }
-         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appId", "appTour", "appSubOfId", "appIcon", "appDirectNav", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
+         ,{ "name": "Simple", "outTypes":["JSON"], "columns": ["appRefnum", "appHostName", "appLabel", "appDescr", "appId", "appTour", "appSubOfId", "appIcon", "appDirectNav", "appActive", "userRefnum", "userId", "userEmail", "userNameLast", "userNameFirst", "enabled"] }
        ]       
     }
 
@@ -2099,28 +2204,113 @@
            { "name": ""      , "outTypes":["JSON","CSV"], "columns": [ "*" ] }
          ]
       }
+      
+      
+     ,{ "name":"ProjectACLView"
+       ,"description":"Project row enriched with the per-role member lists (admin, writer, reader) derived from active ACL entries"
+       ,"columns":[
+           { "sameAs":"Project.refnum"            }
+          ,{ "sameAs":"Project.appScope"          }
+          ,{ "sameAs":"Project.title"             }
+          ,{ "sameAs":"Project.description"       }
+          ,{ "sameAs":"Project.area"   }
+          ,{ "sameAs":"Project.tags"              }
+          ,{ "sameAs":"Project.creatorRefnum"     }
+          ,{ "sameAs":"Project.creatorId"         }
+          ,{ "sameAs":"Project.lastUpdatorRefnum" }
+          ,{ "sameAs":"Project.lastUpdated"       }
+          ,{ "sameAs":"Project.deleted"           }
+          ,{ "sameAs":"ProjectACL.userRefnum"     , "name":"users"  , "aggregate":"ARRAY_AGG", "distinct":true, "description":"refnums of all users with access"  }
+         ]
+       ,"joins": [
+           { "object": "ProjectACL", "joinType": "LEFT", "on": [ { "db":"*", "clause":"ProjectACL.projectRefnum = Project.refnum" } ] }
+         ]
+       ,"subWhere":"Project.hardDeleted is null and (ProjectACL.refnum is null or ProjectACL.deleted is null)"
+       ,"queries": [
+           { "name"  : "Creator"
+            ,"description": "Get all active projects for a creator, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "appScope=?() and creatorRefnum=?()" } ]
+            ,"orderBy": ["title"]
+           }
+          ,{ "name"  : "CreatorOrAccess"
+            ,"description": "Get all active projects for a creator, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "appScope=?() and creatorRefnum=?() or TILDA.in(users, ?())" } ]
+            ,"orderBy": ["title"]
+           }
+         ]
+       ,"outputMaps":[
+           { "name":""      , "outTypes":["JSON","CSV"], "columns": ["*"] }
+          ,{ "name":"Simple", "outTypes":["JSON"]      , "columns": ["refnum", "appScope", "title", "description", "area", "tags", "creatorId", "lastUpdated", "deleted"] }
+         ]
+      }
+      
+     ,{ "name":"ProjectRoleView"
+       ,"description":"Project ACL rows"
+       ,"columns":[
+           { "sameAs":"Project.refnum"          , "name":"projectRefnum"}
+          ,{ "sameAs":"Project.appScope"        }
+          ,{ "sameAs":"Project.title"           }
+          ,{ "sameAs":"Project.description"     }
+          ,{ "sameAs":"Project.area" }
+          ,{ "sameAs":"Project.tags"            }
+          ,{ "sameAs":"Project.creatorRefnum"   }
+          ,{ "sameAs":"ProjectACL.userRefnum"   }
+          ,{ "sameAs":"ProjectACL.role"         }
+         ]
+       ,"subWhere":"Project.hardDeleted is null and (ProjectACL.refnum is null or ProjectACL.deleted is null)"
+       ,"queries": [
+           { "name"  : "ProjectCreatorOrAccess"
+            ,"description": "Get all active projects for a creator, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "projectRefnum=?() and (creatorRefnum=?() or userRefnum=?())" } ]
+           }
+          ,{ "name"  : "CreatorOrAccess"
+            ,"description": "Get all active projects for a user, as either the creator or a user"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "(creatorRefnum=?() or userRefnum=?())" } ]
+            ,"orderBy": ["title"]
+           }
+         ]
+       ,"outputMaps":[
+           { "name":""      , "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }      
+      
   ]
 
  ,"migrations":{
-      "renames":[
-         { "object":"User", "column":"contentIds", "oldNames":["programs"] }
-        ,{ "object":"AccessLog", "column":"paymentCapture", "oldNames":["payment"] }
-        ,{ "object":"AccessLog", "column":"registrationGuest", "oldNames":["registration"] }
-       ]
-     ,"moves":[
-         { "schema":"ADMIN", "objects":["SystemEmail"] }
-       ]
-     ,"notNulls":[
-         { "object":"User" , "columns":["pswdSalt"], "default":""   }
-        ,{ "object":"Ticket" , "columns":["creatorId"], "default":"N/A"   }
-        ,{ "object":"TicketAnswer" , "columns":["creatorId"], "default":"N/A"   }
-        ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
-        ,{ "object":"App"  , "columns":["icon"]   , "default":"false" }
-        ,{ "object":"App"  , "columns":["directNav"]   , "default":"true" }
-        ,{ "object":"Tour" , "columns":["title", "defaultLanguage"], "default":"XX" }
-        ,{ "object":"TourUserClick", "columns":["contextId"], "default":"_base" }
-        ,{ "object":"TourUserClick", "columns":["type", "topic"], "default":"_generic" }
-       ]
+     "moves":[
+        { "schema":"ADMIN", "objects"  :["SystemEmail"] }
+       ,{ "schema":"MSLApps", "objects":["MSLProject", "MSLProjectACL"]
+                            , "views"  :["MSLProjectACLView","MSLProjectRoleView"]
+        }
+       ,{ "schema":"PROJECTS", "objects":["Project", "ProjectACL"]
+                              , "views"  :["ProjectACLView", "ProjectRoleView"] }
+      ]
+    ,"renames":[
+        { "object":"User", "column":"contentIds", "oldNames":["programs"] }
+       ,{ "object":"AccessLog", "column":"paymentCapture", "oldNames":["payment"] }
+       ,{ "object":"AccessLog", "column":"registrationGuest", "oldNames":["registration"] }
+       ,{ "object":"Project"        , "oldNames":["MSLProject"        ] }
+       ,{ "object":"Project"        , "column":"area", "oldNames":["therapeuticArea"] }
+       ,{ "object":"ProjectACL"     , "oldNames":["MSLProjectACL"     ] }
+       ,{ "view"  :"ProjectACLView" , "oldNames":["MSLProjectACLView" ] }
+       ,{ "view"  :"ProjectRoleView", "oldNames":["MSLProjectRoleView"] }
+      ]
+    ,"notNulls":[
+        { "object":"User" , "columns":["pswdSalt"], "default":""   }
+       ,{ "object":"Ticket" , "columns":["creatorId"], "default":"N/A"   }
+       ,{ "object":"TicketAnswer" , "columns":["creatorId"], "default":"N/A"   }
+       ,{ "object":"Promo", "columns":["roles"]   , "default":"ARRAY[]::TEXT[]" }
+       ,{ "object":"App"  , "columns":["icon"]   , "default":"false" }
+       ,{ "object":"App"  , "columns":["directNav"]   , "default":"true" }
+       ,{ "object":"Tour" , "columns":["title", "defaultLanguage"], "default":"XX" }
+       ,{ "object":"TourUserClick", "columns":["contextId"], "default":"_base" }
+       ,{ "object":"TourUserClick", "columns":["type", "topic"], "default":"_generic" }
+       ,{ "object":"Project", "columns":["appScope"], "default":"X"}
+      ]
    }
 }    
 
