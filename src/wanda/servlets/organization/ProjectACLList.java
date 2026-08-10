@@ -1,4 +1,4 @@
-package wanda.servlets;
+package wanda.servlets.organization;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/projects/project/acl/list")
+@WebServlet("/svc/wanda/project/acl/list")
 public class ProjectACLList extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;

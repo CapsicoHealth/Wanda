@@ -1,3 +1,18 @@
+/* ===========================================================================
+ * Copyright (C) 2017 CapsicoHealth Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 {
   "package":"wanda.data",
   "dependencies": ["tilda/data/_tilda.Tilda.json"],
@@ -1015,7 +1030,7 @@
           { "name":"e", "type"  :"JSON[]", "nullable":true, "description":"Boolean expression with variables, operators, functions and values"
                       , "jsonSchema": {
                            "typeName": "ValidationRule"
-                          ,"description": "A recursive boolean-logic tree for validating the agent response. Each rule's 'expr' may define its own leaf test (op+vals) and/or a 'subRule' chain; both may be present at once. The effective chain for a given 'expr' is: [its own leaf test, if 'vals' is set] followed by [each 'subRule' entry, in order]. Within that chain, the first element's 'op' is ignored (there is nothing before it to combine with); every subsequent element's 'op' ('and'/'or') combines it with the running result so far, strictly left-to-right (no operator precedence). To force grouping/precedence (e.g., 'A and (B or C)'), nest the lower-precedence combination inside a child rule's 'subRule' rather than listing it as a sibling."
+                          ,"description": "A recursive boolean-logic tree for validating the agent response, matching the shape produced and consumed by the FLORIA Expression Editor (module-expression-editor.js). A rule list is evaluated as a strictly left-to-right fold with no operator precedence: the first element's 'op' is ignored (there is nothing before it to combine with), and every subsequent element's 'op' ('and'/'or') combines that element's own value with the running result so far. A rule is EITHER a leaf (it carries an 'expr', i.e., a single var/f/vals test) OR a group (it carries a 'sub', i.e., a nested rule list evaluated by this same fold and then treated as one parenthesized value) - never both, and never neither. 'not':true negates that rule's own value, whether it is a leaf or a whole group. To force grouping/precedence (e.g., 'A and (B or C)'), nest the lower-precedence combination in a child rule's 'sub' rather than listing it as a sibling."
                           ,"fields": [
                               {"name":"op", "type":"STRING"  , "description":"Operator for the expression, being OR or AND. Note: The first 'sibling' in a list would have no operator)."
                                           , "values": [
@@ -1023,27 +1038,31 @@
                                                ,{ "name":"or" , "description":"Or clause" }
                                               ]
                               }
-                             ,{"name":"expr"  , "type":"JSON", "description":"An expression that could contain sub-rules and/or a leaf validation expression"
+                             ,{"name":"not"   , "type":"BOOLEAN", "description":"Negation for the expression, being true or false." }
+                             ,{"name":"expr"  , "type":"JSON"   , "description":"A leaf validation expression, i.e., a single var/f/vals test. Set on a leaf rule only, and mutually exclusive with 'sub'."
                                               , "jsonSchema": {
                                                    "typeName": "ValidationExpression"
-                                                  ,"description": "A An expression node that can contain a leaf value test, or sub-expressions."
+                                                  ,"description": "A leaf expression node holding a single value test: apply function 'f' to variable 'var' over the values in 'vals'."
                                                   ,"fields": [
                                                       { "name":"var" , "type":"STRING"  , "description":"The variable this expression applies to" }
                                                      ,{ "name":"f"   , "type":"STRING"  , "description":"A function name, e.g., 'any' for matching any value, or 'all' for matching all values." }
                                                      ,{ "name":"vals", "type":"STRING[]", "description":"One or more values (case-insensitive 'indexOf' matching)" }
-                                                     ,{ "name":"sub" , "type":"JSON[]"  , "description":"Sub clause"
-                                                                     , "jsonSchema": {
-                                                                           "typeName": "ExpressionTemplate.ValidationRule"
-                                                                        }
-                                                      }
                                                     ]
+                                                 }
+                              }
+                             ,{"name":"sub"   , "type":"JSON[]" , "description":"A nested rule list, making this rule a group rather than a leaf: the list is evaluated with the same left-to-right fold, and its result is treated as one parenthesized value that this rule's own 'op' then combines with its siblings (and its own 'not' negates as a whole). Set on a group rule only, and mutually exclusive with 'expr'."
+                                              , "jsonSchema": {
+                                                   "typeName": "ExpressionTemplate.ValidationRule"
                                                  }
                               }
                             ]
                           ,"validation": { 
-                              "descr":"A rule has an optional op and must have an expr"
+                              "descr":"A rule has an optional op, and is either a leaf (expr) or a group (sub), but never both and never neither"
                              ,"rule": [
-                                 "expr is not null and (op is NOE or op in ('and','or'))" 
+                                 "(   expr is not null and sub is NOE"
+                                ," or expr is null and sub is not NOE"
+                                ,")"
+                                ,"and (op is NOE or op in ('and','or'))"
                                ]
                             }
                          }
@@ -1051,15 +1070,179 @@
         ]
       ,"primary": { "autogen": true, "keyBatch": 5000 }        
      }
-     
-     
+
+
+
+   ,{ "name":"Organization"
+     ,"description":"An organization (tenant) that owns resources such as data sources and can have its own set of members"
+     ,"columns":[
+         { "name":"title"             , "type"  :"STRING(1024)"   , "nullable":false                   , "description":"The title/name of the organization"          }
+        ,{ "name":"description"       , "type"  :"STRING(4096)"   , "nullable":true                    , "description":"A free-text description of the organization" }
+        ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"    , "nullable":false                   , "description":"Organization initial creator refnum"          }
+        ,{ "name":"creatorId"         , "sameas":"User.id"        , "nullable":false                   , "description":"Organization initial creator id"              }
+        ,{ "name":"lastUpdatorRefnum" , "sameas":"User.refnum"    , "nullable":false                   , "description":"Organization last updater refnum"             }
+        ,{ "name":"lastUpdatorId"     , "sameas":"User.id"        , "nullable":false                   , "description":"Organization last updater id"                 }
+        ,{ "name":"status"            , "type"  :"STRING(2)"      , "nullable":false                   , "description":"Organization lifecycle status"
+                                      , "values": [ { "name":"Active"  , "value":"AC", "description":"Active"   , "default":"CREATE"}
+                                                   ,{ "name":"Archived", "value":"AR", "description":"Archived" }
+                                                   ,{ "name":"Deleted" , "value":"DE", "description":"Deleted" }
+                                                  ]
+         }
+        ,{ "name":"hardDeleted"       , "type"  :"DATETIME"       , "nullable":true                    , "description":"When this record was hard-deleted: ready to be removed completely from DB at some later time, not undeletable."        }
+       ]
+     ,"primary": { "autogen": true, "keyBatch": 1000 }
+     ,"foreign": [
+         { "name":"Creator"    , "srcColumns":["creatorRefnum"]    , "destObject":"User" }
+        ,{ "name":"LastUpdator", "srcColumns":["lastUpdatorRefnum"], "destObject":"User" }
+       ]
+     ,"indices": [
+         { "name":"Creator"    , "columns":["creatorRefnum"], "orderBy":["lastUpdated desc"] }
+        ,{ "name":"TitleActive", "columns":["title"        ], "subWhere":"hardDeleted is null" }
+       ]
+     ,"queries": [
+         { "name"  :"ActiveCreatorByTitle"
+          ,"description":"Get all active organizations matching a title, ordered by title"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"creatorRefnum=?() and hardDeleted is null and title ilike ?()" } ]
+          ,"orderBy":["title"]
+         }
+        ,{ "name"  :"ActiveCreatorByLastUpdated"
+          ,"description":"Get all active organizations created by a given user"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"creatorRefnum=?() and hardDeleted is null" } ]
+          ,"orderBy":["title"]
+         }
+       ]
+     ,"outputMaps": [
+         { "name":""      , "outTypes":["JSON","CSV"], "columns":["*"] }
+        ,{ "name":"Simple", "outTypes":["JSON"]      , "columns":["refnum", "title", "description", "status", "creatorId", "lastUpdated"] }
+       ]
+    }
+
+
+   ,{ "name":"OrganizationACL"
+     ,"description":"Access-control list entries that allow the organization creator to share an organization with other users at a given role level"
+     ,"columns":[
+         { "name":"organizationRefnum", "sameAs":"Organization.refnum", "nullable":false, "invariant":true , "description":"The organization being shared"                }
+        ,{ "name":"userRefnum"        , "sameas":"User.refnum"        , "nullable":false, "invariant":true , "description":"The user being granted access"                }
+        ,{ "name":"userId"            , "sameas":"User.id"            , "nullable":false                   , "description":"The user id being granted access (denorm)"    }
+        ,{ "name":"role"              , "type"  :"CHAR"                              , "nullable":false                   , "description":"Role granted to the user on this organization"
+                                       , "values": [ { "name":"Owner" , "value":"O", "description":"Owner (can delete)"  }
+                                                    ,{ "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)"  }
+                                                    ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit organization content" }
+                                                    ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
+                                                   ]
+          }
+        ,{ "name":"grantedByRefnum"   , "sameas":"User.refnum"        , "nullable":false                   , "description":"The user who granted this access entry"       }
+        ,{ "name":"grantedById"       , "sameas":"User.id"            , "nullable":false                   , "description":"The user id who granted this access (denorm)" }
+       ]
+     ,"primary": { "autogen": true, "keyBatch": 1000 }
+     ,"foreign": [
+         { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+        ,{ "name":"User"        , "srcColumns":["userRefnum"        ], "destObject":"User" }
+        ,{ "name":"GrantedBy"   , "srcColumns":["grantedByRefnum"   ], "destObject":"User" }
+       ]
+     ,"indices": [
+         { "name":"OrganizationUser" , "columns":["organizationRefnum", "userRefnum"], "db":true }
+        ,{ "name":"UserOrganizations", "columns":["userRefnum"                      ], "orderBy":["created desc"] }
+       ]
+     ,"queries": [
+         { "name"  :"OrganizationActiveByUser"
+          ,"description":"Get all active ACL entries for an organization, ordered by user id"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and deleted is null" } ]
+          ,"orderBy":["userId"]
+         }
+        ,{ "name"  :"OrganizationActiveByLastUpdated"
+          ,"description":"Get all active ACL entries for an organization, ordered by last updated"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and deleted is null" } ]
+          ,"orderBy":["lastUpdated desc"]
+         }
+        ,{ "name"  :"UserOrganizationsActive"
+          ,"description":"Get all active organizations shared with a user"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and deleted is null" } ]
+          ,"orderBy":["lastUpdated desc"]
+         }
+       ]
+     ,"outputMaps": [
+         { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
+       ]
+    }
+
+
+
+    ,{ "name":"OrganizationInvite"
+      ,"description":"Pending invitations from an org admin/owner to a user (existing or new) to join an organization"
+      ,"columns":[
+          { "name":"organizationRefnum" , "sameAs":"Organization.refnum", "nullable":false, "invariant":true , "description":"The organization the invitee is being asked to join"                             }
+         ,{ "name":"inviterRefnum"      , "sameas":"User.refnum"        , "nullable":false, "invariant":true , "description":"The org admin/owner who issued the invitation"                                  }
+         ,{ "name":"inviterId"          , "sameas":"User.id"            , "nullable":false                   , "description":"Denorm of inviter user id"                                                      }
+         ,{ "name":"inviteeEmail"       , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"Email of the invited person - canonical lookup key before a User account exists" }
+         ,{ "name":"inviteeRefnum"      , "sameas":"User.refnum"        , "nullable":true                    , "description":"FK to User once the account exists; null when invitee is not yet registered"    }
+         ,{ "name":"inviteeUserId"      , "sameas":"User.id"            , "nullable":true                    , "description":"Denorm of invitee user id; null until the account exists"                       }
+         ,{ "name":"role"               , "type"  :"CHAR"               , "nullable":false                   , "description":"OrganizationACL role to be granted on acceptance (Admin/Writer/Reader - Owner cannot be granted via invite)"
+                                        , "values": [ { "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)" }
+                                                     ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit organization content" }
+                                                     ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
+                                                    ]
+           }
+         ,{ "name":"inviteToken"        , "type"  :"STRING( 20)"        , "nullable":true                    , "description":"One-time random token for the accept/decline link; used for Scenario A (existing active user). Null for Scenario B (new user - org join is triggered automatically from UserOnBoarding via inviteeRefnum)." }
+         ,{ "name":"inviteTokenCreated" , "type"  :"DATETIME"           , "nullable":true                    , "description":"When inviteToken was generated, for TTL enforcement"                            }
+         ,{ "name":"status"             , "type"  :"STRING(2)"          , "nullable":false                   , "description":"Invite lifecycle status"
+                                        , "values": [ { "name":"Pending"  , "value":"PE", "description":"Invitation sent, awaiting response", "default":"CREATE" }
+                                                     ,{ "name":"Accepted" , "value":"AC", "description":"Invitation accepted" }
+                                                     ,{ "name":"Declined" , "value":"DC", "description":"Invitation declined by invitee" }
+                                                     ,{ "name":"Cancelled", "value":"CN", "description":"Invitation cancelled by the org admin/owner" }
+                                                     ,{ "name":"Expired"  , "value":"EX", "description":"Invitation token expired without response" }
+                                                    ]
+           }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 1000 }
+      ,"foreign": [
+          { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+         ,{ "name":"Inviter"     , "srcColumns":["inviterRefnum"]     , "destObject":"User" }
+         ,{ "name":"Invitee"     , "srcColumns":["inviteeRefnum"]     , "destObject":"User" }
+        ]
+      ,"indices": [
+          { "name":"OrgEmailPending", "columns":["organizationRefnum", "inviteeEmail"], "subWhere":"status='PE' and deleted is null", "db":true                   }
+         ,{ "name":"InviteToken"    , "columns":["inviteToken"]                       , "subWhere":"inviteToken is not null and deleted is null", "db":true       }
+         ,{ "name":"InviteePending" , "columns":["inviteeRefnum"]                     , "subWhere":"status='PE' and deleted is null"                             }
+         ,{ "name":"OrgPending"     , "columns":["organizationRefnum"]                , "subWhere":"status='PE' and deleted is null", "orderBy":["created desc"] }
+        ]
+      ,"queries": [
+         { "name"  :"ByToken"
+          ,"description":"Look up an invite by its accept/decline token - used by AcceptOrgInvite and DeclineOrgInvite (Scenario A: existing active user)"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"inviteToken=?() and deleted is null" } ]
+         }
+        ,{ "name"  :"ByInviteePending"
+          ,"description":"Find all pending org invites for a given inviteeRefnum - used by UserOnBoarding to auto-join organisations after registration (Scenario B: new user)"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"inviteeRefnum=?() and status='PE' and deleted is null" } ]
+          ,"orderBy":["created asc"]
+         }
+        ,{ "name"  :"ByOrgPending"
+          ,"description":"List all pending invites for a given organization - used by ListOrgInvites for admin/owner review"
+          ,"from"  :[]
+          ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and status='PE' and deleted is null" } ]
+          ,"orderBy":["created desc"]
+         }
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
+        ]
+     }
+
     ,{ "name":"Project"
       ,"description":"A project to pull resources and work together"
       ,"columns":[
-          { "name":"appScope"          , "type"  :"STRING(32)"     , "nullable":false                   , "description":"The app scope for the project"                 }
+          { "name":"organizationRefnum", "sameAs":"Organization.refnum", "nullable":true                , "description":"The organization (tenant) this project belongs to" }
+         ,{ "name":"appScope"          , "type"  :"STRING(32)"     , "nullable":false                   , "description":"The app scope for the project"                 }
          ,{ "name":"title"             , "type"  :"STRING(1024)"   , "nullable":false                   , "description":"The title of the project"                 }
          ,{ "name":"description"       , "type"  :"STRING(4096)"   , "nullable":true                    , "description":"A free-text description of the project"   }
-         ,{ "name":"area"              , "type"  :"STRING( 256)"   , "nullable":true                    , "description":"Primary area for the project"  }
+         ,{ "name":"area"              , "type"  :"STRING( 256)"   , "nullable":true                    , "description":"Primary area for the project, e.g., Healthcare, Compliance, Supply-Chain, Manufacturing..."  }
          ,{ "name":"tags"              , "type"  :"STRING{}"       , "nullable":true                    , "description":"User-defined tags attached to the project" }
          ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"    , "nullable":false                   , "description":"Project initial creator refnum"           }
          ,{ "name":"creatorId"         , "sameas":"User.id"        , "nullable":false                   , "description":"Project initial creator id"               }
@@ -1075,24 +1258,39 @@
         ]
       ,"primary": { "autogen": true, "keyBatch": 1000 }
       ,"foreign": [
-          { "name":"Creator"    , "srcColumns":["creatorRefnum"]    , "destObject":"User" }
-         ,{ "name":"LastUpdator", "srcColumns":["lastUpdatorRefnum"], "destObject":"User" }
+          { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+         ,{ "name":"Creator"     , "srcColumns":["creatorRefnum"]     , "destObject":"User" }
+         ,{ "name":"LastUpdator" , "srcColumns":["lastUpdatorRefnum"] , "destObject":"User" }
         ]
       ,"indices": [
-          { "name":"Creator"           , "columns":["appScope", "creatorRefnum"         ], "orderBy":["lastUpdated desc"] }
-         ,{ "name":"CreatorTitleActive", "columns":["appScope", "creatorRefnum", "title"], "subWhere":"hardDeleted is null" }
+          { "name":"OrgAppScope"           , "columns":["organizationRefnum", "appScope"         ], "subWhere":"organizationRefnum is not null"                         , "orderBy":["lastUpdated desc"] }
+         ,{ "name":"AppScope"              , "columns":[                      "appScope"         ], "subWhere":"organizationRefnum is     null"                         , "orderBy":["lastUpdated desc"]}
+         ,{ "name":"OrgAppScopeTitleActive", "columns":["organizationRefnum", "appScope", "title"], "subWhere":"organizationRefnum is not null and hardDeleted is null" }
+         ,{ "name":"AppScopeTitleActive"   , "columns":[                      "appScope", "title"], "subWhere":"organizationRefnum is     null and hardDeleted is null" }
         ]
       ,"queries": [
-          { "name"  :"UserByTitle"
+          { "name"  :"AppScopeCreatorByTitle"
            ,"description":"Get all active projects for a user, ordered by title"
            ,"from"  :[]
            ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
            ,"orderBy":["title"]
           }
-         ,{ "name"  :"UserByLastUpdated"
+         ,{ "name"  :"OrganizationAppScopeCreatorByTitle"
+           ,"description":"Get all active projects for a user, ordered by title"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+           ,"orderBy":["title"]
+          }
+         ,{ "name"  :"AppScopeCreatorByLastUpdated"
            ,"description":"Get all active projects for a user, ordered by last updated"
            ,"from"  :[]
            ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name"  :"OrganizationAppScopeCreatorByLastUpdated"
+           ,"description":"Get all active projects for a user, ordered by last updated"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
            ,"orderBy":["lastUpdated desc"]
           }
         ]
@@ -1153,6 +1351,114 @@
           { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
         ]
      }     
+
+     
+
+    ,{ "name":"DataSource"
+      ,"description":"A connection to an external database (e.g., Postgres, BigQuery) bound to an organization, with per-type connection details kept in configJson"
+      ,"columns":[
+          { "name":"organizationRefnum", "sameAs":"Organization.refnum", "nullable":false                   , "description":"The organization (tenant) this data source belongs to" }
+         ,{ "name":"title"             , "type"  :"STRING(1024)"       , "nullable":false                   , "description":"The title/name of the data source"          }
+         ,{ "name":"description"       , "type"  :"STRING(4096)"       , "nullable":true                    , "description":"A free-text description of the data source" }
+         ,{ "name":"type"              , "type"  :"STRING(2)"          , "nullable":false                   , "description":"The type of database this data source connects to, driving how configJson is interpreted (via a Java factory/plugin mechanism)"
+                                        , "values": [ { "name":"Postgres", "value":"PG", "description":"PostgreSQL, or Postgres-wire-compatible/similar traditional SQL database (e.g., SQLServer)" }
+                                                     ,{ "name":"BigQuery", "value":"BQ", "description":"Google BigQuery" }
+                                                    ]
+           }
+         ,{ "name":"configJson"        , "type"  :"JSON"               , "nullable":false                   , "description":"Database-type-specific connection details, interpreted according to 'type'. For Postgres-like databases: host, port, database, username, passwordEncrypted, ssl_mode. For BigQuery: serviceAccountId. Any secret (e.g., passwordEncrypted) must be stored encrypted, never in plain text." }
+         ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"        , "nullable":false                   , "description":"Data source initial creator refnum"          }
+         ,{ "name":"creatorId"         , "sameas":"User.id"            , "nullable":false                   , "description":"Data source initial creator id"              }
+         ,{ "name":"lastUpdatorRefnum" , "sameas":"User.refnum"        , "nullable":false                   , "description":"Data source last updater refnum"             }
+         ,{ "name":"lastUpdatorId"     , "sameas":"User.id"            , "nullable":false                   , "description":"Data source last updater id"                 }
+         ,{ "name":"status"            , "type"  :"STRING(2)"          , "nullable":false                   , "description":"Data source lifecycle status"
+                                        , "values": [ { "name":"Active"  , "value":"AC", "description":"Active"   , "default":"CREATE"}
+                                                     ,{ "name":"Archived", "value":"AR", "description":"Archived" }
+                                                     ,{ "name":"Deleted" , "value":"DE", "description":"Deleted" }
+                                                    ]
+           }
+         ,{ "name":"hardDeleted"       , "type"  :"DATETIME"           , "nullable":true                    , "description":"When this record was hard-deleted: ready to be removed completely from DB at some later time, not undeletable." }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 1000 }
+      ,"foreign": [
+          { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+         ,{ "name":"Creator"     , "srcColumns":["creatorRefnum"      ], "destObject":"User" }
+         ,{ "name":"LastUpdator" , "srcColumns":["lastUpdatorRefnum"  ], "destObject":"User" }
+        ]
+      ,"indices": [
+          { "name":"Organization"           , "columns":["organizationRefnum"         ], "orderBy":["lastUpdated desc"] }
+         ,{ "name":"OrganizationTitleActive", "columns":["organizationRefnum", "title"], "subWhere":"hardDeleted is null" }
+        ]
+      ,"queries": [
+          { "name"  :"OrganizationByTitle"
+           ,"description":"Get all active data sources for an organization matching a title, ordered by title"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and title ilike ?() and hardDeleted is null" } ]
+           ,"orderBy":["title"]
+          }
+         ,{ "name"  :"OrganizationByLastUpdated"
+           ,"description":"Get all active data sources for an organization, ordered by last updated"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and hardDeleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name":""      , "outTypes":["JSON"]      , "columns":["*"] }
+         ,{ "name":"Simple", "outTypes":["JSON","CSV"], "columns":["refnum", "organizationRefnum", "title", "description", "type", "status", "creatorId", "lastUpdated"] }
+        ]
+     }
+
+
+    ,{ "name":"DataSourceACL"
+      ,"description":"Access-control list entries that allow the data source creator to share a data source with other users at a given role level"
+      ,"columns":[
+          { "name":"dataSourceRefnum" , "sameAs":"DataSource.refnum", "nullable":false, "invariant":true , "description":"The data source being shared"                 }
+         ,{ "name":"userRefnum"       , "sameas":"User.refnum"      , "nullable":false, "invariant":true , "description":"The user being granted access"                 }
+         ,{ "name":"userId"           , "sameas":"User.id"          , "nullable":false                   , "description":"The user id being granted access (denorm)"    }
+         ,{ "name":"role"             , "type"  :"CHAR"                          , "nullable":false                   , "description":"Role granted to the user on this data source"
+                                       , "values": [ { "name":"Owner" , "value":"O", "description":"Owner (can delete)"  }
+                                                    ,{ "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)"  }
+                                                    ,{ "name":"Writer", "value":"W", "description":"Can read and use the data source in queries" }
+                                                    ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
+                                                   ]
+           }
+         ,{ "name":"grantedByRefnum"  , "sameas":"User.refnum"      , "nullable":false                   , "description":"The user who granted this access entry"       }
+         ,{ "name":"grantedById"      , "sameas":"User.id"          , "nullable":false                   , "description":"The user id who granted this access (denorm)" }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 1000 }
+      ,"foreign": [
+          { "name":"DataSource", "srcColumns":["dataSourceRefnum"], "destObject":"DataSource" }
+         ,{ "name":"User"      , "srcColumns":["userRefnum"       ], "destObject":"User" }
+         ,{ "name":"GrantedBy" , "srcColumns":["grantedByRefnum"  ], "destObject":"User" }
+        ]
+      ,"indices": [
+          { "name":"DataSourceUser" , "columns":["dataSourceRefnum", "userRefnum"], "db":true }
+         ,{ "name":"UserDataSources", "columns":["userRefnum"                    ], "orderBy":["created desc"] }
+        ]
+      ,"queries": [
+          { "name"  :"DataSourceActiveByUser"
+           ,"description":"Get all active ACL entries for a data source, ordered by user id"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"dataSourceRefnum=?() and deleted is null" } ]
+           ,"orderBy":["userId"]
+          }
+         ,{ "name"  :"DataSourceActiveByRecent"
+           ,"description":"Get all active ACL entries for a data source, ordered by last updated"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"dataSourceRefnum=?() and deleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name"  :"UserDataSourcesActive"
+           ,"description":"Get all active data sources shared with a user"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and deleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
+        ]
+     }
  ]
   
  ,"views":[
@@ -2210,10 +2516,11 @@
        ,"description":"Project row enriched with the per-role member lists (admin, writer, reader) derived from active ACL entries"
        ,"columns":[
            { "sameAs":"Project.refnum"            }
+          ,{ "sameAs":"Project.organizationRefnum"}
           ,{ "sameAs":"Project.appScope"          }
           ,{ "sameAs":"Project.title"             }
           ,{ "sameAs":"Project.description"       }
-          ,{ "sameAs":"Project.area"   }
+          ,{ "sameAs":"Project.area"              }
           ,{ "sameAs":"Project.tags"              }
           ,{ "sameAs":"Project.creatorRefnum"     }
           ,{ "sameAs":"Project.creatorId"         }
@@ -2227,16 +2534,28 @@
          ]
        ,"subWhere":"Project.hardDeleted is null and (ProjectACL.refnum is null or ProjectACL.deleted is null)"
        ,"queries": [
-           { "name"  : "Creator"
+           { "name"  : "AppCreator"
             ,"description": "Get all active projects for a creator, with their ACL member lists"
             ,"from"  : []
             ,"wheres": [ { "db": "*", "clause": "appScope=?() and creatorRefnum=?()" } ]
             ,"orderBy": ["title"]
            }
-          ,{ "name"  : "CreatorOrAccess"
+          ,{ "name"  : "OrgAppCreator"
+            ,"description": "Get all active projects for a creator, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "organizationRefnum=?() and appScope=?() and creatorRefnum=?()" } ]
+            ,"orderBy": ["title"]
+           }
+          ,{ "name"  : "AppCreatorOrAccess"
             ,"description": "Get all active projects for a creator, with their ACL member lists"
             ,"from"  : []
             ,"wheres": [ { "db": "*", "clause": "appScope=?() and creatorRefnum=?() or TILDA.in(users, ?())" } ]
+            ,"orderBy": ["title"]
+           }
+          ,{ "name"  : "OrgAppCreatorOrAccess"
+            ,"description": "Get all active projects for a creator, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "organizationRefnum=?() and appScope=?() and creatorRefnum=?() or TILDA.in(users, ?())" } ]
             ,"orderBy": ["title"]
            }
          ]
@@ -2250,6 +2569,7 @@
        ,"description":"Project ACL rows"
        ,"columns":[
            { "sameAs":"Project.refnum"          , "name":"projectRefnum"}
+          ,{ "sameAs":"Project.organizationRefnum"}
           ,{ "sameAs":"Project.appScope"        }
           ,{ "sameAs":"Project.title"           }
           ,{ "sameAs":"Project.description"     }
@@ -2266,8 +2586,82 @@
             ,"from"  : []
             ,"wheres": [ { "db": "*", "clause": "projectRefnum=?() and (creatorRefnum=?() or userRefnum=?())" } ]
            }
-          ,{ "name"  : "CreatorOrAccess"
+          ,{ "name"  : "AppCreatorOrAccess"
             ,"description": "Get all active projects for a user, as either the creator or a user"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "appScope=?() and (creatorRefnum=?() or userRefnum=?())" } ]
+            ,"orderBy": ["title"]
+           }
+          ,{ "name"  : "OrgAppCreatorOrAccess"
+            ,"description": "Get all active projects for a user, as either the creator or a user"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "organizationRefnum=?() and appScope=?() and (creatorRefnum=?() or userRefnum=?())" } ]
+            ,"orderBy": ["title"]
+           }
+         ]
+       ,"outputMaps":[
+           { "name":""      , "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }      
+
+
+     ,{ "name":"OrganizationACLView"
+       ,"description":"Organization row enriched with the aggregated list of users who have access, derived from active ACL entries"
+       ,"columns":[
+           { "sameAs":"Organization.refnum"            }
+          ,{ "sameAs":"Organization.title"             }
+          ,{ "sameAs":"Organization.description"       }
+          ,{ "sameAs":"Organization.creatorRefnum"     }
+          ,{ "sameAs":"Organization.creatorId"         }
+          ,{ "sameAs":"Organization.lastUpdatorRefnum" }
+          ,{ "sameAs":"Organization.status"            }
+          ,{ "sameAs":"Organization.lastUpdated"       }
+          ,{ "sameAs":"Organization.deleted"           }
+          ,{ "sameAs":"OrganizationACL.userRefnum"     , "name":"users", "aggregate":"ARRAY_AGG", "distinct":true, "description":"refnums of all users with access" }
+         ]
+       ,"joins": [
+           { "object": "OrganizationACL", "joinType": "LEFT", "on": [ { "db":"*", "clause":"OrganizationACL.\"organizationRefnum\" = Organization.refnum" } ] }
+         ]
+       ,"subWhere":"Organization.hardDeleted is null and (OrganizationACL.refnum is null or OrganizationACL.deleted is null)"
+       ,"queries": [
+           { "name"  : "Creator"
+            ,"description": "Get all active organizations for a creator, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "creatorRefnum=?()" } ]
+            ,"orderBy": ["title"]
+           }
+          ,{ "name"  : "CreatorOrAccess"
+            ,"description": "Get all active organizations for a creator or a shared user, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "creatorRefnum=?() or TILDA.in(users, ?())" } ]
+            ,"orderBy": ["title"]
+           }
+         ]
+       ,"outputMaps":[
+           { "name":""      , "outTypes":["JSON","CSV"], "columns": ["*"] }
+          ,{ "name":"Simple", "outTypes":["JSON"]      , "columns": ["refnum", "title", "description", "creatorId", "lastUpdated", "deleted"] }
+         ]
+      }
+
+     ,{ "name":"OrganizationRoleView"
+       ,"description":"Organization ACL rows"
+       ,"columns":[
+           { "sameAs":"Organization.refnum"        , "name":"organizationRefnum"}
+          ,{ "sameAs":"Organization.title"         }
+          ,{ "sameAs":"Organization.description"   }
+          ,{ "sameAs":"Organization.creatorRefnum" }
+          ,{ "sameAs":"OrganizationACL.userRefnum" }
+          ,{ "sameAs":"OrganizationACL.role"       }
+         ]
+       ,"subWhere":"Organization.hardDeleted is null and (OrganizationACL.refnum is null or OrganizationACL.deleted is null)"
+       ,"queries": [
+           { "name"  : "OrganizationCreatorOrAccess"
+            ,"description": "Get an active organization for a creator or shared user"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "organizationRefnum=?() and (creatorRefnum=?() or userRefnum=?())" } ]
+           }
+          ,{ "name"  : "CreatorOrAccess"
+            ,"description": "Get all active organizations for a user, as either the creator or a shared user"
             ,"from"  : []
             ,"wheres": [ { "db": "*", "clause": "(creatorRefnum=?() or userRefnum=?())" } ]
             ,"orderBy": ["title"]
@@ -2276,8 +2670,80 @@
        ,"outputMaps":[
            { "name":""      , "outTypes":["JSON","CSV"], "columns": ["*"] }
          ]
-      }      
-      
+      }
+
+
+     ,{ "name":"DataSourceACLView"
+       ,"description":"Data source row enriched with the aggregated list of users who have access, derived from active ACL entries. configJson is intentionally excluded from output maps here as this view is meant for listing/sharing, not for exposing connection secrets."
+       ,"columns":[
+           { "sameAs":"DataSource.refnum"             }
+          ,{ "sameAs":"DataSource.organizationRefnum" }
+          ,{ "sameAs":"DataSource.title"              }
+          ,{ "sameAs":"DataSource.description"        }
+          ,{ "sameAs":"DataSource.type"                }
+          ,{ "sameAs":"DataSource.creatorRefnum"      }
+          ,{ "sameAs":"DataSource.creatorId"          }
+          ,{ "sameAs":"DataSource.lastUpdatorRefnum"  }
+          ,{ "sameAs":"DataSource.status"             }
+          ,{ "sameAs":"DataSource.lastUpdated"        }
+          ,{ "sameAs":"DataSource.deleted"            }
+          ,{ "sameAs":"DataSourceACL.userRefnum"      , "name":"users", "aggregate":"ARRAY_AGG", "distinct":true, "description":"refnums of all users with access" }
+         ]
+       ,"joins": [
+           { "object": "DataSourceACL", "joinType": "LEFT", "on": [ { "db":"*", "clause":"DataSourceACL.\"dataSourceRefnum\" = DataSource.refnum" } ] }
+         ]
+       ,"subWhere":"DataSource.hardDeleted is null and (DataSourceACL.refnum is null or DataSourceACL.deleted is null)"
+       ,"queries": [
+           { "name"  : "Organization"
+            ,"description": "Get all active data sources for an organization, with their ACL member lists"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "organizationRefnum=?()" } ]
+            ,"orderBy": ["title"]
+           }
+          ,{ "name"  : "OrganizationCreatorOrAccess"
+            ,"description": "Get all active data sources for an organization visible to a user, either as creator or a shared user"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "organizationRefnum=?() and (creatorRefnum=?() or TILDA.in(users, ?()))" } ]
+            ,"orderBy": ["title"]
+           }
+         ]
+       ,"outputMaps":[
+           { "name":""      , "outTypes":["JSON","CSV"], "columns": ["refnum", "organizationRefnum", "title", "description", "type", "status", "creatorRefnum", "creatorId", "lastUpdatorRefnum", "lastUpdated", "deleted", "users"] }
+          ,{ "name":"Simple", "outTypes":["JSON"]      , "columns": ["refnum", "organizationRefnum", "title", "description", "type", "creatorId", "lastUpdated", "deleted"] }
+         ]
+      }
+
+     ,{ "name":"DataSourceRoleView"
+       ,"description":"Data source ACL rows"
+       ,"columns":[
+           { "sameAs":"DataSource.refnum"             , "name":"dataSourceRefnum"}
+          ,{ "sameAs":"DataSource.organizationRefnum" }
+          ,{ "sameAs":"DataSource.title"              }
+          ,{ "sameAs":"DataSource.description"        }
+          ,{ "sameAs":"DataSource.type"                }
+          ,{ "sameAs":"DataSource.creatorRefnum"      }
+          ,{ "sameAs":"DataSourceACL.userRefnum"      }
+          ,{ "sameAs":"DataSourceACL.role"            }
+         ]
+       ,"subWhere":"DataSource.hardDeleted is null and (DataSourceACL.refnum is null or DataSourceACL.deleted is null)"
+       ,"queries": [
+           { "name"  : "DataSourceCreatorOrAccess"
+            ,"description": "Get an active data source for a creator or shared user"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "dataSourceRefnum=?() and (creatorRefnum=?() or userRefnum=?())" } ]
+           }
+          ,{ "name"  : "CreatorOrAccess"
+            ,"description": "Get all active data sources for a user, as either the creator or a shared user"
+            ,"from"  : []
+            ,"wheres": [ { "db": "*", "clause": "(creatorRefnum=?() or userRefnum=?())" } ]
+            ,"orderBy": ["title"]
+           }
+         ]
+       ,"outputMaps":[
+           { "name":""      , "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+
   ]
 
  ,"migrations":{

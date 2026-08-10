@@ -1,4 +1,4 @@
-package wanda.servlets;
+package wanda.servlets.organization;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,7 +17,7 @@ import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.exceptions.NotFoundException;
 
-@WebServlet("/svc/projects/project/create")
+@WebServlet("/svc/wanda/project/create")
 public class ProjectCreate extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;
@@ -32,25 +32,33 @@ public class ProjectCreate extends SimpleServlet
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
-        long   refnum          = Req.getParamLong  ("refnum",          false);
-        String appScope        = Req.getParamString("appScope",        true);
-        String title           = Req.getParamString("title",           true);
-        String description     = Req.getParamString("description",     false);
-        String area            = Req.getParamString("area", false);
-        String tag             = Req.getParamString("tags",            false);
-        String status          = Req.getParamString("status",          false);
+        long refnum = Req.getParamLong("refnum", false);
+        long organizationRefnum = Req.getParamLong("organizationRefnum", false);
+        String appScope = Req.getParamString("appScope", true);
+        String title = Req.getParamString("title", true);
+        String description = Req.getParamString("description", false);
+        String area = Req.getParamString("area", false);
+        String tag = Req.getParamString("tags", false);
+        String status = Req.getParamString("status", false);
         Req.throwIfErrors();
 
         Project_Data p;
         if (refnum == SystemValues.EVIL_VALUE) // create
           {
             p = Project_Factory.create(appScope, title, U.getRefnum(), U.getId(), U.getRefnum(), U.getId());
+            if (organizationRefnum!=SystemValues.EVIL_VALUE)
+             p.setOrganizationRefnum(organizationRefnum);
           }
         else // update
           {
             p = Project_Factory.lookupByPrimaryKey(refnum);
-            if (p.read(C) == false || p.getAppScope().equals(appScope) == false)
+            if (p.read(C) == false)
               throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " cannot be found.");
+            // AppScope and orgRefnum must match. Because organizationRefnum is optional, we have to check for nulls. 
+            // If organizationRefnum was provided, it must match the project's. If it wasn't provided, the project's must be null.
+            if (p.getAppScope().equals(appScope) == false  || organizationRefnum == SystemValues.EVIL_VALUE && p.isNullOrganizationRefnum() == false
+                                                           || organizationRefnum != SystemValues.EVIL_VALUE && p.getOrganizationRefnum() != organizationRefnum)
+              throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " is not found in the specified appScope and organization.");
             if (p.getCreatorRefnum() != U.getRefnum())
               throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " is not updatable by this user.");
             p.setTitle(title);
@@ -70,8 +78,9 @@ public class ProjectCreate extends SimpleServlet
 
         if (p.write(C) == false)
           {
-            p = Project_Factory.lookupByCreatorTitleActive(appScope, U.getRefnum(), title);
-            if (p.read(C) ==true)
+            p = organizationRefnum==SystemValues.EVIL_VALUE ? Project_Factory.lookupByAppScopeTitleActive(appScope, title)
+                                                            : Project_Factory.lookupByOrgAppScopeTitleActive(organizationRefnum, appScope, title);
+            if (p.read(C) == true)
               {
                 Req.addError("title", "A project with the title '" + title + "' already exists. Please choose a different title.");
                 Req.throwIfErrors();

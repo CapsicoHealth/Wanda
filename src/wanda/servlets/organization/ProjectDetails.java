@@ -1,4 +1,4 @@
-package wanda.servlets;
+package wanda.servlets.organization;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,7 +15,7 @@ import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.exceptions.NotFoundException;
 
-@WebServlet("/svc/projects/project/details")
+@WebServlet("/svc/wanda/project/details")
 public class ProjectDetails extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;

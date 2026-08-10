@@ -1,4 +1,4 @@
-package wanda.servlets;
+package wanda.servlets.organization;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,7 +14,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/projects/project/acl/delete")
+@WebServlet("/svc/wanda/project/acl/delete")
 public class ProjectACLDelete extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;
