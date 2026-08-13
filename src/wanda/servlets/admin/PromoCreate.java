@@ -1,5 +1,5 @@
 /* ===========================================================================
- * Copyright (C) 2017 CapsicoHealth Inc.
+ * Copyright (C) 2025 CapsicoHealth Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class PromoCreate extends SimpleServlet
         params.put("system", new String[] {"0"}); // overwrite any system value coming in: system promotions can only be side-loaded.
         String[] allowedDomains = params.get("allowedDomains");
         if (allowedDomains != null && allowedDomains.length > 0)
-         params.put("allowedDomains", TextUtil.split(allowedDomains[0], "\\s*,\\s*"));
+         params.put("allowedDomains", TextUtil.split(allowedDomains[0].toLowerCase(), "\\s*[,;]\\s*"));
         Promo_Data p = Promo_Factory.init(params, errors);
 
         req.throwIfErrors(errors);

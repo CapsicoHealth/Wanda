@@ -123,7 +123,7 @@ public class InviteUserServlet extends SimpleServlet
               }
             Req.throwIfErrors();
             LOG.debug("Updating existing user access");
-            User_Data.updateDetailsAndInvite(C, refnumUser, promoCode, loginType, loginDomain, email, firstName, lastName, roles, appRefnums, tenantRefnumList, oldTenantRefnums, contentIds);
+            User_Data.updateDetailsAndInvite(C, refnumUser, promoCode, loginType, loginDomain, email, firstName, lastName, roles, appRefnums, tenantRefnumList, oldTenantRefnums, contentIds, null);
           }
         else
           {
@@ -132,7 +132,7 @@ public class InviteUserServlet extends SimpleServlet
               Req.addError("email", "User already exists with email '" + email + "'");
             Req.throwIfErrors();
             LOG.debug("Inviting new user");
-            User_Data.inviteUser(C, promoCode, loginType, loginDomain, email, firstName, lastName, roles, tenantRefnums, appRefnums, contentIds);
+            User_Data.inviteUser(C, promoCode, loginType, loginDomain, email, firstName, lastName, roles, tenantRefnums, appRefnums, contentIds, null);
           }
 
         Req.throwIfErrors();

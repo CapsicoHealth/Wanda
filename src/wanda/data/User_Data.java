@@ -167,7 +167,7 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }.start();
       }
 
-    public static void inviteUser(Connection C, String promoCode, String loginType, String loginDomain, String email, String firstName, String lastName, String[] roles, long[] tenantRefnums, long[] appRefnums, String[] contentIds)
+    public static void inviteUser(Connection C, String promoCode, String loginType, String loginDomain, String email, String firstName, String lastName, String[] roles, long[] tenantRefnums, long[] appRefnums, String[] contentIds, String orgId)
     throws Exception
       {
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
@@ -183,29 +183,28 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.setNullLocked();
         if (TextUtil.isNullOrEmpty(promoCode) == false)
           U.setPromoCode(promoCode);
-        else
-          U.setNullPromoCode();
-        
+
         if (TextUtil.isNullOrEmpty(loginType) == false)
           {
             if (User_Data.checkLoginType(loginType) == false)
               throw new Exception("Invalid loginType value: " + loginType);
             U.setLoginType(loginType);
           }
-        
+
         if (TextUtil.isNullOrEmpty(loginDomain) == false)
           U.setLoginDomain(loginDomain);
-        else
-          U.setNullLoginDomain();
 
         if (TextUtil.isNullOrEmpty(contentIds) == false)
           U.setContentIds(Arrays.asList(contentIds));
-        
+
         if (U.write(C) == false)
           Errors.add(new StringStringPair("User", "Unable to save changes"));
 
         UserDetail_Data UD = UserDetail_Factory.create(U.getRefnum(), lastName, firstName);
         UD.setEmailHome(email);
+        if (TextUtil.isNullOrEmpty(orgId) == false)
+          UD.setOrgId(orgId);
+
         if (UD.write(C) == false)
           Errors.add(new StringStringPair("UserDetail", "Unable to save changes"));
 
@@ -246,12 +245,78 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
           }
       }
 
-    public static void updateDetailsAndInvite(Connection C, User_Data U, String promoCode, String loginType, String loginDomain, String email, String firstName, String lastName, String[] roles, long[] appRefnums, List<Long> tenantRefnumList, long[] oldTenantRefnums, String[] contentIds)
+    /**
+     * This method updates the user details and sends an invite email if the user is being invited for the first time.
+     * It also updates the tenant associations and app access. If the user is not being invited for the first time, it 
+     * does not send an invite email even if the tenant associations or app access are being updated, as long as the 
+     * login count is greater than 0. The rationale is that if the user has already logged in before, they should have 
+     * already received an invite email, and we don't want to send them another one just because their tenant 
+     * associations or app access are being updated. However, if the user has never logged in before (i.e., login count 
+     * is 0), then we can assume they are being invited for the first time, and we should send them an invite email with 
+     * a link to set their password.<BR>
+     * <BR>
+     * This method is used in the guest registration flow, where a user may be created with a promo code and invited to 
+     * set their password. If the user already exists and has never logged in before, we want to update their details 
+     * and send them an invite email. If the user already exists and has logged in before, we want to update their 
+     * details but not send them another invite email.<BR>
+     * <BR>
+     * Note that this method does not update the user's email. If the email needs to be updated, it should be done 
+     * separately using the updateEmailIfChanged method, which also handles sending a verification email for the 
+     * new email address.<BR>
+     * <BR>
+     * @param C
+     * @param U
+     * @param promoCode
+     * @param loginType
+     * @param loginDomain
+     * @param email
+     * @param firstName
+     * @param lastName
+     * @param roles
+     * @param appRefnums
+     * @param tenantRefnumList
+     * @param oldTenantRefnums
+     * @param contentIds
+     * @param orgId
+     * @throws Exception
+     */
+    public static void updateDetailsAndInvite(Connection C, User_Data U, String promoCode, String loginType, String loginDomain, String email, String firstName, String lastName, String[] roles, long[] appRefnums, List<Long> tenantRefnumList, long[] oldTenantRefnums, String[] contentIds, String orgId)
     throws Exception
       {
         List<StringStringPair> Errors = new ArrayList<StringStringPair>();
         // Do not send invite if tenantRefnums/Roles/Name are change and loginCount > 0
         boolean isResetPassword = U.getLoginCount() == 0;
+        U.setEmail(email);
+        U.setRoles(new HashSet<String>(Arrays.asList(roles)));
+        if (TextUtil.isNullOrEmpty(promoCode) == false)
+          U.setPromoCode(promoCode);
+        else
+          U.setNullPromoCode();
+
+        if (TextUtil.isNullOrEmpty(loginType) == false)
+          {
+            if (User_Data.checkLoginType(loginType) == false)
+              throw new Exception("Invalid loginType value: " + loginType);
+            U.setLoginType(loginType);
+          }
+
+        if (TextUtil.isNullOrEmpty(loginDomain) == false)
+          U.setLoginDomain(loginDomain);
+        else
+          U.setNullLoginDomain();
+
+        if (TextUtil.isNullOrEmpty(contentIds) == false)
+          U.setContentIds(Arrays.asList(contentIds));
+
+        if (isResetPassword)
+          {
+            U.setPswdResetCode(EncryptionUtil.getToken(18, true));
+            U.setPswdResetCreateNow();
+            U.setInvitedUser(true);
+          }
+        U.setNullInviteCancelled();
+        U.setNullLocked();
+
         UserDetail_Data UD = UserDetail_Factory.lookupByUserRefnum(U.getRefnum());
         if (UD.read(C) == false)
           {
@@ -262,36 +327,8 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
             UD.setNameLast(lastName);
             UD.setNameFirst(firstName);
           }
-        U.setEmail(email);
-        U.setRoles(new HashSet<String>(Arrays.asList(roles)));
-        if (TextUtil.isNullOrEmpty(promoCode) == false)
-          U.setPromoCode(promoCode);
-        else
-          U.setNullPromoCode();
-        
-        if (TextUtil.isNullOrEmpty(loginType) == false)
-          {
-            if (User_Data.checkLoginType(loginType) == false)
-              throw new Exception("Invalid loginType value: " + loginType);
-            U.setLoginType(loginType);
-          }
-        
-        if (TextUtil.isNullOrEmpty(loginDomain) == false)
-          U.setLoginDomain(loginDomain);
-        else
-          U.setNullLoginDomain();
-
-        if (TextUtil.isNullOrEmpty(contentIds) == false)
-          U.setContentIds(Arrays.asList(contentIds));
-        
-        if (isResetPassword)
-          {
-            U.setPswdResetCode(EncryptionUtil.getToken(18, true));
-            U.setPswdResetCreateNow();
-            U.setInvitedUser(true);
-          }
-        U.setNullInviteCancelled();
-        U.setNullLocked();
+        if (TextUtil.isNullOrEmpty(orgId) == false)
+          UD.setOrgId(orgId);
 
         if (U.write(C) == false || UD.write(C) == false)
           {

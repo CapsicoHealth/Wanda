@@ -188,46 +188,49 @@ public class LoadAppsConfig
     throws Exception
       {
         ZonedDateTime ZDT = C.getCurrentTimestamp();
-
         int i = -1;
         LOG.debug("Updating App configurations...");
-        // LogUtil.setLogLevel(Level.ERROR);
         for (AppDef ad : DA._apps)
           if (ad != null)
             {
+              LOG.debug("\n\n----------------------------------------------------------------------------");
+              LOG.debug("Processing app definition with id " + ad._id + " and name=" + ad._AppDefDetail._label);
               App_Data A = App_Factory.lookupByPathHome(ad._path, ad._AppDefDetail._home); // search by path and home
-              A.setId(ad._id);
+              LOG.debug("  - Trying to lookup record by path/home");
+              if (A.read(C) == true)
+                {
+                  A.setId(ad._id);
+                }
+              else
+                {
+                  LOG.debug("  - Lookup by path/home failed");
+                  LOG.debug("  - Trying to lookup record by id");
+                  A = App_Factory.lookupById(ad._id); // search by id
+                  if (A.read(C) == true)
+                    {
+                      A.setPath(ad._path);
+                      A.setHome(ad._AppDefDetail._home);
+                    }
+                  else
+                    {
+                      LOG.debug("  - Lookup by id failed");
+                      LOG.debug("  - creating new record");
+                      A = App_Factory.create(ad._id, ad._path, ad._AppDefDetail._home, ad._icon, ad._directNav);
+                    }
+
+                }
+              // update all the fields.
               if (ad._subAppOfId != null)
                 A.setSubOfId(ad._subAppOfId);
+              A.setTour(ad._AppDefDetail._tour);
               A.setAdmin(ad._AppDefDetail._admin);
               A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-              A.setNullDeleted();
               A.setIcon(ad._icon);
               A.setDirectNav(ad._directNav);
-              if (A.write(C) == false) // not existing
-                {
-                  A = App_Factory.lookupById(ad._id); // search by id
-                  A.setPath(ad._path);
-                  A.setHome(ad._AppDefDetail._home);
-                  A.setTour(ad._AppDefDetail._tour);
-                  A.setAdmin(ad._AppDefDetail._admin);
-                  A.setIcon(ad._icon);
-                  A.setDirectNav(ad._directNav);
-                  A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-                  A.setNullDeleted();
-                  if (A.write(C) == false) // not existing, need to create new
-                    {
-                      A = App_Factory.create(ad._id, ad._path, ad._AppDefDetail._home, ad._icon, ad._directNav);
-                      A.setAdmin(ad._AppDefDetail._admin);
-                      A.setServices(printRawAppDefDetailServicesArray(ad._AppDefDetail._services));
-                      if (A.upsert(C) == false)
-                        {
-                          // LogUtil.resetLogLevel();
-                          throw new Exception("Cannot insert/update App record");
-                        }
-                    }
-                }
-              A.refresh(C);
+              A.setNullDeleted();
+              // not existing, but we want to force a write to update the row's "lastUpdated" for the "App not updated in this round" later in this function!
+              if (A.touch(C) == false) // not existing, need to create new
+                throw new Exception("Cannot insert/update App record");
 
               ++i; // sequence increment.
               // Looking up the app config for this host.
@@ -241,23 +244,18 @@ public class LoadAppsConfig
                 }
               AC.setHostName(Wanda.getHostName());
               AC.setLabel(ad._AppDefDetail._label);
+              AC.setDescr(ad._AppDefDetail._descr);
               AC.setSeq(i);
               AC.setNullDeleted();
-              if (AC.write(C) == false)
-                {
-                  LogUtil.resetLogLevel();
-                  throw new Exception("Cannot insert/update AppConfig record");
-                }
+              if (AC.touch(C) == false)
+                throw new Exception("Cannot insert/update AppConfig record");
 
               AppUser_Data AU = AppUser_Factory.lookupByUnassignedApp(A.getRefnum());
               if (AU.read(C) == false)
                 {
                   AU = AppUser_Factory.create(A.getRefnum());
                   if (AU.write(C) == false)
-                    {
-                      LogUtil.resetLogLevel();
-                      throw new Exception("Cannot insert default app record for app " + A.getRefnum());
-                    }
+                    throw new Exception("Cannot insert default app record for app " + A.getRefnum());
                 }
               // Create Administrator role for the application
               if (TextUtil.isNullOrEmpty(A.getAdmin()) == false)

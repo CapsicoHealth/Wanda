@@ -521,6 +521,7 @@ public class SessionFilter implements jakarta.servlet.Filter
       {
         AccessLog_Data AL = AccessLog_Factory.create(SessionUtil.getSession(Request).getId());
         AL.setIpAddress(Request.getRemoteAddr() + ":" + Request.getRemotePort());
+        AL.setUserAgent(Request.getHeader("user-agent"));
         AL.setUrl(Request.getRequestURL().toString());
         AL.setServlet(Request.getServletPath());
         LOG.info(getRequestHeaderLogStr(Request, S, AL, true, dataMasking, apiToken));
@@ -726,17 +727,17 @@ public class SessionFilter implements jakarta.servlet.Filter
           }
 
         String servletPath = Request.getServletPath();
-        // LOG.debug("Full servlet path: " + servletPath);
+//        LOG.debug("Full servlet path: " + servletPath);
         for (AppView_Data app : Wanda.getApps())
           {
             // How do we cache User access to apps? i.e., the user may have access to an app A1, but that guest path is for A2 which the user
             // doesn't have access to. This is a larger issue of app service access control which we are still developing!
-            // LOG.debug("Checking app : " + app.getAppLabel() + " for guest path match.");
-            if (app.getAppServices() != null)
+//            LOG.debug("Checking app : " + app.getAppLabel() + " for guest path match.");
+            if (app.getAppServices() != null && app.getAppServices().isEmpty() == false)
               {
                 for (ServiceDefinition sd : app.getAppServices())
                   {
-                    // LOG.debug("Checking service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+//                    LOG.debug("Checking service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
                     if (servletPath.equals(sd._path) == true && "GST".equals(sd._access) == true)
                       {
                         // LOG.debug(" ==> MATCHING for guest service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
@@ -744,7 +745,7 @@ public class SessionFilter implements jakarta.servlet.Filter
                       }
                     else
                       {
-                        // LOG.debug(" ==> No match for service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
+//                        LOG.debug(" ==> No match for service definition: '" + sd._path + "' with access: '" + sd._access+"'.");
                       }
                   }
               }

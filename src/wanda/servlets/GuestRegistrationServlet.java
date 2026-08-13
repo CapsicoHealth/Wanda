@@ -59,6 +59,10 @@ public class GuestRegistrationServlet extends SimpleServlet
 
         if (Wanda.isGuestRegistrationAllowed() == false)
           Req.addError("email", "Guest registrations are not allowed");
+
+        // all emails to lower case
+        if (TextUtil.isNullOrEmpty(email) == false)
+          email = email.toLowerCase();
         
         if (Wanda.isGuestRegistrationAllowerDomain(email) == false)
           Req.addError("email", "This email domain is not allowed for guest registrations");
@@ -69,24 +73,29 @@ public class GuestRegistrationServlet extends SimpleServlet
             if (TextUtil.isNullOrEmpty(promoCode) == true)
               {
                 Req.addError("promoCode", "An event/promotion code is required");
+                Req.throwIfErrors();
               }
+            promoCode = TextUtil.trimFull(promoCode);
+            // Validate the promo code
+            p = Promo_Factory.lookupByCode(promoCode);
+            if (p.read(C) == false || p.isActiveAndValid() == false)
+              Req.addError("promoCode", "This event/promotion code is invalid.");
             else
               {
-                // Validate the promo code
-                p = Promo_Factory.lookupByCode(promoCode);
-                if (p.read(C) == false || p.isActiveAndValid() == false)
-                  Req.addError("promoCode", "This event/promotion code is invalid.");
-                
                 // Check the number of users on the promoCode doesn't exceed the max allowed
                 long userCount = User_Factory.countUsersByPromoCode(C, promoCode);
                 if (p.getMaxUsers() > 0 && userCount > 0 && userCount >= p.getMaxUsers())
-                 Req.addError("promoCode", "This event/promotion code has reached its maximum number of users.");
-                
-                // Check the email domain is allowed, if domains have been specified
-                if (p.isNullAllowedDomains() == false)
+                  Req.addError("promoCode", "This event/promotion code has reached its maximum number of users.");
+              }
+            Req.throwIfErrors();
+
+            // Check the email domain is allowed, if domains have been specified
+            if (p.isNullAllowedDomains() == false)
+              {
+                boolean found = false;
+                Iterator<String> it = p.getAllowedDomains();
+                if (it != null)
                   {
-                    boolean found = false;
-                    Iterator<String> it = p.getAllowedDomains();
                     while (it.hasNext() == true)
                       {
                         String domain = it.next();
@@ -103,7 +112,7 @@ public class GuestRegistrationServlet extends SimpleServlet
           }
 
         Req.throwIfErrors();
-        
+
         User_Data user = User_Factory.lookupByEmail(email);
         boolean previousUser = false;
         // If the user exists and, is not a guest or has already registered, then this is a collision.
@@ -123,9 +132,9 @@ public class GuestRegistrationServlet extends SimpleServlet
         long[] tenantRefnums = Wanda.getGuestRegistrationTenantRefnums();
 
         if (previousUser == false)
-          User_Data.inviteUser(C, promoCode, null, null, email, fName, lName, guestRole, tenantRefnums, appRefnums, contents);
+          User_Data.inviteUser(C, promoCode, null, null, email, fName, lName, guestRole, tenantRefnums, appRefnums, contents, null);
         else
-          User_Data.updateDetailsAndInvite(C, user, promoCode, null, null, email, fName, lName, guestRole, appRefnums, CollectionUtil.toList(tenantRefnums), new long[] {}, contents);
+          User_Data.updateDetailsAndInvite(C, user, promoCode, null, null, email, fName, lName, guestRole, appRefnums, CollectionUtil.toList(tenantRefnums), new long[] {}, contents, null);
 
         Res.success();
       }
