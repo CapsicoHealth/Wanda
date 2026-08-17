@@ -31,7 +31,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/wanda/organizations/organization/list")
+@WebServlet("/svc/wanda/organizations/list")
 public class OrganizationList extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;

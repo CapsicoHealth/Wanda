@@ -274,6 +274,16 @@ public class Wanda
         return _Config._emailVerificationTexts;
       }
 
+    public static List<String> getOrgInviteUserTexts()
+      {
+        return _Config._orgInviteUserTexts;
+      }
+
+    public static int getOrgInviteTokenTTLDays()
+      {
+        return _Config._orgInviteTokenTTLDays;
+      }
+
     public static int getResetCodeTTL()
       {
         return _Config._sessionConfig._resetCodeExpiryMins;

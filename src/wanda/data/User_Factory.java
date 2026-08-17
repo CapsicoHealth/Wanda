@@ -82,10 +82,20 @@ public class User_Factory extends wanda.data._Tilda.TILDA__USER_Factory
         return apiUser;
       }
 
+    /**
+     * Counts the number of <B>active</B> (i.e., not soft-deleted) users currently bound to the given promo code.
+     * This is used both by the guest self-registration flow and by the Organization invite flow to enforce a
+     * promo code's maxUsers limit.
+     *
+     * @param C
+     * @param promoCode
+     * @return
+     * @throws Exception
+     */
     public static long countUsersByPromoCode(Connection C, String promoCode) throws Exception
       {
         ScalarRP rp = new ScalarRP();
-        String q = "select count(*) from "+SCHEMA_TABLENAME_LABEL+" where \"promoCode\"="+TextUtil.escapeSingleQuoteForSQL(promoCode);
+        String q = "select count(*) from "+SCHEMA_TABLENAME_LABEL+" where \"promoCode\"="+TextUtil.escapeSingleQuoteForSQL(promoCode)+" and \"deleted\" is null";
         C.executeSelect(SCHEMA_LABEL, TABLENAME_LABEL, q, rp);
         return rp.getResult();
       }

@@ -89,4 +89,29 @@ public class OrganizationRoleView_Factory extends wanda.data._Tilda.TILDA__ORGAN
        throw new NotFoundException("Organization", "" + organizationRefnum, "Organization " + organizationRefnum + " is not " + (requiredRole == OrganizationRole.READER ? "accessible" : "updatable") + " by this user.");
      }
 
+   /**
+    * Evicts a single user's cached role for a given organization, forcing a re-lookup on the next access check.
+    * This should be called whenever an OrganizationACL is created, updated or deleted for a given
+    * organization/user pair (e.g., when accepting/cancelling an OrganizationInvite).
+    *
+    * @param organizationRefnum
+    * @param userRefnum
+    */
+   public static void evict(long organizationRefnum, long userRefnum)
+     {
+       Cache<Long, Character> userCache = _ACL_ORGANIZATION_CACHE.getIfPresent(organizationRefnum);
+       if (userCache != null)
+         userCache.invalidate(userRefnum);
+     }
+
+   /**
+    * Evicts all cached roles for a given organization, forcing a re-lookup for all users on their next access check.
+    *
+    * @param organizationRefnum
+    */
+   public static void evict(long organizationRefnum)
+     {
+       _ACL_ORGANIZATION_CACHE.invalidate(organizationRefnum);
+     }
+
  }

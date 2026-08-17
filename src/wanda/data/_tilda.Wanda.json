@@ -1180,6 +1180,8 @@
          ,{ "name":"inviterRefnum"      , "sameas":"User.refnum"        , "nullable":false, "invariant":true , "description":"The org admin/owner who issued the invitation"                                  }
          ,{ "name":"inviterId"          , "sameas":"User.id"            , "nullable":false                   , "description":"Denorm of inviter user id"                                                      }
          ,{ "name":"inviteeEmail"       , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"Email of the invited person - canonical lookup key before a User account exists" }
+         ,{ "name":"inviteeNameFirst"   , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"First name of the invited person" }
+         ,{ "name":"inviteeNameLast"    , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"Last name of the invited person" }
          ,{ "name":"inviteeRefnum"      , "sameas":"User.refnum"        , "nullable":true                    , "description":"FK to User once the account exists; null when invitee is not yet registered"    }
          ,{ "name":"inviteeUserId"      , "sameas":"User.id"            , "nullable":true                    , "description":"Denorm of invitee user id; null until the account exists"                       }
          ,{ "name":"role"               , "type"  :"CHAR"               , "nullable":false                   , "description":"OrganizationACL role to be granted on acceptance (Admin/Writer/Reader - Owner cannot be granted via invite)"

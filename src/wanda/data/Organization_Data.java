@@ -51,4 +51,21 @@ public class Organization_Data extends wanda.data._Tilda.TILDA__ORGANIZATION
        return true;
      }
 
+  /**
+   * The "owner" of an Organization is the user who created it (see {@link #getCreatorRefnum()}). All ACL grants for
+   * users under this Organization ultimately derive from this owner, including whether or not a promo-code-bound
+   * user limit applies when inviting new (not-yet-existing) users to this Organization.
+   *
+   * @param C
+   * @return the owner's User_Data, already read from the database.
+   * @throws Exception if the owner user cannot be found -- this would indicate a data integrity issue.
+   */
+  public User_Data getOwner(Connection C) throws Exception
+    {
+      User_Data owner = User_Factory.lookupByPrimaryKey(getCreatorRefnum());
+      if (owner.read(C) == false)
+        throw new Exception("Organization " + getRefnum() + "'s owner user " + getCreatorRefnum() + " cannot be found.");
+      return owner;
+    }
+
  }

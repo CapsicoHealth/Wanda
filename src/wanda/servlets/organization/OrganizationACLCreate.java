@@ -33,7 +33,7 @@ import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.exceptions.NotFoundException;
 
-@WebServlet("/svc/wanda/organizations/organization/acl/create")
+@WebServlet("/svc/wanda/organizations/acl/create")
 public class OrganizationACLCreate extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;

@@ -60,6 +60,7 @@ import wanda.data.AccessLog_Factory;
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
 import wanda.data.AppView_Data;
+import wanda.data.OrganizationRoleView_Factory;
 import wanda.data.TenantUser_Data;
 import wanda.data.TenantUser_Factory;
 import wanda.data.Tenant_Data;
@@ -212,6 +213,9 @@ public class SessionFilter implements jakarta.servlet.Filter
                   }
                 UserDetail_Data UD = getUserDetail(MasterConnection, MasterDbUser, response);
                 MasterDbUser.setUserDetail(UD);
+
+                // Validate/clear any active Organization context stored in session before checking app authorization.
+                validateActiveOrg(req, MasterConnection, MasterDbUser);
               }
 
             if (isAuthPassthrough == false && isAppAuthorized(request, MasterConnection, MasterDbUser) == false)
@@ -419,6 +423,8 @@ public class SessionFilter implements jakarta.servlet.Filter
         else if (req.getServletPath().equals("/svc/user/guest/registration") == true)
           AL.setRegistrationGuest(flag);
         else if (req.getServletPath().equals("/svc/user/onboarding") == true)
+          AL.setRegistrationInvite(flag);
+        else if (req.getServletPath().equals("/svc/wanda/organizations/invite/update") == true)
           AL.setRegistrationInvite(flag);
         else if (req.getServletPath().equals("/svc/payments/order/create") == true)
           AL.setPaymentCreate(flag);
@@ -836,6 +842,32 @@ public class SessionFilter implements jakarta.servlet.Filter
     private static boolean isUserLocked(User_Data U)
       {
         return U.getLocked() != null && ChronoUnit.MILLIS.between(ZonedDateTime.now(), U.getLocked()) > 0;
+      }
+
+    /**
+     * Validates that the ACTIVE_ORG_REFNUM stored in session (if any) is still a valid, accessible organization for
+     * the current user. If the user no longer has at least READER access to that organization (e.g., their ACL was
+     * revoked, the invite was cancelled, or the organization was deleted), the stale session attribute is cleared
+     * so that clients fall back to "no active organization" context on their next call to /svc/config.
+     *
+     * @param req
+     * @param C
+     * @param U
+     */
+    private static void validateActiveOrg(RequestUtil req, Connection C, User_Data U)
+      {
+        long activeOrgRefnum = req.getSessionLong(SessionUtil.Attributes.ACTIVE_ORG_REFNUM.toString());
+        if (activeOrgRefnum == SystemValues.EVIL_VALUE)
+          return;
+        try
+          {
+            OrganizationRoleView_Factory.checkOrganizationAcl(C, U, activeOrgRefnum, OrganizationRoleView_Factory.OrganizationRole.READER);
+          }
+        catch (Throwable T)
+          {
+            LOG.info("Active organization " + activeOrgRefnum + " is no longer accessible to user " + U.getRefnum() + ": clearing ACTIVE_ORG_REFNUM from session. " + T.getMessage());
+            req.removeSessionAttribute(SessionUtil.Attributes.ACTIVE_ORG_REFNUM.toString());
+          }
       }
 
     public static boolean checkAppAccess(Connection C, User_Data U, String appName)

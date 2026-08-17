@@ -32,7 +32,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/wanda/organizations/organization/acl/list")
+@WebServlet("/svc/wanda/organizations/acl/list")
 public class OrganizationACLList extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;

@@ -22,12 +22,16 @@ import java.util.List;
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
 import tilda.db.ConnectionPool;
+import tilda.utils.SystemValues;
 import tilda.utils.json.JSONUtil;
 import wanda.data.AppUserView_Data;
 import wanda.data.AppUserView_Factory;
+import wanda.data.Organization_Data;
+import wanda.data.Organization_Factory;
 import wanda.data.User_Data;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
+import wanda.web.SessionUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.config.PasswordRule;
 import wanda.web.config.Wanda;
@@ -65,6 +69,19 @@ public class ConfigServlet extends SimpleServlet
         Out.println();
         JSONUtil.print(Out, "apps", "", false, AUVL, " ");
         Out.println();
+        if (U != null)
+          {
+            long activeOrgRefnum = Req.getSessionLong(SessionUtil.Attributes.ACTIVE_ORG_REFNUM.toString());
+            if (activeOrgRefnum != SystemValues.EVIL_VALUE)
+              {
+                Organization_Data activeOrg = Organization_Factory.lookupByPrimaryKey(activeOrgRefnum);
+                if (activeOrg.read(C) == true)
+                  {
+                    JSONUtil.print(Out, "activeOrganization", "", false, activeOrg, " ");
+                    Out.println();
+                  }
+              }
+          }
         if (U != null)
           {
             Out.println(", \"currentUser\": { ");

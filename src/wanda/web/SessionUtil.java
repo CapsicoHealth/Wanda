@@ -37,7 +37,13 @@ public class SessionUtil
 
     public static enum Attributes
       {
-      USERREFNUM, USER_IMPERSONATOR_EMAIL, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR, MASKING_MODE, PLAN_CLEAR;
+      USERREFNUM, USER_IMPERSONATOR_EMAIL, TENANTUSERREFNUM, FORCE_COMMIT, FORCE_RELOAD_USER, PASSWORD_RESET_TRIES, EULA_CODE, EULA_CLEAR, MASKING_MODE, PLAN_CLEAR,
+      /**
+       * The refnum of the Organization currently selected/active for this session, i.e., the organization context
+       * that org-scoped resources (Projects, DataSources...) should be resolved against. This is analogous to
+       * TENANTUSERREFNUM for the multi-tenant model, but for the Organizations feature.
+       */
+      ACTIVE_ORG_REFNUM;
       }
 
 

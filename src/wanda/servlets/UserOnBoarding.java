@@ -25,6 +25,11 @@ import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
 import tilda.utils.EncryptionUtil;
 import tilda.utils.json.JSONUtil;
+import wanda.data.OrganizationACL_Data;
+import wanda.data.OrganizationACL_Factory;
+import wanda.data.OrganizationInvite_Data;
+import wanda.data.OrganizationInvite_Factory;
+import wanda.data.OrganizationRoleView_Factory;
 import wanda.data.UserDetail_Data;
 import wanda.data.UserDetail_Factory;
 import wanda.data.User_Data;
@@ -120,6 +125,26 @@ public class UserOnBoarding extends SimpleServlet
         U.setInvitedUser(false);
         U.setPswdHist(passwordHistory);
         U.write(C);
+
+        // Auto-join any Organization(s) this brand new user was invited to before they had an account (Scenario B
+        // of the Organization Invite feature -- see User_Data.inviteUserForOrg / InviteOrgUser). Invites are matched
+        // by email and are still in a Pending state with no invitee account linked yet.
+        List<OrganizationInvite_Data> pendingOrgInvites = OrganizationInvite_Factory.lookupWhereByInviteeEmailPending(C, U.getEmail(), 0, -1);
+        for (OrganizationInvite_Data orgInvite : pendingOrgInvites)
+          {
+            orgInvite.setInviteeRefnum(U.getRefnum());
+            orgInvite.setInviteeUserId(U.getId());
+            orgInvite.setStatusAccepted();
+            if (orgInvite.write(C) == false)
+              throw new Exception("Cannot mark OrganizationInvite " + orgInvite.getRefnum() + " as accepted.");
+
+            OrganizationACL_Data orgAcl = OrganizationACL_Factory.create(orgInvite.getOrganizationRefnum(), U.getRefnum(), U.getId(), orgInvite.getRole(), orgInvite.getInviterRefnum(), orgInvite.getInviterId());
+            orgAcl.setNullDeleted();
+            if (orgAcl.upsert(C) == false)
+              throw new Exception("Cannot save OrganizationACL for organization " + orgInvite.getOrganizationRefnum() + " / user " + U.getRefnum() + ".");
+
+            OrganizationRoleView_Factory.evict(orgInvite.getOrganizationRefnum(), U.getRefnum());
+          }
 
         PrintWriter Out = Res.setContentType(ResponseUtil.ContentType.JSON);
         JSONUtil.startOK(Out, '{');

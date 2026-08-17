@@ -32,7 +32,7 @@ import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 import wanda.web.exceptions.NotFoundException;
 
-@WebServlet("/svc/wanda/organizations/organization/delete")
+@WebServlet("/svc/wanda/organizations/delete")
 public class OrganizationDelete extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;

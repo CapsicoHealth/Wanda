@@ -64,4 +64,57 @@ public class Promo_Data extends wanda.data._Tilda.TILDA__PROMO
       return getActive() == true && now.compareTo(getStart()) >= 0 && (isNullEnd() == true || now.compareTo(getEnd()) <= 0);
     }
 
+  /**
+   * @param C
+   * @return the number of active (non-deleted) users currently bound to this promo code, across the entire
+   * platform, regardless of which Tenant/App/Organization they may belong to.
+   * @throws Exception
+   */
+  public long countActiveUsers(Connection C) throws Exception
+    {
+      return User_Factory.countUsersByPromoCode(C, getCode());
+    }
+
+  /**
+   * @param C
+   * @return the number of still-pending, not-yet-onboarded Organization invites (Scenario B -- brand new users
+   * with no account yet) across the entire platform whose inviting Organization's owner is bound to this promo
+   * code. See {@link OrganizationInvite_Factory#countPendingByOwnerPromoCode}.
+   * @throws Exception
+   */
+  public long countPendingOrgInvites(Connection C) throws Exception
+    {
+      return OrganizationInvite_Factory.countPendingByOwnerPromoCode(C, getCode());
+    }
+
+  /**
+   * @param C
+   * @return the total number of users effectively bound to this promo code, i.e., already-active users PLUS
+   * still-pending Organization invites that will inherit this promo code once accepted. This is the number that
+   * must be compared against {@link #getMaxUsers()} to enforce the bound consistently across the whole platform
+   * (all Organizations, all users, all pending invites) -- not just within a single Organization.
+   * @throws Exception
+   */
+  public long countBoundUsers(Connection C) throws Exception
+    {
+      return countActiveUsers(C) + countPendingOrgInvites(C);
+    }
+
+  /**
+   * A promo code with a maxUsers of 0 (or less) is considered unbounded/unlimited.
+   *
+   * @param C
+   * @return true if this promo code has a positive maxUsers value and the current count of users effectively
+   * bound to it (active users + pending Organization invites, see {@link #countBoundUsers(Connection)}) has
+   * reached (or would exceed) that value.
+   * @throws Exception
+   */
+  public boolean hasReachedMaxUsers(Connection C) throws Exception
+    {
+      if (getMaxUsers() <= 0)
+        return false;
+      long count = countBoundUsers(C);
+      return count > 0 && count >= getMaxUsers();
+    }
+
  }

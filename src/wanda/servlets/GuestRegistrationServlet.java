@@ -82,9 +82,9 @@ public class GuestRegistrationServlet extends SimpleServlet
               Req.addError("promoCode", "This event/promotion code is invalid.");
             else
               {
-                // Check the number of users on the promoCode doesn't exceed the max allowed
-                long userCount = User_Factory.countUsersByPromoCode(C, promoCode);
-                if (p.getMaxUsers() > 0 && userCount > 0 && userCount >= p.getMaxUsers())
+                // Check the number of users bound to the promoCode (active users + pending Organization invites
+                // that will inherit it, see Promo_Data#hasReachedMaxUsers) doesn't exceed the max allowed.
+                if (p.hasReachedMaxUsers(C) == true)
                   Req.addError("promoCode", "This event/promotion code has reached its maximum number of users.");
               }
             Req.throwIfErrors();

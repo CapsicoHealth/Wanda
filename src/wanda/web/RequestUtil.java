@@ -389,6 +389,7 @@ public class RequestUtil
             S.removeAttribute(SessionUtil.Attributes.EULA_CODE.toString());
             S.removeAttribute(SessionUtil.Attributes.EULA_CLEAR.toString());
             S.removeAttribute(SessionUtil.Attributes.PLAN_CLEAR.toString());
+            S.removeAttribute(SessionUtil.Attributes.ACTIVE_ORG_REFNUM.toString());
           }
       }
 

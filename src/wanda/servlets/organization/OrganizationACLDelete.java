@@ -30,7 +30,7 @@ import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
-@WebServlet("/svc/wanda/organizations/organization/acl/delete")
+@WebServlet("/svc/wanda/organizations/acl/delete")
 public class OrganizationACLDelete extends SimpleServlet
   {
     private static final long     serialVersionUID = 1L;

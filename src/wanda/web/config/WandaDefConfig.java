@@ -42,6 +42,8 @@ public class WandaDefConfig
     @SerializedName("inviteEmailText" )         List<String>                        _inviteEmailTexts       = null;
     @SerializedName("guestRegistration")        GuestRegistration                   _guestRegistration      = null;
     @SerializedName("emailVerificationText")    List<String>                        _emailVerificationTexts = null;
+    @SerializedName("orgInviteUserText")        List<String>                        _orgInviteUserTexts = null;
+    @SerializedName("orgInviteTokenTTLDays")    int                                 _orgInviteTokenTTLDays  = 7;
 
     @SerializedName("lookAndFeel"     )         LookAndFeel                         _laf                    = null;
     @SerializedName("loginSystem"     )         LoginSystem                         _loginSystem            = null;

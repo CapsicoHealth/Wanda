@@ -228,6 +228,55 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
         U.sendInviteEmail();
       }
 
+    /**
+     * Creates a brand new, minimal User account for someone being invited to join an Organization who does not yet
+     * have an account (Scenario B of the Organization Invite feature). The user is created in an "invited" state
+     * with a password-reset token so they can set their own password via the normal onboarding flow. Unlike
+     * {@link #inviteUser}, this does not attach any tenant/app access directly -- that happens automatically once
+     * the user completes onboarding and the pending OrganizationInvite(s) matching their email are auto-accepted.
+     * <BR>
+     * <B>Important:</B> a brand new user invited into an Organization automatically <B>inherits the promo code of
+     * the inviting Organization's owner</B> (if any) -- see {@link Organization_Data#getOwner(Connection)}. This
+     * is what makes them count towards that promo code's maxUsers limit, exactly as if they had self-registered
+     * with that code. An existing user being invited (see AcceptOrgInvite) never has their promoCode touched --
+     * they retain whatever promo code (or lack thereof) they already had.
+     *
+     * @param C
+     * @param email
+     * @param orgTitle the display title of the organization, used in the invite email copy.
+     * @param promoCode the promo code of the inviting organization's owner, if any (may be null/empty).
+     * @param nameFirst the invitee's first name, if supplied by the inviter (may be null/empty).
+     * @param nameLast the invitee's last name, if supplied by the inviter (may be null/empty).
+     * @return the newly created, already-written User_Data
+     * @throws Exception
+     */
+    public static User_Data inviteUserForOrg(Connection C, String email, String orgTitle, String promoCode, String nameFirst, String nameLast)
+    throws Exception
+      {
+        String password = EncryptionUtil.getToken(18, true);
+        String salt = EncryptionUtil.getToken(8);
+        User_Data U = User_Factory.create(email, email, null, password, salt);
+        U.setPswdResetCode(EncryptionUtil.getToken(18, true));
+        U.setPswdResetCreateNow();
+        U.setInvitedUser(true);
+        U.setNullInviteCancelled();
+        U.setNullLocked();
+        if (TextUtil.isNullOrEmpty(promoCode) == false)
+          U.setPromoCode(promoCode);
+
+        if (U.write(C) == false)
+          throw new Exception("Unable to save new user for organization invite.");
+
+        UserDetail_Data UD = UserDetail_Factory.create(U.getRefnum(), TextUtil.isNullOrEmpty(nameLast) == true ? "" : nameLast, TextUtil.isNullOrEmpty(nameFirst) == true ? "" : nameFirst);
+        UD.setEmailHome(email);
+        if (UD.write(C) == false)
+          throw new Exception("Unable to save new user details for organization invite.");
+
+        LOG.debug("Sending a new organization-invite registration email to '" + U.getEmail() + "'.");
+        U.sendInviteEmailForOrg(orgTitle);
+        return U;
+      }
+
     public static void addApps(Connection C, long[] appRefnums, List<StringStringPair> Errors, User_Data U)
     throws Exception
       {
@@ -437,6 +486,56 @@ public class User_Data extends wanda.data._Tilda.TILDA__USER
                 catch (Throwable T)
                   {
                     LOG.error("Failed sending email to '" + getEmail() + "'.\n", T);
+                  }
+              }
+          }.start();
+      }
+
+    /**
+     * Sends the registration email for a brand new user who was invited to join an Organization directly
+     * (Scenario B: no account existed at the time of the invite). This mirrors {@link #sendInviteEmail()} but reuses
+     * the same org-invite copy texts as the existing-user flow (see {@link Wanda#getOrgInviteUserTexts()}),
+     * appending a generic notice that the recipient needs to register first since they don't have an account yet, as
+     * well as a notice of when the invitation will expire.
+     *
+     * @param orgTitle the display title of the organization, substituted into the configured copy texts.
+     */
+    public void sendInviteEmailForOrg(String orgTitle)
+      {
+        String[] to = { getEmail()
+        }, cc = {}, bcc = {};
+        ZonedDateTime expiry = ZonedDateTime.now().plusDays(Wanda.getOrgInviteTokenTTLDays());
+        new Thread()
+          {
+            @Override
+            public void run()
+              {
+                super.run();
+                try
+                  {
+                    StringBuilder sb = new StringBuilder();
+                    List<String> copyTexts = Wanda.getOrgInviteUserTexts();
+                    if (copyTexts != null)
+                      {
+                        Iterator<String> i = copyTexts.listIterator();
+                        while (i.hasNext())
+                          {
+                            sb.append(i.next().replace("%%ORG_TITLE%%", orgTitle).replace("%%INVITER_ID%%", ""));
+                          }
+                      }
+                    sb.append("<p>Since you don't have an account yet, you'll need to register first.</p>");
+                    sb.append("<p>This invitation will expire on <b>" + expiry.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a zzz")) + "</b>.</p>");
+                    String url = Wanda.getHostName() + Wanda.getAppPath() + Wanda.getHomePagePath() + "?action=signUp&token=" + getPswdResetCode();
+                    sb.append("<p><a href='");
+                    sb.append(url);
+                    sb.append("'>Click here to set your password and join " + orgTitle + "</a></p>");
+                    LOG.debug("Sending org invite (new user) email to " + getEmail() + " via thread with link " + url);
+                    EMailSender.sendMailUsr(to, cc, bcc, "Invited to join " + orgTitle + " on " + Wanda.getAppName(), sb.toString(), true, true);
+                    LOG.debug("Sent org invite (new user) email to " + getEmail() + " via thread.");
+                  }
+                catch (Throwable T)
+                  {
+                    LOG.error("Failed sending org invite email to '" + getEmail() + "'.\n", T);
                   }
               }
           }.start();
