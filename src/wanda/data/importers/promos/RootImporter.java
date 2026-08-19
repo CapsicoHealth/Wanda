@@ -15,6 +15,7 @@
  */
 
 package wanda.data.importers.promos;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,7 @@ import com.google.gson.annotations.SerializedName;
 
 import tilda.Importer;
 import tilda.db.Connection;
+import wanda.data.App_Factory;
 import wanda.data.Promo_Data;
 
 public class RootImporter implements Importer
@@ -38,11 +40,17 @@ public class RootImporter implements Importer
         int count = 0;
 
         for (Plan obj : _Plans)
-          count+= obj.write(C);
+          count += obj.write(C);
 
         for (Promo_Data obj : _Promos)
           {
             ++count;
+            if (obj.getAppIds() != null && obj.getAppIds().length > 0)
+              {
+                List<Long> appRefnums = App_Factory.getAppRefnums(C, obj.getAppIds());
+                if (appRefnums != null && appRefnums.isEmpty() == false)
+                 obj.setApps(appRefnums);
+              }
             if (obj.upsert(C) == false)
               throw new Exception("Cannot upsert Promo record");
           }

@@ -17,6 +17,7 @@
 package wanda.data.importers.promos;
 
 import java.io.Writer;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,13 +40,20 @@ public class Plan implements JSONable
     transient short               _discountMonths = 0;
     transient short               _discountPctYear= 0;
     transient boolean             _autoRenew      = false;
+    /**
+     * The promo's one-time signup-bonus credits ({@code Promo.initialCredits}), or null if the governing promo
+     * defines none, or if this specific product's wallet has already received it once (see
+     * {@link wanda.servlets.helpers.CreditHelper#grantSignupBonusIfEligible}). Only ever meaningful for
+     * planType=C (credit pack) plans: subscriptions have no wallet to bonus.
+     */
+    transient BigDecimal          _initialCredits = null;
 
     public Plan(Plan_Data p)
       {
         _Plan = p;
       }
 
-    public Plan(Plan P, short discountPct, short discountMonths, short discountPctYear, boolean autoRenew)
+    public Plan(Plan P, short discountPct, short discountMonths, short discountPctYear, boolean autoRenew, BigDecimal initialCredits)
       {
         _Plan = P._Plan;
         _Pricings = P._Pricings;
@@ -53,6 +61,7 @@ public class Plan implements JSONable
         _discountMonths = discountMonths;
         _discountPctYear = discountPctYear;
         _autoRenew = autoRenew;
+        _initialCredits = initialCredits;
       }
     
     public short getDiscountPct()
@@ -68,6 +77,21 @@ public class Plan implements JSONable
     public short getDiscountPctYear()
       {
         return _discountPctYear;
+      }
+
+    public BigDecimal getInitialCredits()
+      {
+        return _initialCredits;
+      }
+
+    /**
+     * Called by whoever assembles the response once they've determined that the CURRENT user's wallet for this
+     * plan's product has already received the signup bonus once: the bonus is a first-purchase-only perk, so it
+     * must stop being advertised as available once it has been claimed.
+     */
+    public void clearInitialCredits()
+      {
+        _initialCredits = null;
       }
 
     public int write(Connection C)
@@ -109,6 +133,8 @@ public class Plan implements JSONable
         JSONUtil.print(out, "discountPctYear", false, _discountPctYear);
         out.write("\n" + lead + "     ");
         JSONUtil.print(out, "autoRenew", false, _autoRenew);
+        out.write("\n" + lead + "     ");
+        JSONUtil.print(out, "initialCredits", false, _initialCredits);
         out.write("\n" + lead + "     ");
         JSONUtil.print(out, "plan", "", false, _Plan, "");
         out.write(lead + "     ");

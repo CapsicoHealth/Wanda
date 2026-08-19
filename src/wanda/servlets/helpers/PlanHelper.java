@@ -18,6 +18,7 @@ package wanda.servlets.helpers;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -124,10 +125,56 @@ public class PlanHelper
         List<Plan> L = getAvailablePlans(C, U);
         if (L == null || L.isEmpty() == true)
           return false;
-        // If they do, check if they have an active billing
-        UserPlanBilling_Data UPB = UserPlanBilling_Factory.lookupByUserActive(U.getRefnum());
-        // return true if no active plan found
-        return UPB.read(C) == false;
+
+        // Only SUBSCRIPTION plans gate access here. Credit (planType=C) plans must never block login: running out
+        // of credits is handled at the point of use ("buy more credits"), not by forcing a plan pick at sign-in.
+        // Contact-us (planType=X) plans aren't purchasable at all.
+        boolean foundSubscriptionPlan = false;
+        for (String productId : getSubscriptionProductIds(L))
+          {
+            foundSubscriptionPlan = true;
+            // If they have an active billing for ANY subscription product, they don't need to pick a plan.
+            UserPlanBilling_Data UPB = UserPlanBilling_Factory.lookupByUserActive(U.getRefnum(), productId);
+            if (UPB.read(C) == true)
+              return false;
+          }
+
+        // No subscription plan on offer at all: nothing to pick.
+        return foundSubscriptionPlan;
+      }
+
+
+    /**
+     * The distinct product ids across the subscription-type (planType=S) plans in the supplied list. Since a
+     * product groups several tiers, this collapses e.g. Individual/Professional/Enterprise down to one entry.
+     */
+    public static List<String> getSubscriptionProductIds(List<Plan> plans)
+      {
+        List<String> L = new ArrayList<String>();
+        if (plans != null)
+          for (Plan p : plans)
+            {
+              if (p._Plan.isPlanTypeSubscription() == false)
+                continue;
+              String productId = p._Plan.getPaymentSystemProductId();
+              if (L.contains(productId) == false)
+                L.add(productId);
+            }
+        return L;
+      }
+
+
+    /**
+     * Finds a plan by code in the supplied list of plans available to a user. Returns null if not found, i.e.,
+     * if the plan doesn't exist or isn't available to that user.
+     */
+    public static Plan getPlan(List<Plan> plans, String planCode)
+      {
+        if (plans != null)
+          for (Plan p : plans)
+            if (p._Plan.getCode().equals(planCode) == true)
+              return p;
+        return null;
       }
 
 
@@ -137,15 +184,29 @@ public class PlanHelper
         if (U == null)
          return Plan_Factory.getPlans();
 
-        if (U.isNullPromoCode() == false)
-          {
-            Promo_Data P = Promo_Factory.lookupByCode(U.getPromoCode());
-            if (P.read(C) == true)
-              return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths(), P.getDiscountYearPct(), P.getAutoRenew());
-          }
+        Promo_Data P = getUserPromo(C, U);
+        if (P != null)
+          return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths(), P.getDiscountYearPct(), P.getAutoRenew()
+                                       , P.isNullInitialCredits() == true ? null : P.getInitialCredits());
 
         return null;
       }
+
+    /**
+     * @return the {@link Promo_Data} a user registered under, or null if they have no promo code, or the code
+     * no longer resolves to a record. Centralized here (rather than each caller re-doing
+     * {@code Promo_Factory.lookupByCode}) so every consumer -- plan availability, the signup credit bonus, etc. --
+     * agrees on what "the user's promo" means.
+     */
+    public static Promo_Data getUserPromo(Connection C, User_Data U)
+    throws Exception
+      {
+        if (U == null || U.isNullPromoCode() == true)
+          return null;
+        Promo_Data P = Promo_Factory.lookupByCode(U.getPromoCode());
+        return P.read(C) == true ? P : null;
+      }
+
 
     public static class SelectedPlan
       {
@@ -170,6 +231,34 @@ public class PlanHelper
             return _plan._Plan.getRefnum();
           }
 
+        /**
+         * The product grouping key: all tiers of a same product share it, and a user can hold at most one
+         * active subscription/billing/pre-order per product.
+         */
+        public String getProductId()
+          {
+            return _plan._Plan.getPaymentSystemProductId();
+          }
+
+        public char getPlanType()
+          {
+            return _plan._Plan.getPlanType();
+          }
+
+        public boolean isCreditPlan()
+          {
+            return _plan._Plan.isPlanTypeCredits();
+          }
+
+        /**
+         * The credit UNITS granted by a purchase of this plan at this price point. Only meaningful for
+         * planType=C. Null otherwise.
+         */
+        public BigDecimal getCredits()
+          {
+            return _pricing.isNullOneTimeCredits() == true ? null : _pricing.getOneTimeCredits();
+          }
+
         public String getBillingCurrency()
           {
             return _pricing.getCurrency();
@@ -177,7 +266,11 @@ public class PlanHelper
 
         public BigDecimal getBillingPrice()
           {
-            return _cycle == UserPlanSubscription_Data._cycleYearly ? _pricing.getYearly() : _pricing.getMonthly();
+            if (_cycle == UserPlanSubscription_Data._cycleOneTime)
+              return _pricing.isNullOneTime() == true ? null : _pricing.getOneTime();
+            if (_cycle == UserPlanSubscription_Data._cycleYearly)
+              return _pricing.isNullYearly() == true ? null : _pricing.getYearly();
+            return _pricing.isNullMonthly() == true ? null : _pricing.getMonthly();
           }
 
         public char getBillingCycle()
@@ -205,15 +298,52 @@ public class PlanHelper
           if (p._Plan.getCode().equals(planCode) == true)
             {
               foundPlan = true;
+              if (p._Plan.isPlanTypeContactUs() == true)
+                {
+                  LOG.error("Plan '" + planCode + "' is a contact-us plan and cannot be purchased online.");
+                  return null;
+                }
+              // The cycle must match the nature of the plan: credit packs are one-time only, subscriptions are monthly/yearly only.
+              if (p._Plan.isPlanTypeCredits() == true && cycle != UserPlanSubscription_Data._cycleOneTime
+              || p._Plan.isPlanTypeSubscription() == true && cycle == UserPlanSubscription_Data._cycleOneTime)
+                {
+                  LOG.error("Plan '" + planCode + "' of type '" + p._Plan.getPlanType() + "' cannot be purchased with cycle '" + cycle + "'.");
+                  return null;
+                }
               for (PlanPricing_Data pp : p._Pricings)
                 {
                   if (pp.getCurrency().equals(currency) == true)
-                    return new SelectedPlan(p, pp, cycle);
+                    {
+                      SelectedPlan SP = new SelectedPlan(p, pp, cycle);
+                      // Guard against a pricing row that simply doesn't define the requested cycle's amount: without this,
+                      // a null price flows all the way into the payment provider call.
+                      if (SP.getBillingPrice() == null)
+                        {
+                          LOG.error("Plan '" + planCode + "' has a pricing row for currency '" + currency + "' but no amount defined for cycle '" + cycle + "'.");
+                          return null;
+                        }
+                      return SP;
+                    }
                 }
               LOG.error("Plan found, but no pricing for currency " + currency);
             }
         if (foundPlan == false)
           LOG.error("No plan found for code " + planCode);
+        return null;
+      }
+
+
+    /**
+     * The credit UNITS granted by a purchase of this plan in the supplied currency, or null if this isn't a
+     * credit plan, has no pricing row for that currency, or that row defines no credits.
+     */
+    public static BigDecimal getCredits(Plan p, String currency)
+      {
+        if (p == null || p._Plan.isPlanTypeCredits() == false || p._Pricings == null)
+          return null;
+        for (PlanPricing_Data pp : p._Pricings)
+          if (pp.getCurrency().equals(currency) == true)
+            return pp.isNullOneTimeCredits() == true ? null : pp.getOneTimeCredits();
         return null;
       }
 

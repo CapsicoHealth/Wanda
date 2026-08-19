@@ -17,11 +17,13 @@
 
 package wanda.servlets;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
+import tilda.utils.TextUtil;
 import wanda.data.User_Data;
 import wanda.data.importers.promos.Plan;
 import wanda.servlets.helpers.PlanHelper;
@@ -48,7 +50,20 @@ public class UserPlanList extends SimpleServlet
     protected void justDo(RequestUtil Req, ResponseUtil Res, Connection C, User_Data U)
     throws Exception
       {
+        // Optional: restrict the catalog to a single product. Absent means all products, i.e. the
+        // pre-existing behavior, so no existing caller changes.
+        String productId = Req.getParamString("productId", false);
+
         List<Plan> plans = PlanHelper.getAvailablePlans(C, U);
+        if (plans != null && TextUtil.isNullOrEmpty(productId) == false)
+          {
+            List<Plan> filtered = new ArrayList<Plan>();
+            for (Plan p : plans)
+              if (p._Plan.getPaymentSystemProductId().equals(productId) == true)
+                filtered.add(p);
+            plans = filtered;
+          }
+
         Res.successJson("", plans);
       }
 

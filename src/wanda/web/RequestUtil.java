@@ -18,6 +18,7 @@ package wanda.web;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -280,6 +281,25 @@ public class RequestUtil
     public double[] getParamsDouble(String Name, boolean Mandatory)
       {
         return ParseUtil.parseDouble(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
+      }
+
+    /**
+     * Exact decimal parameter. Prefer this over getParamDouble for anything money- or credit-like, where binary
+     * floating point rounding is not acceptable.
+     */
+    public BigDecimal getParamBigDecimal(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseBigDecimal(Name, Mandatory, _Req.getParameter(Name), _Errors);
+      }
+
+    public BigDecimal getParamBigDecimal(String Name, BigDecimal Default)
+      {
+        return ParseUtil.parseBigDecimal(_Req.getParameter(Name), Default);
+      }
+
+    public BigDecimal[] getParamsBigDecimal(String Name, boolean Mandatory)
+      {
+        return ParseUtil.parseBigDecimal(Name, Mandatory, _Req.getParameterValues(Name), _Errors);
       }
 
     public boolean getParamBoolean(String Name, boolean Mandatory)

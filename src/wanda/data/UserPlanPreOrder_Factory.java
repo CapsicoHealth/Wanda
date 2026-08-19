@@ -42,10 +42,17 @@ public class UserPlanPreOrder_Factory extends wanda.data._Tilda.TILDA__USERPLANP
       // Add logic to initialize your object, for example, caching some values, or validating some things.
     }
 
-   public static int delete(Connection C, long userRefnum) throws Exception
+   /**
+    * Deletes the in-flight pre-order for a user FOR A GIVEN PRODUCT. The product id is required: a user can
+    * legitimately have one in-flight order per product (e.g., subscribing to GenAILearning while a credit
+    * top-up for Agentic is mid-checkout), and deleting across products would silently cancel an unrelated
+    * payment the user is in the middle of approving.
+    */
+   public static int delete(Connection C, long userRefnum, String paymentSystemProductId) throws Exception
     {
       DeleteQuery Q = newDeleteQuery(C);
-      Q.where().equals(COLS.USERREFNUM, userRefnum);
+      Q.where().equals(COLS.USERREFNUM, userRefnum)
+               .and().equals(COLS.PAYMENTSYSTEMPRODUCTID, paymentSystemProductId);
       
       return Q.execute();
     }

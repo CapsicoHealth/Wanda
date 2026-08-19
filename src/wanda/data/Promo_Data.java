@@ -17,9 +17,12 @@
 package wanda.data;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.google.gson.annotations.SerializedName;
 
 import tilda.db.Connection;
 import tilda.utils.DateTimeUtil;
@@ -31,7 +34,7 @@ This is the application class <B>Data_Promo</B> mapped to the table <B>WANDA.Pro
 public class Promo_Data extends wanda.data._Tilda.TILDA__PROMO
  {
    protected static final Logger LOG = LogManager.getLogger(Promo_Data.class.getName());
-
+   
    public Promo_Data() { }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,6 +43,15 @@ public class Promo_Data extends wanda.data._Tilda.TILDA__PROMO
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+    @SerializedName("appIds") String[] _appIds = null;
+
+    public String[] getAppIds()
+      {
+        return _appIds;
+      }
+
+   
+  
    @Override
    protected boolean beforeWrite(Connection C) throws Exception
      {
@@ -53,7 +65,8 @@ public class Promo_Data extends wanda.data._Tilda.TILDA__PROMO
        // Do things after an object has just been read form the data store, for example, take care of AUTO fields.
        return true;
      }
-
+   
+   
   /**
    * To be valid, a promo code must be active, and the start date must be in the past, and the end date is either null or in the future.
    * @return

@@ -20,10 +20,13 @@
 
 package wanda.data;
 
+import java.util.List;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import tilda.db.*;
+import tilda.db.processors.LongListRP;
 
 /**
 This is the application class <B>Data_App</B> mapped to the table <B>PEOPLE.App</B>.
@@ -44,6 +47,15 @@ public class App_Factory extends wanda.data._Tilda.TILDA__APP_Factory
    public static void init(Connection C) throws Exception
     {
       // Add logic to initialize your object, for example, caching some values, or validating some things.
+    }
+   
+   public static List<Long> getAppRefnums(Connection C, String[] appIds) throws Exception
+    {
+      SelectQuery Q = newSelectQuery(C);
+      Q.selectColumn(App_Factory.COLS.REFNUM).where().in(App_Factory.COLS.ID, appIds);
+      LongListRP RP = new LongListRP();
+      Q.execute(RP, 0, -1);
+      return RP.getResult();
     }
 
  }

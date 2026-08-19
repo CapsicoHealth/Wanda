@@ -59,12 +59,11 @@ public class PaymentOrderCreate extends SimpleServlet
 
         req.throwIfErrors();
 
-        PlanHelper.getAvailablePlans(C, U);
         List<Plan> plans = PlanHelper.getAvailablePlans(C, U);
         SelectedPlan p = PlanHelper.getPlanPrice(plans, planCode, currency, cycle);
         if (p == null)
           {
-            req.addError("planCode", "No plan found matching planCode = '" + planCode + "' for the currency '" + currency + "'.");
+            req.addError("planCode", "No plan found matching planCode = '" + planCode + "' for the currency '" + currency + "' and cycle '" + cycle + "'.");
             req.throwIfErrors();
           }
         
@@ -74,6 +73,9 @@ public class PaymentOrderCreate extends SimpleServlet
         JSONUtil.startOK(out, '{');
         JSONUtil.print(out, "orderId", true, UPD.getOrderId());
         JSONUtil.print(out, "customId", false, UPD.getCustomId());
+        // The client must echo the planCode back on capture: pre-orders are now keyed by (user, product), so
+        // the capture step needs to know which product's order it is completing.
+        JSONUtil.print(out, "planCode", false, planCode);
         JSONUtil.end(out, '}');
       }
 
@@ -119,12 +121,12 @@ public class PaymentOrderCreate extends SimpleServlet
     private static UserPlanPreOrder_Data getPreOrder(RequestUtil req, Connection C, User_Data U, String paymentProvider, SelectedPlan p)
     throws Exception, BadRequestException
       {
-        UserPlanPreOrder_Data UPD = UserPlanPreOrder_Factory.lookupByUser(U.getRefnum());
+        UserPlanPreOrder_Data UPD = UserPlanPreOrder_Factory.lookupByUser(U.getRefnum(), p.getProductId());
         if (UPD.read(C) == true && isPreOrderStillValid(UPD, U, paymentProvider, p) == true)
          return UPD;
 
         if (UPD.isSuccessfullyRead() == true) // If there was a prior Order (that was unprocessed), we need to clean.
-         UserPlanPreOrder_Factory.delete(C, U.getRefnum());
+         UserPlanPreOrder_Factory.delete(C, U.getRefnum(), p.getProductId());
         
         // Create a new Pre-Order
         String customId = EncryptionUtil.hash256Str(""+U.getRefnum(), EncryptionUtil.getToken(16, true));
@@ -134,7 +136,7 @@ public class PaymentOrderCreate extends SimpleServlet
        if (PPPO.isCreated() == false)
          throw new Exception("The pre-order from payment provider " + paymentProvider + ", planCode='"+p.getPlanCode()+"' and currency '"+p.getBillingCurrency()+"' was returned as incomplete.");
 
-        UPD = UserPlanPreOrder_Factory.create(U.getRefnum(), p.getPlanRefnum(), paymentProvider, customId, DateTimeUtil.nowUTC(), p.getBillingPrice(), p.getBillingCurrency(), p.getBillingCycle());
+        UPD = UserPlanPreOrder_Factory.create(U.getRefnum(), p.getPlanRefnum(), p.getProductId(), paymentProvider, customId, DateTimeUtil.nowUTC(), p.getBillingPrice(), p.getBillingCurrency(), p.getBillingCycle());
         UPD.setOrderId(PPPO.id);
         UPD.setOrderDetails(PPPO.toJsonString());
         if (UPD.write(C) == false)

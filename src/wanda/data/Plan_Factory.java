@@ -16,6 +16,7 @@
 
 package wanda.data;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +49,9 @@ public class Plan_Factory extends wanda.data._Tilda.TILDA__PLAN_Factory
     public static void init(Connection C)
     throws Exception
       {
+        // Must clear first: init() can be called more than once (e.g., a catalog reload), and appending
+        // to the existing list would silently duplicate every plan.
+        _PLANS.clear();
         List<Plan_Data> PL = Plan_Factory.lookupWhereAllByPositions(C, 0, -1);
         List<PlanPricing_Data> PPL = PlanPricing_Factory.lookupWhereAllByCurrency(C, 0, -1);
         for (Plan_Data p : PL)
@@ -62,23 +66,41 @@ public class Plan_Factory extends wanda.data._Tilda.TILDA__PLAN_Factory
           }
       }
 
-    public static List<Plan> getPlans(String[] planCodes, short discountPct, short discountMonths, short discountPctYear, boolean autoRenew)
+    public static List<Plan> getPlans(String[] planCodes, short discountPct, short discountMonths, short discountPctYear, boolean autoRenew, BigDecimal initialCredits)
+      {
+        return getPlans(null, planCodes, discountPct, discountMonths, discountPctYear, autoRenew, initialCredits);
+      }
+
+    /**
+     * @param paymentSystemProductId when not null, restricts the result to the plans (tiers) of that one product.
+     */
+    public static List<Plan> getPlans(String paymentSystemProductId, String[] planCodes, short discountPct, short discountMonths, short discountPctYear, boolean autoRenew, BigDecimal initialCredits)
       {
         List<Plan> L = new ArrayList<Plan>();
         if (planCodes != null)
           for (String pc : planCodes)
             for (Plan P : _PLANS)
-              if (P._Plan.getCode().equals(pc) == true && P._Plan.isCurrentlyActiveToday() == true)
-                L.add(new Plan(P, discountPct, discountMonths, discountPctYear, autoRenew));
+              if (P._Plan.getCode().equals(pc) == true && P._Plan.isCurrentlyActiveToday() == true
+              && (paymentSystemProductId == null || P._Plan.getPaymentSystemProductId().equals(paymentSystemProductId) == true))
+                L.add(new Plan(P, discountPct, discountMonths, discountPctYear, autoRenew, initialCredits));
         return L;
       }
 
     public static List<Plan> getPlans()
       {
+        return getPlans((String) null);
+      }
+
+    /**
+     * @param paymentSystemProductId when not null, restricts the result to the plans (tiers) of that one product.
+     */
+    public static List<Plan> getPlans(String paymentSystemProductId)
+      {
         List<Plan> L = new ArrayList<Plan>();
         for (Plan P : _PLANS)
-          if (P._Plan.isCurrentlyActiveToday() == true)
-            L.add(new Plan(P, (short) 0, (short) 0, (short) 0, false));
+          if (P._Plan.isCurrentlyActiveToday() == true
+          && (paymentSystemProductId == null || P._Plan.getPaymentSystemProductId().equals(paymentSystemProductId) == true))
+            L.add(new Plan(P, (short) 0, (short) 0, (short) 0, false, null));
         return L;
       }
 

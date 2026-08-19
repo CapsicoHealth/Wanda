@@ -44,7 +44,6 @@ public class GuestRegistration
     @SerializedName("defaultApps"     ) public GuestRegistrationApp[] _defaultApps = null;
     @SerializedName("tenantIds"       ) public String[]               _tenantIds = null;
     @SerializedName("excludedDomains" ) public String[]               _excludedDomains = null;
-    
     /*@formatter:on*/
 
     public transient long[]       _appRefnums      = null;
