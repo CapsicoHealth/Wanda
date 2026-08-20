@@ -16,11 +16,16 @@
 package wanda.servlets.helpers;
 
 import java.math.BigDecimal;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 import tilda.db.Connection;
+import tilda.db.ListResults;
 import tilda.utils.json.JSONPrinter;
 import wanda.data.UserPlanBilling_Data;
 import wanda.data.UserPlanCreditLedger_Data;
@@ -127,6 +132,115 @@ public class CreditHelper
       }
 
     /**
+     * A read-only, cache-friendly snapshot of a wallet's balance for a widget/UI poll (e.g. the credit-meter
+     * gauge). Deliberately a separate, smaller shape than {@link CreditStatus}: this is never used to gate or
+     * mutate anything, only to paint a number on screen, so it is safe to serve slightly stale (see
+     * {@link #getSnapshot}).
+     */
+    public static class CreditSnapshot
+      {
+        protected CreditSnapshot(String productId, boolean hasWallet, BigDecimal balance, BigDecimal creditsPurchased, BigDecimal lastTopUpAmount)
+          {
+            _productId = productId;
+            _hasWallet = hasWallet;
+            _balance = balance;
+            _creditsPurchased = creditsPurchased;
+            _lastTopUpAmount = lastTopUpAmount;
+          }
+
+        public final String     _productId;
+        public final boolean    _hasWallet;
+        public final BigDecimal _balance;
+        public final BigDecimal _creditsPurchased;
+
+        /**
+         * The wallet's balance right after its MOST RECENT top-up (order) finished -- i.e. any credits left over
+         * from before the top-up PLUS what it added -- see
+         * {@link CreditHelper#getLastTopUpAmount(Connection, UserPlanSubscription_Data)}. ZERO when the wallet
+         * has never received one (or has no wallet at all), in which case a gauge should fall back to a fixed
+         * scale instead of trying to use this as "100%".
+         */
+        public final BigDecimal _lastTopUpAmount;
+      }
+
+    /**
+     * Bounded, thread-safe, short-TTL cache of {@link CreditSnapshot}s keyed by "userRefnum|productId", so a
+     * credit-meter widget polling every few seconds (potentially from several open tabs/products) does not hit
+     * the database on every poll. Deliberately used ONLY by {@link #getSnapshot}, which is a display-only,
+     * read-only path -- every balance-affecting entry point ({@link #check}, {@link #charge}, {@link #consume},
+     * {@link #grant}, {@link #adjust}) reads straight from the database as before and additionally invalidates
+     * this cache (see {@link #post}), so gating/mutation decisions can never be made against a stale value.
+     * <P>
+     * Backed by Guava's {@link Cache} -- the same pattern already used elsewhere in this codebase (e.g.
+     * {@code TrialTrackedDetails._TRIAL_SUMMARY_CACHE}, {@code CohortDefinition_Data._JOURNEY_PATHWAY_PATIENTS_CACHE})
+     * -- rather than a hand-rolled {@code LinkedHashMap} + lock: {@code maximumSize} gives bounded, evicted
+     * storage and {@code expireAfterWrite} gives the TTL, both handled internally (including thread-safety) by
+     * Guava, so there is no manual locking or LRU bookkeeping to get right here.
+     * <P>
+     * {@link #CACHE_TTL_MS} is deliberately generous (minutes, not seconds): {@link #post} invalidates a
+     * wallet's entry synchronously on every grant/charge/consume/adjust, so within a single JVM the cache is
+     * NEVER stale between a mutation and the next {@link #getSnapshot} call, no matter how long the TTL is --
+     * the TTL only exists as a safety net for the one case invalidation can't cover: a clustered deployment with
+     * more than one JVM (this cache is plain in-process memory, not shared/distributed), where a mutation
+     * handled by one instance doesn't invalidate another instance's copy. If/when this runs behind a
+     * non-sticky load balancer across multiple instances, either lower this back down or move the cache to a
+     * shared store; for a single instance (or sticky sessions), a long TTL costs nothing and just means more
+     * cache hits.
+     */
+    private static final int  CACHE_MAX_ENTRIES = 50;
+    private static final long CACHE_TTL_MS      = 10 * 60_000L; // 10 minutes
+
+    private static final Cache<String, CreditSnapshot> _cache = CacheBuilder.newBuilder()
+    .maximumSize(CACHE_MAX_ENTRIES)
+    .expireAfterWrite(CACHE_TTL_MS, TimeUnit.MILLISECONDS)
+    .build();
+
+    private static String cacheKey(long userRefnum, String paymentSystemProductId)
+      {
+        return userRefnum + "|" + paymentSystemProductId;
+      }
+
+    /**
+     * The signed-in user's wallet snapshot for a product, for a display-only widget (e.g. a credit-meter gauge).
+     * Served from a small in-memory cache (see {@link #_cache}) when a fresh-enough entry exists, so a widget
+     * that polls every few seconds does not put repeated load on the database. On a miss (or an expired entry),
+     * reads through to {@link #getWallet} and caches the result.
+     * <P>
+     * Within a single JVM this is always exactly as fresh as the last mutation: {@link #post} invalidates the
+     * entry synchronously on every grant/charge/consume/adjust, regardless of {@link #CACHE_TTL_MS}'s length.
+     * The TTL is only a safety net against a clustered/multi-instance deployment -- see {@link #_cache}'s docs.
+     * <P>
+     * <B>Do not use this for gating or mutating a purchase/consumption decision</B> -- use {@link #check} /
+     * {@link #consume} / {@link #charge} instead, which always read the database directly and never touch this
+     * cache.
+     */
+    public static CreditSnapshot getSnapshot(Connection C, User_Data U, String paymentSystemProductId)
+    throws Exception
+      {
+        String key = cacheKey(U.getRefnum(), paymentSystemProductId);
+        CreditSnapshot cached = _cache.getIfPresent(key);
+        if (cached != null)
+          return cached;
+
+        UserPlanSubscription_Data UPS = getWallet(C, U, paymentSystemProductId);
+        CreditSnapshot snapshot = new CreditSnapshot(paymentSystemProductId, UPS != null, getBalance(UPS),
+                                                      UPS == null || UPS.isNullCreditsPurchased() == true ? BigDecimal.ZERO : UPS.getCreditsPurchased(),
+                                                      getLastTopUpAmount(C, UPS));
+        _cache.put(key, snapshot);
+        return snapshot;
+      }
+
+    /**
+     * Drops any cached {@link CreditSnapshot} for this wallet, so the very next {@link #getSnapshot} call after a
+     * mutation reads the fresh value rather than potentially serving a stale one for up to {@link #CACHE_TTL_MS}
+     * more milliseconds. Called from {@link #post}, the single choke point every balance mutation goes through.
+     */
+    private static void invalidateSnapshot(long userRefnum, String paymentSystemProductId)
+      {
+        _cache.invalidate(cacheKey(userRefnum, paymentSystemProductId));
+      }
+
+    /**
      * <B>Entry gate.</B> Checks, without writing anything, whether a user may begin metered work for a product.
      * An app service calls this first and, when {@link CreditStatus#isOK} is false, returns
      * {@link #CODE_INSUFFICIENT_CREDITS} to its front-end without doing any work at all.
@@ -154,6 +268,19 @@ public class CreditHelper
     public static CreditStatus charge(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, String reference)
     throws Exception
       {
+        return charge(C, U, paymentSystemProductId, credits, reference, null);
+      }
+
+    /**
+     * Same as {@link #charge(Connection, User_Data, String, BigDecimal, String)}, but also records a
+     * human-readable {@code notes} value on the ledger row (e.g. the agent/flow/document's name + id) alongside
+     * the {@code reference} (intended as a short, filterable TYPE-OF-COST bucket, e.g. "Agent"/"Flow"/"Document"),
+     * so a reporting UI can both filter by cost type (via {@code reference}) and drill down into per-item detail
+     * / top-N breakdowns (via {@code notes}) without needing a separate join.
+     */
+    public static CreditStatus charge(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, String reference, String notes)
+    throws Exception
+      {
         if (credits == null || credits.signum() < 0)
           throw new Exception("Cannot charge a null or negative number of credits (" + credits + ").");
 
@@ -167,7 +294,7 @@ public class CreditHelper
           }
 
         if (credits.signum() > 0)
-          post(C, UPS, UserPlanCreditLedger_Data._typeUse, credits.negate(), reference, null, false);
+          post(C, UPS, UserPlanCreditLedger_Data._typeUse, credits.negate(), reference, notes, false);
 
         return new CreditStatus(paymentSystemProductId, true, getBalance(UPS));
       }
@@ -198,6 +325,94 @@ public class CreditHelper
         if (UPS == null || UPS.isNullCreditsBalance() == true)
           return BigDecimal.ZERO;
         return UPS.getCreditsBalance();
+      }
+
+    /**
+     * How many ledger rows to scan, per page, while walking backwards from "now" to find the last top-up's own
+     * GRANT/BONUS rows (see {@link #getLastTopUpAmount}) -- generous since a heavy user can rack up many USE
+     * rows between purchases, but still bounded via {@link #_TOPUP_SCAN_MAX_ROWS} so a wallet with an unusually
+     * long USE-only history can never turn this into an unbounded scan.
+     */
+    private static final int _TOPUP_SCAN_PAGE     = 200;
+    private static final int _TOPUP_SCAN_MAX_ROWS = 2000;
+
+    /**
+     * The wallet's balance right after its MOST RECENT top-up (order) finished posting -- i.e. the
+     * {@code balanceAfter} snapshot of the last of its GRANT row (the pack itself) and, when that purchase was
+     * also the wallet's first ever, the BONUS row (the promo signup bonus granted alongside it -- see
+     * {@link #grant}/{@link #grantSignupBonusIfEligible}) posted for that order.
+     * <P>
+     * This is deliberately the resulting BALANCE, not merely the sum of the GRANT/BONUS deltas: any credits the
+     * wallet still had left over from BEFORE the top-up are part of "what the user has to spend until the next
+     * top-up", so they belong in the 100% ceiling too. E.g. a user sitting at 100 who buys a 1,000-credit pack
+     * ends the top-up at 1,100 -- that is the new "100%", not 1,000. This is what a credit-meter gauge should
+     * treat as "100%", so e.g. a Starter pack (0 + 1,000 + 500 bonus) reads "1,409 / 1,500" after spending some
+     * of it, rather than the current balance always being its own 100% ceiling (which reads as "N / N" no matter
+     * how much has actually been spent).
+     * <P>
+     * Walks the WORM ledger (see {@link UserPlanCreditLedger_Factory#lookupWhereSubscription}, already ordered
+     * {@code created desc}) backwards from "now": skips the trailing run of USE/ADJ rows (spending since the
+     * last top-up), then identifies the contiguous run of GRANT/BONUS rows immediately behind them that share
+     * the SAME {@code billingRefnum} (the same order) -- exactly the last top-up's own rows, since GRANT and
+     * BONUS are only ever posted together, back-to-back, for the same order, and never interleaved with USE/ADJ
+     * rows belonging to a different order. Because the ledger is walked most-recent-first, the VERY FIRST row of
+     * that run encountered (the BONUS row when one was posted, else the GRANT row) is chronologically the LAST
+     * one posted for that order, so its {@code balanceAfter} already reflects the whole top-up (plus whatever
+     * was left over before it) -- that single snapshot is the answer; no summing needed.
+     * <P>
+     * Returns {@link BigDecimal#ZERO} for a null wallet, or for a wallet that has (implausibly) never received a
+     * top-up, so callers can treat "unknown" and "zero" identically and fall back to a fixed-tier scale instead.
+     */
+    public static BigDecimal getLastTopUpAmount(Connection C, UserPlanSubscription_Data UPS)
+    throws Exception
+      {
+        if (UPS == null)
+          return BigDecimal.ZERO;
+
+        BigDecimal topUpBalanceAfter = null;
+        Long topUpBillingRefnum = null;
+        boolean topUpFound = false;
+        int start = 0;
+        int scanned = 0;
+        while (scanned < _TOPUP_SCAN_MAX_ROWS)
+          {
+            ListResults<UserPlanCreditLedger_Data> page = UserPlanCreditLedger_Factory.lookupWhereSubscription(C, UPS.getRefnum(), start, _TOPUP_SCAN_PAGE);
+            if (page == null || page.isEmpty() == true)
+              break;
+
+            for (UserPlanCreditLedger_Data L : page)
+              {
+                ++scanned;
+                boolean isTopUpRow = L.isTypeGrant() == true || L.isTypeBonus() == true;
+                Long rowBillingRefnum = L.isNullBillingRefnum() == true ? null : Long.valueOf(L.getBillingRefnum());
+
+                if (topUpFound == false)
+                  {
+                    if (isTopUpRow == false)
+                      continue; // still walking back through USE/ADJ rows spent since the last top-up
+                    topUpFound = true;
+                    topUpBillingRefnum = rowBillingRefnum;
+                    topUpBalanceAfter = L.getBalanceAfter(); // most-recent row of the group: the final ceiling.
+                  }
+                else if (isTopUpRow == false || java.util.Objects.equals(rowBillingRefnum, topUpBillingRefnum) == false)
+                  return topUpBalanceAfter; // walked past the last top-up's own rows: done.
+              }
+
+            if (page.size() < _TOPUP_SCAN_PAGE)
+              break;
+            start += _TOPUP_SCAN_PAGE;
+          }
+        return topUpBalanceAfter == null ? BigDecimal.ZERO : topUpBalanceAfter;
+      }
+
+    /**
+     * Convenience overload of {@link #getLastTopUpAmount(Connection, UserPlanSubscription_Data)} that looks the
+     * wallet up first; returns ZERO when the user has no wallet at all for the product.
+     */
+    public static BigDecimal getLastTopUpAmount(Connection C, User_Data U, String paymentSystemProductId)
+    throws Exception
+      {
+        return getLastTopUpAmount(C, getWallet(C, U, paymentSystemProductId));
       }
 
     /**
@@ -356,6 +571,10 @@ public class CreditHelper
           L.setNotes(notes);
         if (L.write(C) == false)
           throw new Exception("Cannot write the credit ledger entry for subscription " + UPS.getRefnum() + ".");
+
+        // Any cached CreditSnapshot for this wallet (see getSnapshot) is now stale: drop it so the widget's
+        // next poll reads the fresh balance instead of waiting out the TTL.
+        invalidateSnapshot(UPS.getUserRefnum(), UPS.getPaymentSystemProductId());
 
         return L;
       }

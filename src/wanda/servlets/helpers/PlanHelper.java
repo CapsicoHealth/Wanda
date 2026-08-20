@@ -126,28 +126,47 @@ public class PlanHelper
         if (L == null || L.isEmpty() == true)
           return false;
 
-        // Only SUBSCRIPTION plans gate access here. Credit (planType=C) plans must never block login: running out
-        // of credits is handled at the point of use ("buy more credits"), not by forcing a plan pick at sign-in.
-        // Contact-us (planType=X) plans aren't purchasable at all.
-        boolean foundSubscriptionPlan = false;
-        for (String productId : getSubscriptionProductIds(L))
+        // Every purchasable product (planType=S subscriptions AND planType=C credit packs alike -- see below for
+        // why credit products no longer get a free pass) that this user's promo names is gated here.
+        // Contact-us (planType=X) plans aren't purchasable online at all, so they never gate anything.
+        for (String productId : getGatedProductIds(L))
           {
-            foundSubscriptionPlan = true;
-            // If they have an active billing for ANY subscription product, they don't need to pick a plan.
+            // If they have an active billing for this product already (a real purchase, OR a prior
+            // auto-assignment -- see autoAssignFreePlan below, which creates one too), they don't need to pick.
             UserPlanBilling_Data UPB = UserPlanBilling_Factory.lookupByUserActive(U.getRefnum(), productId);
             if (UPB.read(C) == true)
-              return false;
+              continue;
+
+            // Not resolved yet. Rather than force a pick, see if this product has exactly one plan flagged
+            // Plan.autoPlan=true (a promo's free/trial credit pack, e.g. AGENTIC_CREDITS_TRIAL): if so, assign it
+            // automatically -- no payment, no picker -- so plan-picking is never a blocker to getting started.
+            // This is a one-time, idempotent action per product: the UserPlanBilling row it creates is exactly
+            // what makes the check above skip this product on every later call.
+            Plan auto = getSingleAutoPlan(L, productId);
+            if (auto != null)
+              {
+                autoAssignFreePlan(C, U, auto);
+                continue;
+              }
+
+            // No existing billing and no auto-assignable plan for this product: a manual pick is required.
+            return true;
           }
 
-        // No subscription plan on offer at all: nothing to pick.
-        return foundSubscriptionPlan;
+        // Every gated product (if any) was either already billed or just auto-assigned above: nothing to pick.
+        return false;
       }
 
 
     /**
      * The distinct product ids across the subscription-type (planType=S) plans in the supplied list. Since a
      * product groups several tiers, this collapses e.g. Individual/Professional/Enterprise down to one entry.
+     *
+     * @deprecated superseded by {@link #getGatedProductIds}, which also covers credit (planType=C) products now
+     *             that {@link #needsPlan} gates on any purchasable product rather than subscriptions only. Kept
+     *             for any external caller still relying on the subscription-only grouping.
      */
+    @Deprecated
     public static List<String> getSubscriptionProductIds(List<Plan> plans)
       {
         List<String> L = new ArrayList<String>();
@@ -161,6 +180,109 @@ public class PlanHelper
                 L.add(productId);
             }
         return L;
+      }
+
+    /**
+     * The distinct product ids across every PURCHASABLE plan type (planType=S subscriptions and planType=C
+     * credit packs) in the supplied list -- i.e., every product {@link #needsPlan} must resolve one way or
+     * another for the user. Contact-us (planType=X) plans are excluded: they aren't purchasable online, so they
+     * never gate a pick.
+     */
+    public static List<String> getGatedProductIds(List<Plan> plans)
+      {
+        List<String> L = new ArrayList<String>();
+        if (plans != null)
+          for (Plan p : plans)
+            {
+              if (p._Plan.isPlanTypeContactUs() == true)
+                continue;
+              String productId = p._Plan.getPaymentSystemProductId();
+              if (L.contains(productId) == false)
+                L.add(productId);
+            }
+        return L;
+      }
+
+    /**
+     * The single {@code planType=C} plan flagged {@code autoPlan=true} for the given product within the supplied
+     * plan list, or null if there is none. If MORE than one is found, this is treated as a misconfiguration
+     * (which one would even be picked is ambiguous) -- a warning is logged and null is returned, which makes
+     * {@link #needsPlan} fall back to a manual pick rather than guessing.
+     */
+    private static Plan getSingleAutoPlan(List<Plan> plans, String productId)
+      {
+        Plan found = null;
+        for (Plan p : plans)
+          {
+            if (p._Plan.getPaymentSystemProductId().equals(productId) == false || p._Plan.isPlanTypeCredits() == false || p._Plan.getAutoPlan() != true)
+              continue;
+            if (found != null)
+              {
+                LOG.warn("Product '" + productId + "' has more than one autoPlan=true plan ('" + found._Plan.getCode() + "' and '" + p._Plan.getCode()
+                + "'): auto-assignment is ambiguous, so it will be skipped in favor of a manual plan pick.");
+                return null;
+              }
+            found = p;
+          }
+        return found;
+      }
+
+    /**
+     * Grants a {@code Plan.autoPlan=true} credit plan to a user with no payment and no plan-picker prompt --
+     * intended for a promo's free/trial tier (e.g. AGENTIC_CREDITS_TRIAL). Mirrors the paid-purchase path in
+     * {@code PaymentOrderCapture} (subscription/wallet row, then a PAID+active {@link UserPlanBilling_Data} row,
+     * then {@link CreditHelper#grant} and any {@link CreditHelper#grantSignupBonusIfEligible}), minus the
+     * PayPal/{@code UserPlanPreOrder} step there is no order to capture. Only ever called once per product from
+     * {@link #needsPlan}, which is itself made idempotent by the very {@link UserPlanBilling_Data} row this
+     * method creates.
+     */
+    private static void autoAssignFreePlan(Connection C, User_Data U, Plan plan)
+    throws Exception
+      {
+        String productId = plan._Plan.getPaymentSystemProductId();
+
+        // Credits are currency-agnostic and this plan must be priced at $0 in every currency it defines (see the
+        // Plan.autoPlan column description), so which currency we record on the ledger/subscription is purely
+        // for bookkeeping consistency with the paid-purchase code path. Prefer USD; fall back to whatever
+        // currency the plan actually defines pricing for.
+        String currency = "USD";
+        BigDecimal credits = getCredits(plan, currency);
+        if (credits == null && plan._Pricings != null)
+          for (PlanPricing_Data pp : plan._Pricings)
+            {
+              currency = pp.getCurrency();
+              credits = getCredits(plan, currency);
+              if (credits != null)
+                break;
+            }
+        if (credits == null || credits.signum() <= 0)
+          {
+            LOG.error("Plan '" + plan._Plan.getCode() + "' is flagged autoPlan=true but defines no positive oneTimeCredits in any currency: skipping auto-assignment for user " + U.getRefnum() + ".");
+            return;
+          }
+
+        LocalDate now = DateTimeUtil.nowLocalDate();
+        UserPlanSubscription_Data UPS = UserPlanSubscription_Factory.create(U.getRefnum(), true, plan._Plan.getRefnum(), productId, currency, UserPlanSubscription_Data._cycleOneTime, now);
+        if (UPS.write(C) == false)
+          throw new Exception("Cannot create auto-assigned plan subscription for user " + U.getRefnum() + " and product " + productId + ".");
+
+        UserPlanBilling_Data UPB = UserPlanBilling_Factory.create(UPS.getRefnum(), U.getRefnum(), plan._Plan.getRefnum(), productId, "NONE", "AUTO-" + UPS.getRefnum(), "AUTO-" + UPS.getRefnum(), true);
+        UPB.setStatus(UserPlanBilling_Data._statusPaid);
+        UPB.setOrderDt(DateTimeUtil.nowUTC());
+        UPB.setExpiryDt(UPS.getExpiryDtFrom(now));
+        UPB.setTotal(BigDecimal.ZERO);
+        UPB.setCurrency(currency);
+        UPB.setMessage("Auto-assigned free plan '" + plan._Plan.getCode() + "' at registration (Plan.autoPlan=true): no payment required.");
+        if (UPB.write(C) == false)
+          throw new Exception("Cannot create auto-assigned plan billing for user " + U.getRefnum() + " and product " + productId + ".");
+
+        CreditHelper.grant(C, UPS, UPB, credits);
+
+        Promo_Data promo = getUserPromo(C, U);
+        if (promo != null && promo.isNullInitialCredits() == false)
+          CreditHelper.grantSignupBonusIfEligible(C, UPS, UPB, promo.getInitialCredits());
+
+        LOG.info("Auto-assigned free plan '" + plan._Plan.getCode() + "' (" + credits + " credits) to user " + U.getRefnum() + " for product " + productId + ".");
       }
 
 
@@ -205,6 +327,32 @@ public class PlanHelper
           return null;
         Promo_Data P = Promo_Factory.lookupByCode(U.getPromoCode());
         return P.read(C) == true ? P : null;
+      }
+
+    /**
+     * Whether the user's CURRENTLY ACTIVE plan/billing for a product is one flagged {@code Plan.autoPlan=true}
+     * -- i.e., they are still riding the auto-assigned free/trial plan (see {@link #autoAssignFreePlan}) rather
+     * than a plan they actually purchased. Backs the credit-meter widget's one-time "you're on a free trial"
+     * welcome message (see {@code FloriaPayments.CreditGauge} in module-payments.js) via
+     * {@code /svc/user/credits/balance} -- display-only, never used for gating/mutation.
+     *
+     * @return false if the user has no active billing for the product at all (nothing to report), or if their
+     *         active plan isn't an autoPlan one.
+     */
+    public static boolean isOnAutoPlan(Connection C, User_Data U, String productId)
+    throws Exception
+      {
+        UserPlanBilling_Data UPB = UserPlanBilling_Factory.lookupByUserActive(U.getRefnum(), productId);
+        if (UPB.read(C) == false)
+          return false;
+
+        List<Plan> plans = getAvailablePlans(C, U);
+        if (plans != null)
+          for (Plan p : plans)
+            if (p._Plan.getRefnum() == UPB.getPlanRefnum())
+              return p._Plan.isPlanTypeCredits() == true && p._Plan.getAutoPlan() == true;
+
+        return false;
       }
 
 

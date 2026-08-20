@@ -16,21 +16,22 @@
 
 package wanda.servlets;
 
-import java.math.BigDecimal;
-
 import jakarta.servlet.annotation.WebServlet;
 import tilda.db.Connection;
 import tilda.utils.json.JSONPrinter;
-import wanda.data.UserPlanSubscription_Data;
 import wanda.data.User_Data;
 import wanda.servlets.helpers.CreditHelper;
+import wanda.servlets.helpers.CreditHelper.CreditSnapshot;
+import wanda.servlets.helpers.PlanHelper;
 import wanda.web.RequestUtil;
 import wanda.web.ResponseUtil;
 import wanda.web.SimpleServlet;
 
 /**
- * Returns the signed-in user's credit balance for a product, for the credit-meter widget. Cheap enough to poll:
- * it's a single indexed read of the wallet (the user's active subscription for that product).
+ * Returns the signed-in user's credit balance for a product, for the credit-meter widget. Backed by
+ * {@link CreditHelper#getSnapshot}'s small, bounded, short-TTL cache, so a widget polling every few seconds (or
+ * embedded more than once on the same page) doesn't put repeated load on the database for what is, after all,
+ * a display-only read: gating/mutation decisions never go through this path (see CreditHelper).
  */
 @WebServlet("/svc/user/credits/balance")
 public class UserCreditsBalance extends SimpleServlet
@@ -50,15 +51,23 @@ public class UserCreditsBalance extends SimpleServlet
 
         req.throwIfErrors();
 
-        UserPlanSubscription_Data UPS = CreditHelper.getWallet(C, U, productId);
-        BigDecimal balance = CreditHelper.getBalance(UPS);
+        CreditSnapshot S = CreditHelper.getSnapshot(C, U, productId);
 
         JSONPrinter j = new JSONPrinter();
         j.addElement("productId", productId);
-        j.addElement("balance", balance, 0);
+        j.addElement("balance", S._balance, 0);
         // No wallet at all vs. an exhausted wallet: the UI may want to say "buy credits" vs. "top up".
-        j.addElement("hasWallet", UPS != null);
-        j.addElement("creditsPurchased", UPS == null || UPS.isNullCreditsPurchased() == true ? BigDecimal.ZERO : UPS.getCreditsPurchased(), 0);
+        j.addElement("hasWallet", S._hasWallet);
+        j.addElement("creditsPurchased", S._creditsPurchased, 0);
+        // The wallet's balance right after its last top-up finished (leftover balance before it PLUS what was
+        // added): the credit-meter gauge uses this, when non-zero, as its "100%" scale instead of a fixed tier
+        // -- see CreditHelper.getLastTopUpAmount.
+        j.addElement("lastTopUpAmount", S._lastTopUpAmount, 0);
+        // Whether the user is still riding an auto-assigned free/trial plan (Plan.autoPlan=true, e.g. a promo's
+        // free credit pack) rather than one they actually purchased -- lets the gauge show a one-time "you're on
+        // a free trial" welcome message. Display-only, same as everything else on this endpoint.
+        j.addElement("onTrialPlan", PlanHelper.isOnAutoPlan(C, U, productId));
         res.successJson(j);
       }
   }
+

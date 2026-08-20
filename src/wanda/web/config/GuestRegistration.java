@@ -53,11 +53,11 @@ public class GuestRegistration
     protected static boolean validate(Connection C, GuestRegistration gr, boolean OK)
     throws Exception
       {
-        if (gr != null && gr._type != GuestType.NONE)
+        if (gr != null && gr._type == GuestType.PLAIN)
           {
             if (gr._defaultApps == null || gr._defaultApps.length == 0)
               {
-                Wanda.LOG.error("The guestRegistration appIds is empty or unspecified. If allowed is true, there must be at least one aplication listed.");
+                Wanda.LOG.error("The guestRegistration appIds is empty or unspecified. If allowed is true and the registration type allowed is PLAIN, there must be at least one aplication listed.");
                 OK = false;
               }
             else

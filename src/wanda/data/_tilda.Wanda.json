@@ -90,6 +90,7 @@
                                     ,{"name":"ContactUs"   , "value":"X", "description":"Not purchasable online (e.g., Enterprise): no pricing rows expected."  }
                                    ]
           }
+         ,{ "name":"autoPlan"   , "type":"BOOLEAN"    , "nullable": false, "default":"false"       , "description":"When true, this plan is assigned to a user automatically -- no payment, no plan-picker prompt -- the moment it becomes their only resolvable option for its paymentSystemProductId (see PlanHelper#needsPlan / #autoAssignFreePlan). Intended for a promo's free/trial credit pack: MUST be a planType=C plan priced at $0 (oneTime=0) in every currency it defines, with just enough oneTimeCredits to let a new user get started. At most one autoPlan=true plan is expected per paymentSystemProductId; if more than one active one is found, auto-assignment is skipped (falls back to a manual plan pick) and a warning is logged, since which one to pick would otherwise be ambiguous." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
