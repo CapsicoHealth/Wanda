@@ -41,7 +41,11 @@ public class ProjectCreate extends SimpleServlet
 
     public ProjectCreate()
       {
-        super(true, true, false);
+        // Guest-allowed: a guest user must be able to create their own project (e.g. Flow Studio's
+        // "Create your first project" onboarding) -- the created project's creatorRefnum becomes the
+        // guest's own refnum, which ProjectRoleView_Factory.checkProjectAcl() already treats as an
+        // automatic OWNER, so every subsequent project operation below works with no separate ACL row.
+        super(true, true, true);
       }
 
     @Override

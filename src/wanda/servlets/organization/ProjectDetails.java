@@ -39,7 +39,7 @@ public class ProjectDetails extends SimpleServlet
 
     public ProjectDetails()
       {
-        super(true, false, false);
+        super(true, false, true);
       }
 
     @Override

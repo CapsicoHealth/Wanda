@@ -38,7 +38,7 @@ public class ProjectACLDelete extends SimpleServlet
 
     public ProjectACLDelete()
       {
-        super(true, true, false);
+        super(true, true, true);
       }
 
     @Override

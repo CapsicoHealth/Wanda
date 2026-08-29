@@ -26,7 +26,10 @@ import com.google.common.cache.CacheBuilder;
 
 import tilda.db.Connection;
 import tilda.db.ListResults;
+import tilda.utils.SystemValues;
 import tilda.utils.json.JSONPrinter;
+import wanda.data.Project_Data;
+import wanda.data.Project_Factory;
 import wanda.data.UserPlanBilling_Data;
 import wanda.data.UserPlanCreditLedger_Data;
 import wanda.data.UserPlanCreditLedger_Factory;
@@ -260,25 +263,41 @@ public class CreditHelper
      * That is the whole point: the cost of an agentic operation is generally not known until it finishes, so
      * refusing to record it would mean giving the work away and losing the audit trail. The user is simply
      * blocked by {@link #check} the next time around, which is what triggers the top-up prompt.
+     * <P>
+     * This overload records no organization/project attribution: use it only for a charge that genuinely has no
+     * container context (e.g. a standalone action run outside any project). Everything that DOES run within a
+     * project should call
+     * {@link #charge(Connection, User_Data, String, BigDecimal, long, long, String, String, String)} instead, so
+     * per-project/per-org spend reporting can see it.
      * 
      * @param credits a POSITIVE number of credit units to debit
+     * @param itemType the filterable TYPE-OF-COST bucket, e.g. "Agent"/"Flow"/"Document". Free-form on purpose:
+     *        apps exist outside Wanda, so Wanda can never exhaustively enumerate asset types.
+     * @param itemId the charged item's own id (e.g. a flow/agent/document UUID), for per-item roll-ups. The app
+     *        picks whatever key it uses itself -- Wanda never interprets it.
+     * @param itemLabel a human-readable label for the item (e.g. its title), for display/drill-down only.
      * @return the status AFTER the charge. When {@link CreditStatus#isOK} is false, the app should return its
      *         results to the client <B>and</B> the {@link #CODE_INSUFFICIENT_CREDITS} code alongside them.
      */
-    public static CreditStatus charge(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, String reference)
+    public static CreditStatus charge(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, String itemType, String itemId, String itemLabel)
     throws Exception
       {
-        return charge(C, U, paymentSystemProductId, credits, reference, null);
+        return charge(C, U, paymentSystemProductId, credits, SystemValues.EVIL_VALUE, SystemValues.EVIL_VALUE, itemType, itemId, itemLabel);
       }
 
     /**
-     * Same as {@link #charge(Connection, User_Data, String, BigDecimal, String)}, but also records a
-     * human-readable {@code notes} value on the ledger row (e.g. the agent/flow/document's name + id) alongside
-     * the {@code reference} (intended as a short, filterable TYPE-OF-COST bucket, e.g. "Agent"/"Flow"/"Document"),
-     * so a reporting UI can both filter by cost type (via {@code reference}) and drill down into per-item detail
-     * / top-N breakdowns (via {@code notes}) without needing a separate join.
+     * Same as {@link #charge(Connection, User_Data, String, BigDecimal, String, String, String)}, but also
+     * attributes the charge to an organization and/or a project, which is what makes per-org and per-project
+     * spend reporting possible (see UserPlanCreditLedgerMinimal*View).
+     * <P>
+     * Both refnums are optional: pass {@link SystemValues#EVIL_VALUE} for either one that does not apply, and
+     * the corresponding ledger column is simply left null.
+     * 
+     * @param organizationRefnum the owning organization, or {@link SystemValues#EVIL_VALUE} when there is none.
+     * @param projectRefnum the owning project, or {@link SystemValues#EVIL_VALUE} when the work is not being
+     *        done within a project.
      */
-    public static CreditStatus charge(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, String reference, String notes)
+    public static CreditStatus charge(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, long organizationRefnum, long projectRefnum, String itemType, String itemId, String itemLabel)
     throws Exception
       {
         if (credits == null || credits.signum() < 0)
@@ -294,7 +313,7 @@ public class CreditHelper
           }
 
         if (credits.signum() > 0)
-          post(C, UPS, UserPlanCreditLedger_Data._typeUse, credits.negate(), reference, notes, false);
+          post(C, UPS, UserPlanCreditLedger_Data._typeUse, credits.negate(), organizationRefnum, projectRefnum, itemType, itemId, itemLabel, false);
 
         return new CreditStatus(paymentSystemProductId, true, getBalance(UPS));
       }
@@ -444,7 +463,7 @@ public class CreditHelper
         if (credits == null || credits.signum() <= 0)
           throw new Exception("Cannot grant a null or non-positive number of credits (" + credits + ") to subscription " + UPS.getRefnum() + ".");
 
-        UserPlanCreditLedger_Data L = post(C, UPS, UserPlanCreditLedger_Data._typeGrant, credits, "order:" + UPB.getOrderId(), null, false);
+        UserPlanCreditLedger_Data L = post(C, UPS, UserPlanCreditLedger_Data._typeGrant, credits, SystemValues.EVIL_VALUE, SystemValues.EVIL_VALUE, "order:" + UPB.getOrderId(), null, null, false);
         if (L == null) // floorGuard is false above, so this would only happen if the wallet row vanished concurrently.
           throw new Exception("Failed to grant " + credits + " credits to subscription " + UPS.getRefnum() + ": the wallet row could not be found for the update.");
         L.setBillingRefnum(UPB.getRefnum());
@@ -480,7 +499,7 @@ public class CreditHelper
         if (UPS.isNullCreditsBonusGranted() == false && UPS.getCreditsBonusGranted().signum() > 0)
           return null; // Already granted once on this wallet: the first-purchase-only guard.
 
-        UserPlanCreditLedger_Data L = post(C, UPS, UserPlanCreditLedger_Data._typeBonus, bonusCredits, "signup-bonus:order:" + UPB.getOrderId(), null, false);
+        UserPlanCreditLedger_Data L = post(C, UPS, UserPlanCreditLedger_Data._typeBonus, bonusCredits, SystemValues.EVIL_VALUE, SystemValues.EVIL_VALUE, "signup-bonus:order:" + UPB.getOrderId(), null, null, false);
         if (L == null) // post() only returns null when floorGuard blocks it, and floorGuard is false here.
           throw new Exception("Failed to grant a signup bonus of " + bonusCredits + " credits to subscription " + UPS.getRefnum() + ": the wallet row could not be found for the update.");
         L.setBillingRefnum(UPB.getRefnum());
@@ -505,9 +524,14 @@ public class CreditHelper
      * usual case for agentic operations), use {@link #check} at entry and {@link #charge} at exit instead.
      * 
      * @param credits a POSITIVE number of credit units to deduct
+     * @param organizationRefnum the owning organization, or {@link SystemValues#EVIL_VALUE} when there is none.
+     * @param projectRefnum the owning project, or {@link SystemValues#EVIL_VALUE} when there is none.
+     * @param itemType the filterable TYPE-OF-COST bucket (free-form -- see {@link #charge}).
+     * @param itemId the consumed item's own id, or null.
+     * @param itemLabel a human-readable label for the item, or null.
      * @return false, having written nothing, if the user has no wallet or an insufficient balance.
      */
-    public static boolean consume(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, String reference)
+    public static boolean consume(Connection C, User_Data U, String paymentSystemProductId, BigDecimal credits, long organizationRefnum, long projectRefnum, String itemType, String itemId, String itemLabel)
     throws Exception
       {
         if (credits == null || credits.signum() <= 0)
@@ -523,20 +547,23 @@ public class CreditHelper
         // floorGuard=true: the underlying UPDATE only applies (and returns true) if the resulting balance would
         // remain >= 0. If another request already spent the last of it a moment ago, this simply returns false,
         // even though the in-memory UPS we read a moment ago still shows enough credits.
-        return post(C, UPS, UserPlanCreditLedger_Data._typeUse, credits.negate(), reference, null, true) != null;
+        return post(C, UPS, UserPlanCreditLedger_Data._typeUse, credits.negate(), organizationRefnum, projectRefnum, itemType, itemId, itemLabel, true) != null;
       }
 
     /**
      * Administrative correction. The amount is signed: positive to credit the user, negative to debit them.
      * Applies unconditionally (no floor guard) — an admin override is expected to be able to push a balance
      * negative deliberately, e.g. clawing back a refunded grant that has already been partly spent.
+     * <P>
+     * Admin corrections carry no organization/project attribution: they are a wallet-level financial action, not
+     * metered work done inside a project, so they deliberately stay out of per-project spend reporting.
      */
-    public static UserPlanCreditLedger_Data adjust(Connection C, UserPlanSubscription_Data UPS, BigDecimal amount, String reference, String notes)
+    public static UserPlanCreditLedger_Data adjust(Connection C, UserPlanSubscription_Data UPS, BigDecimal amount, String itemType, String itemLabel)
     throws Exception
       {
         if (amount == null || amount.signum() == 0)
           throw new Exception("Cannot post a null or zero adjustment to subscription " + UPS.getRefnum() + ".");
-        return post(C, UPS, UserPlanCreditLedger_Data._typeAdjustment, amount, reference, notes, false);
+        return post(C, UPS, UserPlanCreditLedger_Data._typeAdjustment, amount, SystemValues.EVIL_VALUE, SystemValues.EVIL_VALUE, itemType, null, itemLabel, false);
       }
 
     /**
@@ -545,12 +572,14 @@ public class CreditHelper
      * snapshots it. Everything else in this class routes through here so the ledger and the cache can never
      * drift apart, and so every mutation gets the same concurrency-safe treatment.
      * 
+     * @param organizationRefnum the owning organization, or {@link SystemValues#EVIL_VALUE} to leave it null.
+     * @param projectRefnum the owning project, or {@link SystemValues#EVIL_VALUE} to leave it null.
      * @param floorGuard when true, the debit is refused (this returns null, having written nothing) if it would
      *        drive the balance negative. Pass true only for {@link #consume}'s strict pre-authorization; every
      *        other caller applies unconditionally.
      * @return the ledger entry, or null if floorGuard blocked the update.
      */
-    private static UserPlanCreditLedger_Data post(Connection C, UserPlanSubscription_Data UPS, String type, BigDecimal signedAmount, String reference, String notes, boolean floorGuard)
+    private static UserPlanCreditLedger_Data post(Connection C, UserPlanSubscription_Data UPS, String type, BigDecimal signedAmount, long organizationRefnum, long projectRefnum, String itemType, String itemId, String itemLabel, boolean floorGuard)
     throws Exception
       {
         BigDecimal purchasedDelta = signedAmount.signum() > 0 ? signedAmount : null;
@@ -565,10 +594,36 @@ public class CreditHelper
         BigDecimal balanceAfter = getBalance(UPS);
 
         UserPlanCreditLedger_Data L = UserPlanCreditLedger_Factory.create(UPS.getUserRefnum(), UPS.getRefnum(), UPS.getPaymentSystemProductId(), type, signedAmount, balanceAfter);
-        if (reference != null)
-          L.setReference(reference);
-        if (notes != null)
-          L.setNotes(notes);
+        // EVIL_VALUE is the caller-side "not applicable" sentinel for these optional FKs, mirroring how Tilda's
+        // own generated request parsers treat it: anything else is a real refnum and gets recorded.
+        if (projectRefnum != SystemValues.EVIL_VALUE)
+          {
+            L.setProjectRefnum(projectRefnum);
+            // A project belongs to exactly one organization, so callers only ever need to supply the project:
+            // deriving the org here (rather than making every charge site pass both, or making the reporting
+            // views join back through Project) is what keeps the ORG-level report from silently coming back
+            // empty just because a client only knew about its own project. Denormalizing it onto the WORM
+            // ledger row is deliberate: the row records the attribution AS OF the charge, so later moving a
+            // project between orgs can never retroactively rewrite historical spend.
+            if (organizationRefnum == SystemValues.EVIL_VALUE)
+              {
+                Project_Data P = Project_Factory.lookupByPrimaryKey(projectRefnum);
+                // Best-effort only: a project that cannot be read (deleted/never existed), or one that isn't
+                // attached to an organization at all (the generated getter reports that as 0), simply leaves
+                // the org null -- an unattributed-at-org-level charge, exactly as before. Never a reason to
+                // fail the charge itself, which is real work the user already consumed.
+                if (P.read(C) == true && P.getOrganizationRefnum() > 0)
+                  organizationRefnum = P.getOrganizationRefnum();
+              }
+          }
+        if (organizationRefnum != SystemValues.EVIL_VALUE)
+          L.setOrganizationRefnum(organizationRefnum);
+        if (itemType != null)
+          L.setItemType(itemType);
+        if (itemId != null)
+          L.setItemId(itemId);
+        if (itemLabel != null)
+          L.setItemLabel(itemLabel);
         if (L.write(C) == false)
           throw new Exception("Cannot write the credit ledger entry for subscription " + UPS.getRefnum() + ".");
 

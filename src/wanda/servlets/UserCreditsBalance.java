@@ -33,7 +33,7 @@ import wanda.web.SimpleServlet;
  * embedded more than once on the same page) doesn't put repeated load on the database for what is, after all,
  * a display-only read: gating/mutation decisions never go through this path (see CreditHelper).
  */
-@WebServlet("/svc/user/credits/balance")
+@WebServlet("/svc/wanda/credits/balance")
 public class UserCreditsBalance extends SimpleServlet
   {
     private static final long serialVersionUID = 4471943985398431811L;

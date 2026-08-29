@@ -40,7 +40,10 @@ public class ProjectList extends SimpleServlet
 
     public ProjectList()
       {
-        super(true, false, false);
+        // Guest-allowed: a guest (unregistered/anonymous) user must be able to see the project(s)
+        // they created (e.g. Flow Studio) -- see wanda.app.*.json's "GST" service guard, which is the
+        // OTHER half of this gate (SessionFilter.isGuestPath()).
+        super(true, false, true);
       }
 
     @Override

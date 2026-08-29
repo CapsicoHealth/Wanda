@@ -40,7 +40,7 @@ public class ProjectACLList extends SimpleServlet
 
     public ProjectACLList()
       {
-        super(true, false, false);
+        super(true, false, true);
       }
 
     @Override

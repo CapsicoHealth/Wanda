@@ -344,6 +344,311 @@
     }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ,{ "name":"Organization"
+      ,"description":"An organization (tenant) that owns resources such as data sources and can have its own set of members"
+      ,"columns":[
+          { "name":"title"             , "type"  :"STRING(1024)"   , "nullable":false                   , "description":"The title/name of the organization"          }
+         ,{ "name":"description"       , "type"  :"STRING(4096)"   , "nullable":true                    , "description":"A free-text description of the organization" }
+         ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"    , "nullable":false                   , "description":"Organization initial creator refnum"          }
+         ,{ "name":"creatorId"         , "sameas":"User.id"        , "nullable":false                   , "description":"Organization initial creator id"              }
+         ,{ "name":"lastUpdatorRefnum" , "sameas":"User.refnum"    , "nullable":false                   , "description":"Organization last updater refnum"             }
+         ,{ "name":"lastUpdatorId"     , "sameas":"User.id"        , "nullable":false                   , "description":"Organization last updater id"                 }
+         ,{ "name":"status"            , "type"  :"STRING(2)"      , "nullable":false                   , "description":"Organization lifecycle status"
+                                       , "values": [ { "name":"Active"  , "value":"AC", "description":"Active"   , "default":"CREATE"}
+                                                    ,{ "name":"Archived", "value":"AR", "description":"Archived" }
+                                                    ,{ "name":"Deleted" , "value":"DE", "description":"Deleted" }
+                                                   ]
+          }
+         ,{ "name":"hardDeleted"       , "type"  :"DATETIME"       , "nullable":true                    , "description":"When this record was hard-deleted: ready to be removed completely from DB at some later time, not undeletable."        }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 1000 }
+      ,"foreign": [
+          { "name":"Creator"    , "srcColumns":["creatorRefnum"]    , "destObject":"User" }
+         ,{ "name":"LastUpdator", "srcColumns":["lastUpdatorRefnum"], "destObject":"User" }
+        ]
+      ,"indices": [
+          { "name":"Creator"    , "columns":["creatorRefnum"], "orderBy":["lastUpdated desc"] }
+         ,{ "name":"TitleActive", "columns":["title"        ], "subWhere":"hardDeleted is null" }
+        ]
+      ,"queries": [
+          { "name"  :"ActiveCreatorByTitle"
+           ,"description":"Get all active organizations matching a title, ordered by title"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"creatorRefnum=?() and hardDeleted is null and title ilike ?()" } ]
+           ,"orderBy":["title"]
+          }
+         ,{ "name"  :"ActiveCreatorByLastUpdated"
+           ,"description":"Get all active organizations created by a given user"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"creatorRefnum=?() and hardDeleted is null" } ]
+           ,"orderBy":["title"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name":""      , "outTypes":["JSON","CSV"], "columns":["*"] }
+         ,{ "name":"Simple", "outTypes":["JSON"]      , "columns":["refnum", "title", "description", "status", "creatorId", "lastUpdated"] }
+        ]
+     }
+
+
+    ,{ "name":"OrganizationACL"
+      ,"description":"Access-control list entries that allow the organization creator to share an organization with other users at a given role level"
+      ,"columns":[
+          { "name":"organizationRefnum", "sameAs":"Organization.refnum", "nullable":false, "invariant":true , "description":"The organization being shared"                }
+         ,{ "name":"userRefnum"        , "sameas":"User.refnum"        , "nullable":false, "invariant":true , "description":"The user being granted access"                }
+         ,{ "name":"userId"            , "sameas":"User.id"            , "nullable":false                   , "description":"The user id being granted access (denorm)"    }
+         ,{ "name":"role"              , "type"  :"CHAR"                              , "nullable":false                   , "description":"Role granted to the user on this organization"
+                                        , "values": [ { "name":"Owner" , "value":"O", "description":"Owner (can delete)"  }
+                                                     ,{ "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)"  }
+                                                     ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit organization content" }
+                                                     ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
+                                                    ]
+           }
+         ,{ "name":"grantedByRefnum"   , "sameas":"User.refnum"        , "nullable":false                   , "description":"The user who granted this access entry"       }
+         ,{ "name":"grantedById"       , "sameas":"User.id"            , "nullable":false                   , "description":"The user id who granted this access (denorm)" }
+        ]
+      ,"primary": { "autogen": true, "keyBatch": 1000 }
+      ,"foreign": [
+          { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+         ,{ "name":"User"        , "srcColumns":["userRefnum"        ], "destObject":"User" }
+         ,{ "name":"GrantedBy"   , "srcColumns":["grantedByRefnum"   ], "destObject":"User" }
+        ]
+      ,"indices": [
+          { "name":"OrganizationUser" , "columns":["organizationRefnum", "userRefnum"], "db":true }
+         ,{ "name":"UserOrganizations", "columns":["userRefnum"                      ], "orderBy":["created desc"] }
+        ]
+      ,"queries": [
+          { "name"  :"OrganizationActiveByUser"
+           ,"description":"Get all active ACL entries for an organization, ordered by user id"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and deleted is null" } ]
+           ,"orderBy":["userId"]
+          }
+         ,{ "name"  :"OrganizationActiveByLastUpdated"
+           ,"description":"Get all active ACL entries for an organization, ordered by last updated"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and deleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+         ,{ "name"  :"UserOrganizationsActive"
+           ,"description":"Get all active organizations shared with a user"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and deleted is null" } ]
+           ,"orderBy":["lastUpdated desc"]
+          }
+        ]
+      ,"outputMaps": [
+          { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
+        ]
+     }
+
+
+
+     ,{ "name":"OrganizationInvite"
+       ,"description":"Pending invitations from an org admin/owner to a user (existing or new) to join an organization"
+       ,"columns":[
+           { "name":"organizationRefnum" , "sameAs":"Organization.refnum", "nullable":false, "invariant":true , "description":"The organization the invitee is being asked to join"                             }
+          ,{ "name":"inviterRefnum"      , "sameas":"User.refnum"        , "nullable":false, "invariant":true , "description":"The org admin/owner who issued the invitation"                                  }
+          ,{ "name":"inviterId"          , "sameas":"User.id"            , "nullable":false                   , "description":"Denorm of inviter user id"                                                      }
+          ,{ "name":"inviteeEmail"       , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"Email of the invited person - canonical lookup key before a User account exists" }
+          ,{ "name":"inviteeNameFirst"   , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"First name of the invited person" }
+          ,{ "name":"inviteeNameLast"    , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"Last name of the invited person" }
+          ,{ "name":"inviteeRefnum"      , "sameas":"User.refnum"        , "nullable":true                    , "description":"FK to User once the account exists; null when invitee is not yet registered"    }
+          ,{ "name":"inviteeUserId"      , "sameas":"User.id"            , "nullable":true                    , "description":"Denorm of invitee user id; null until the account exists"                       }
+          ,{ "name":"role"               , "type"  :"CHAR"               , "nullable":false                   , "description":"OrganizationACL role to be granted on acceptance (Admin/Writer/Reader - Owner cannot be granted via invite)"
+                                         , "values": [ { "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)" }
+                                                      ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit organization content" }
+                                                      ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
+                                                     ]
+            }
+          ,{ "name":"inviteToken"        , "type"  :"STRING( 20)"        , "nullable":true                    , "description":"One-time random token for the accept/decline link; used for Scenario A (existing active user). Null for Scenario B (new user - org join is triggered automatically from UserOnBoarding via inviteeRefnum)." }
+          ,{ "name":"inviteTokenCreated" , "type"  :"DATETIME"           , "nullable":true                    , "description":"When inviteToken was generated, for TTL enforcement"                            }
+          ,{ "name":"status"             , "type"  :"STRING(2)"          , "nullable":false                   , "description":"Invite lifecycle status"
+                                         , "values": [ { "name":"Pending"  , "value":"PE", "description":"Invitation sent, awaiting response", "default":"CREATE" }
+                                                      ,{ "name":"Accepted" , "value":"AC", "description":"Invitation accepted" }
+                                                      ,{ "name":"Declined" , "value":"DC", "description":"Invitation declined by invitee" }
+                                                      ,{ "name":"Cancelled", "value":"CN", "description":"Invitation cancelled by the org admin/owner" }
+                                                      ,{ "name":"Expired"  , "value":"EX", "description":"Invitation token expired without response" }
+                                                     ]
+            }
+         ]
+       ,"primary": { "autogen": true, "keyBatch": 1000 }
+       ,"foreign": [
+           { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+          ,{ "name":"Inviter"     , "srcColumns":["inviterRefnum"]     , "destObject":"User" }
+          ,{ "name":"Invitee"     , "srcColumns":["inviteeRefnum"]     , "destObject":"User" }
+         ]
+       ,"indices": [
+           { "name":"OrgEmailPending", "columns":["organizationRefnum", "inviteeEmail"], "subWhere":"status='PE' and deleted is null", "db":true                   }
+          ,{ "name":"InviteToken"    , "columns":["inviteToken"]                       , "subWhere":"inviteToken is not null and deleted is null", "db":true       }
+          ,{ "name":"InviteePending" , "columns":["inviteeRefnum"]                     , "subWhere":"status='PE' and deleted is null"                             }
+          ,{ "name":"OrgPending"     , "columns":["organizationRefnum"]                , "subWhere":"status='PE' and deleted is null", "orderBy":["created desc"] }
+         ]
+       ,"queries": [
+          { "name"  :"ByToken"
+           ,"description":"Look up an invite by its accept/decline token - used by AcceptOrgInvite and DeclineOrgInvite (Scenario A: existing active user)"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"inviteToken=?() and deleted is null" } ]
+          }
+         ,{ "name"  :"ByInviteePending"
+           ,"description":"Find all pending org invites for a given inviteeRefnum - used by UserOnBoarding to auto-join organisations after registration (Scenario B: new user)"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"inviteeRefnum=?() and status='PE' and deleted is null" } ]
+           ,"orderBy":["created asc"]
+          }
+         ,{ "name"  :"ByOrgPending"
+           ,"description":"List all pending invites for a given organization - used by ListOrgInvites for admin/owner review"
+           ,"from"  :[]
+           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and status='PE' and deleted is null" } ]
+           ,"orderBy":["created desc"]
+          }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
+         ]
+      }
+
+     ,{ "name":"Project"
+       ,"description":"A project to pull resources and work together"
+       ,"columns":[
+           { "name":"organizationRefnum", "sameAs":"Organization.refnum", "nullable":true                , "description":"The organization (tenant) this project belongs to" }
+          ,{ "name":"appScope"          , "type"  :"STRING(32)"     , "nullable":false                   , "description":"The app scope for the project"                 }
+          ,{ "name":"title"             , "type"  :"STRING(1024)"   , "nullable":false                   , "description":"The title of the project"                 }
+          ,{ "name":"description"       , "type"  :"STRING(4096)"   , "nullable":true                    , "description":"A free-text description of the project"   }
+          ,{ "name":"area"              , "type"  :"STRING( 256)"   , "nullable":true                    , "description":"Primary area for the project, e.g., Healthcare, Compliance, Supply-Chain, Manufacturing..."  }
+          ,{ "name":"tags"              , "type"  :"STRING{}"       , "nullable":true                    , "description":"User-defined tags attached to the project" }
+          ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"    , "nullable":false                   , "description":"Project initial creator refnum"           }
+          ,{ "name":"creatorId"         , "sameas":"User.id"        , "nullable":false                   , "description":"Project initial creator id"               }
+          ,{ "name":"lastUpdatorRefnum" , "sameas":"User.refnum"    , "nullable":false                   , "description":"Project last updater refnum"              }
+          ,{ "name":"lastUpdatorId"     , "sameas":"User.id"        , "nullable":false                   , "description":"Project last updater id"                  }
+          ,{ "name":"status"            , "type"  :"STRING(2)"      , "nullable":false                   , "description":"Project lifecycle status"
+                                        , "values": [ { "name":"Active"  , "value":"AC", "description":"Active"   , "default":"CREATE"}
+                                                     ,{ "name":"Archived", "value":"AR", "description":"Archived" }
+                                                     ,{ "name":"Deleted" , "value":"DE", "description":"Deleted" }
+                                                    ]
+           }
+          ,{ "name":"hardDeleted"       , "type"  :"DATETIME"       , "nullable":true                    , "description":"When this record was hard-deleted: ready to be removed completely from DB at some later time, not undeletable."        }
+         ]
+       ,"primary": { "autogen": true, "keyBatch": 1000 }
+       ,"foreign": [
+           { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+          ,{ "name":"Creator"     , "srcColumns":["creatorRefnum"]     , "destObject":"User" }
+          ,{ "name":"LastUpdator" , "srcColumns":["lastUpdatorRefnum"] , "destObject":"User" }
+         ]
+       ,"indices": [
+           { "name":"OrgAppScope"           , "columns":["organizationRefnum", "appScope"         ], "subWhere":"organizationRefnum is not null"                         , "orderBy":["lastUpdated desc"] }
+          ,{ "name":"AppScope"              , "columns":[                      "appScope"         ], "subWhere":"organizationRefnum is     null"                         , "orderBy":["lastUpdated desc"]}
+          ,{ "name":"OrgAppScopeTitleActive", "columns":["organizationRefnum", "appScope", "title"], "subWhere":"organizationRefnum is not null and hardDeleted is null" }
+          ,{ "name":"AppScopeTitleActive"   , "columns":[                      "appScope", "title"], "subWhere":"organizationRefnum is     null and hardDeleted is null" }
+         ]
+       ,"queries": [
+           { "name"  :"AppScopeCreatorByTitle"
+            ,"description":"Get all active projects for a user, ordered by title"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+            ,"orderBy":["title"]
+           }
+          ,{ "name"  :"OrganizationAppScopeCreatorByTitle"
+            ,"description":"Get all active projects for a user, ordered by title"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+            ,"orderBy":["title"]
+           }
+          ,{ "name"  :"AppScopeCreatorByLastUpdated"
+            ,"description":"Get all active projects for a user, ordered by last updated"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+            ,"orderBy":["lastUpdated desc"]
+           }
+          ,{ "name"  :"OrganizationAppScopeCreatorByLastUpdated"
+            ,"description":"Get all active projects for a user, ordered by last updated"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
+            ,"orderBy":["lastUpdated desc"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":""      , "outTypes":["JSON","CSV"], "columns":["*"] }
+          ,{ "name":"Simple", "outTypes":["JSON"]      , "columns":["refnum", "appScope", "title", "description", "area", "tags", "status", "creatorId", "lastUpdated"] }
+         ]
+      }
+
+
+     ,{ "name":"ProjectACL"
+       ,"description":"Access-control list entries that allow the project creator to share a project with other users at a given role level"
+       ,"columns":[
+           { "name":"projectRefnum"   , "sameAs":"Project.refnum"  , "nullable":false, "invariant":true , "description":"The project being shared"                      }
+          ,{ "name":"userRefnum"      , "sameas":"User.refnum"     , "nullable":false, "invariant":true , "description":"The user being granted access"                 }
+          ,{ "name":"userId"          , "sameas":"User.id"         , "nullable":false                   , "description":"The user id being granted access (denorm)"    }
+          ,{ "name":"role"            , "type"  :"CHAR"                           , "nullable":false                   , "description":"Role granted to the user on this project"
+                                       , "values": [ { "name":"Owner" , "value":"O", "description":"Owner (can delete)"  }
+                                                    ,{ "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)"  }
+                                                    ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit project content" }
+                                                    ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
+                                                   ]
+           }
+          ,{ "name":"grantedByRefnum" , "sameas":"User.refnum"     , "nullable":false                   , "description":"The user who granted this access entry"       }
+          ,{ "name":"grantedById"     , "sameas":"User.id"         , "nullable":false                   , "description":"The user id who granted this access (denorm)" }
+         ]
+       ,"primary": { "autogen": true, "keyBatch": 1000 }
+       ,"foreign": [
+           { "name":"Project"  , "srcColumns":["projectRefnum"  ], "destObject":"Project" }
+          ,{ "name":"User"     , "srcColumns":["userRefnum"     ], "destObject":"User" }
+          ,{ "name":"GrantedBy", "srcColumns":["grantedByRefnum"], "destObject":"User" }
+         ]
+       ,"indices": [
+           { "name":"ProjectUser"  , "columns":["projectRefnum", "userRefnum"], "db":true }
+          ,{ "name":"UserProjects" , "columns":["userRefnum"                 ], "orderBy":["created desc"] }
+         ]
+       ,"queries": [
+           { "name"  :"ProjectActiveByUser"
+            ,"description":"Get all active ACL entries for a project"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and deleted is null" } ]
+            ,"orderBy":["userId"]
+           }
+          ,{ "name"  :"ProjectActiveByRecent"
+            ,"description":"Get all active ACL entries for a project"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and deleted is null" } ]
+            ,"orderBy":["lastUpdated desc"]
+           }
+          ,{ "name"  :"UserProjectsActive"
+            ,"description":"Get all active projects shared with a user"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and deleted is null" } ]
+            ,"orderBy":["lastUpdated desc"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
+         ]
+      }     
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
    ,{ "name":"UserPlanPreOrder"
      ,"description":"Plan Orders submitted but not yet completed. This table should have only one order per user PER PRODUCT, as a staging area. Full orders, either completed or canceled, should be moved to UserPlanSubscription and UserPlanBilling."
      ,"columns": [
@@ -459,6 +764,7 @@
 
 
    ,{ "name":"UserPlanCreditLedger"
+     ,"lc":"WORM"
      ,"descriptionX":[
          "WORM (append-only) ledger of every credit movement for pre-paid (planType=C) plans. This is the SOURCE OF TRUTH:"
         ,"UserPlanSubscription.creditsBalance is only a denormalized cache and can be rebuilt from here with a SUM(amount)"
@@ -467,6 +773,8 @@
        ]
      ,"columns": [
          {"name":"userRefnum"        , "sameAs":"User.refnum"                , "nullable":false, "description":"User Foreign Key, denormalized for direct user-scoped queries." }
+        ,{"name":"organizationRefnum", "sameAs":"Organization.refnum"        , "nullable":true , "description":"Organization Foreign Key (optional)." }
+        ,{"name":"projectRefnum"     , "sameAs":"Project.refnum"             , "nullable":true , "description":"Project Foreign Key (optional)." }
         ,{"name":"subscriptionRefnum", "sameAs":"UserPlanSubscription.refnum", "nullable":false, "description":"The credit wallet (subscription) this movement applies to." }
         ,{"name":"billingRefnum"     , "sameAs":"UserPlanBilling.refnum"     , "nullable":true , "description":"The purchase that paid for this movement. Set for GRANT rows, null for USE/ADJ." }
         ,{"name":"paymentSystemProductId", "sameAs":"Plan.paymentSystemProductId", "nullable":false, "description":"The product grouping key, denormalized for direct product-scoped queries." }
@@ -480,18 +788,27 @@
          }
         ,{"name":"amount"            , "type":"NUMERIC"                      , "nullable":false, "description":"The signed credit units: POSITIVE for GRANT, NEGATIVE for USE, either for ADJ." }
         ,{"name":"balanceAfter"      , "type":"NUMERIC"                      , "nullable":false, "description":"Snapshot of the wallet balance right after applying this row, so an audit never needs to recompute a running total." }
-        ,{"name":"reference"         , "type":"STRING(256)"                  , "nullable":true , "description":"Free-form pointer to whatever consumed or granted these credits, e.g., a job id or a feature code." }
-        ,{"name":"notes"             , "type":"STRING(1024)"                 , "nullable":true , "description":"Optional human-readable detail, mostly for ADJ rows." }
+        ,{"name":"itemType"          , "type":"STRING(64)"                   , "nullable":true , "description":"The type of the item being tracked, for example, 'Flow', 'Agent', 'Document'..." }
+        ,{"name":"itemId"            , "type":"STRING(64)"                   , "nullable":true , "description":"The id of the item being tracked" }
+        ,{"name":"itemLabel"         , "type":"STRING(1024)"                 , "nullable":true , "description":"Optional human-readable detail for the item, mostly for 'USE' rows." }
        ]
      ,"primary": { "autogen": true }
      ,"foreign":[
          { "name":"User"        , "srcColumns":["userRefnum"        ], "destObject":"User" }
+        ,{ "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
+        ,{ "name":"Project"     , "srcColumns":["projectRefnum"     ], "destObject":"Project" }
         ,{ "name":"Subscription", "srcColumns":["subscriptionRefnum"], "destObject":"UserPlanSubscription" }
         ,{ "name":"Billing"     , "srcColumns":["billingRefnum"     ], "destObject":"UserPlanBilling" }
        ]
      ,"indices":[
-         { "name":"Subscription", "columns":["subscriptionRefnum"], "orderBy":["created desc"], "db": true }
-        ,{ "name":"User"        , "columns":["userRefnum", "paymentSystemProductId"], "orderBy":["created desc"], "db": true }
+         { "name":"Subscription"    , "columns":["subscriptionRefnum"                  ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"User"            , "columns":["userRefnum", "paymentSystemProductId"], "orderBy":["created desc"], "db": true }
+        ,{ "name":"Organization"    , "columns":["organizationRefnum"                  ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"OrganizationUser", "columns":["organizationRefnum","userRefnum"     ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"Project"         , "columns":["projectRefnum"                       ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"ProjectUser"     , "columns":["projectRefnum","userRefnum"          ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"UserItem"        , "columns":["userRefnum","itemType","itemId"      ], "orderBy":["created desc"], "db": true }
+        ,{ "name":"ProjectItem"     , "columns":["projectRefnum","itemType","itemId"   ], "orderBy":["created desc"], "db": true }
        ]
      ,"queries": [
        ]
@@ -1135,287 +1452,6 @@
      }
 
 
-
-   ,{ "name":"Organization"
-     ,"description":"An organization (tenant) that owns resources such as data sources and can have its own set of members"
-     ,"columns":[
-         { "name":"title"             , "type"  :"STRING(1024)"   , "nullable":false                   , "description":"The title/name of the organization"          }
-        ,{ "name":"description"       , "type"  :"STRING(4096)"   , "nullable":true                    , "description":"A free-text description of the organization" }
-        ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"    , "nullable":false                   , "description":"Organization initial creator refnum"          }
-        ,{ "name":"creatorId"         , "sameas":"User.id"        , "nullable":false                   , "description":"Organization initial creator id"              }
-        ,{ "name":"lastUpdatorRefnum" , "sameas":"User.refnum"    , "nullable":false                   , "description":"Organization last updater refnum"             }
-        ,{ "name":"lastUpdatorId"     , "sameas":"User.id"        , "nullable":false                   , "description":"Organization last updater id"                 }
-        ,{ "name":"status"            , "type"  :"STRING(2)"      , "nullable":false                   , "description":"Organization lifecycle status"
-                                      , "values": [ { "name":"Active"  , "value":"AC", "description":"Active"   , "default":"CREATE"}
-                                                   ,{ "name":"Archived", "value":"AR", "description":"Archived" }
-                                                   ,{ "name":"Deleted" , "value":"DE", "description":"Deleted" }
-                                                  ]
-         }
-        ,{ "name":"hardDeleted"       , "type"  :"DATETIME"       , "nullable":true                    , "description":"When this record was hard-deleted: ready to be removed completely from DB at some later time, not undeletable."        }
-       ]
-     ,"primary": { "autogen": true, "keyBatch": 1000 }
-     ,"foreign": [
-         { "name":"Creator"    , "srcColumns":["creatorRefnum"]    , "destObject":"User" }
-        ,{ "name":"LastUpdator", "srcColumns":["lastUpdatorRefnum"], "destObject":"User" }
-       ]
-     ,"indices": [
-         { "name":"Creator"    , "columns":["creatorRefnum"], "orderBy":["lastUpdated desc"] }
-        ,{ "name":"TitleActive", "columns":["title"        ], "subWhere":"hardDeleted is null" }
-       ]
-     ,"queries": [
-         { "name"  :"ActiveCreatorByTitle"
-          ,"description":"Get all active organizations matching a title, ordered by title"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"creatorRefnum=?() and hardDeleted is null and title ilike ?()" } ]
-          ,"orderBy":["title"]
-         }
-        ,{ "name"  :"ActiveCreatorByLastUpdated"
-          ,"description":"Get all active organizations created by a given user"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"creatorRefnum=?() and hardDeleted is null" } ]
-          ,"orderBy":["title"]
-         }
-       ]
-     ,"outputMaps": [
-         { "name":""      , "outTypes":["JSON","CSV"], "columns":["*"] }
-        ,{ "name":"Simple", "outTypes":["JSON"]      , "columns":["refnum", "title", "description", "status", "creatorId", "lastUpdated"] }
-       ]
-    }
-
-
-   ,{ "name":"OrganizationACL"
-     ,"description":"Access-control list entries that allow the organization creator to share an organization with other users at a given role level"
-     ,"columns":[
-         { "name":"organizationRefnum", "sameAs":"Organization.refnum", "nullable":false, "invariant":true , "description":"The organization being shared"                }
-        ,{ "name":"userRefnum"        , "sameas":"User.refnum"        , "nullable":false, "invariant":true , "description":"The user being granted access"                }
-        ,{ "name":"userId"            , "sameas":"User.id"            , "nullable":false                   , "description":"The user id being granted access (denorm)"    }
-        ,{ "name":"role"              , "type"  :"CHAR"                              , "nullable":false                   , "description":"Role granted to the user on this organization"
-                                       , "values": [ { "name":"Owner" , "value":"O", "description":"Owner (can delete)"  }
-                                                    ,{ "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)"  }
-                                                    ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit organization content" }
-                                                    ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
-                                                   ]
-          }
-        ,{ "name":"grantedByRefnum"   , "sameas":"User.refnum"        , "nullable":false                   , "description":"The user who granted this access entry"       }
-        ,{ "name":"grantedById"       , "sameas":"User.id"            , "nullable":false                   , "description":"The user id who granted this access (denorm)" }
-       ]
-     ,"primary": { "autogen": true, "keyBatch": 1000 }
-     ,"foreign": [
-         { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
-        ,{ "name":"User"        , "srcColumns":["userRefnum"        ], "destObject":"User" }
-        ,{ "name":"GrantedBy"   , "srcColumns":["grantedByRefnum"   ], "destObject":"User" }
-       ]
-     ,"indices": [
-         { "name":"OrganizationUser" , "columns":["organizationRefnum", "userRefnum"], "db":true }
-        ,{ "name":"UserOrganizations", "columns":["userRefnum"                      ], "orderBy":["created desc"] }
-       ]
-     ,"queries": [
-         { "name"  :"OrganizationActiveByUser"
-          ,"description":"Get all active ACL entries for an organization, ordered by user id"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and deleted is null" } ]
-          ,"orderBy":["userId"]
-         }
-        ,{ "name"  :"OrganizationActiveByLastUpdated"
-          ,"description":"Get all active ACL entries for an organization, ordered by last updated"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and deleted is null" } ]
-          ,"orderBy":["lastUpdated desc"]
-         }
-        ,{ "name"  :"UserOrganizationsActive"
-          ,"description":"Get all active organizations shared with a user"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and deleted is null" } ]
-          ,"orderBy":["lastUpdated desc"]
-         }
-       ]
-     ,"outputMaps": [
-         { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
-       ]
-    }
-
-
-
-    ,{ "name":"OrganizationInvite"
-      ,"description":"Pending invitations from an org admin/owner to a user (existing or new) to join an organization"
-      ,"columns":[
-          { "name":"organizationRefnum" , "sameAs":"Organization.refnum", "nullable":false, "invariant":true , "description":"The organization the invitee is being asked to join"                             }
-         ,{ "name":"inviterRefnum"      , "sameas":"User.refnum"        , "nullable":false, "invariant":true , "description":"The org admin/owner who issued the invitation"                                  }
-         ,{ "name":"inviterId"          , "sameas":"User.id"            , "nullable":false                   , "description":"Denorm of inviter user id"                                                      }
-         ,{ "name":"inviteeEmail"       , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"Email of the invited person - canonical lookup key before a User account exists" }
-         ,{ "name":"inviteeNameFirst"   , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"First name of the invited person" }
-         ,{ "name":"inviteeNameLast"    , "type"  :"STRING(255)"        , "nullable":false, "invariant":true , "description":"Last name of the invited person" }
-         ,{ "name":"inviteeRefnum"      , "sameas":"User.refnum"        , "nullable":true                    , "description":"FK to User once the account exists; null when invitee is not yet registered"    }
-         ,{ "name":"inviteeUserId"      , "sameas":"User.id"            , "nullable":true                    , "description":"Denorm of invitee user id; null until the account exists"                       }
-         ,{ "name":"role"               , "type"  :"CHAR"               , "nullable":false                   , "description":"OrganizationACL role to be granted on acceptance (Admin/Writer/Reader - Owner cannot be granted via invite)"
-                                        , "values": [ { "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)" }
-                                                     ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit organization content" }
-                                                     ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
-                                                    ]
-           }
-         ,{ "name":"inviteToken"        , "type"  :"STRING( 20)"        , "nullable":true                    , "description":"One-time random token for the accept/decline link; used for Scenario A (existing active user). Null for Scenario B (new user - org join is triggered automatically from UserOnBoarding via inviteeRefnum)." }
-         ,{ "name":"inviteTokenCreated" , "type"  :"DATETIME"           , "nullable":true                    , "description":"When inviteToken was generated, for TTL enforcement"                            }
-         ,{ "name":"status"             , "type"  :"STRING(2)"          , "nullable":false                   , "description":"Invite lifecycle status"
-                                        , "values": [ { "name":"Pending"  , "value":"PE", "description":"Invitation sent, awaiting response", "default":"CREATE" }
-                                                     ,{ "name":"Accepted" , "value":"AC", "description":"Invitation accepted" }
-                                                     ,{ "name":"Declined" , "value":"DC", "description":"Invitation declined by invitee" }
-                                                     ,{ "name":"Cancelled", "value":"CN", "description":"Invitation cancelled by the org admin/owner" }
-                                                     ,{ "name":"Expired"  , "value":"EX", "description":"Invitation token expired without response" }
-                                                    ]
-           }
-        ]
-      ,"primary": { "autogen": true, "keyBatch": 1000 }
-      ,"foreign": [
-          { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
-         ,{ "name":"Inviter"     , "srcColumns":["inviterRefnum"]     , "destObject":"User" }
-         ,{ "name":"Invitee"     , "srcColumns":["inviteeRefnum"]     , "destObject":"User" }
-        ]
-      ,"indices": [
-          { "name":"OrgEmailPending", "columns":["organizationRefnum", "inviteeEmail"], "subWhere":"status='PE' and deleted is null", "db":true                   }
-         ,{ "name":"InviteToken"    , "columns":["inviteToken"]                       , "subWhere":"inviteToken is not null and deleted is null", "db":true       }
-         ,{ "name":"InviteePending" , "columns":["inviteeRefnum"]                     , "subWhere":"status='PE' and deleted is null"                             }
-         ,{ "name":"OrgPending"     , "columns":["organizationRefnum"]                , "subWhere":"status='PE' and deleted is null", "orderBy":["created desc"] }
-        ]
-      ,"queries": [
-         { "name"  :"ByToken"
-          ,"description":"Look up an invite by its accept/decline token - used by AcceptOrgInvite and DeclineOrgInvite (Scenario A: existing active user)"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"inviteToken=?() and deleted is null" } ]
-         }
-        ,{ "name"  :"ByInviteePending"
-          ,"description":"Find all pending org invites for a given inviteeRefnum - used by UserOnBoarding to auto-join organisations after registration (Scenario B: new user)"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"inviteeRefnum=?() and status='PE' and deleted is null" } ]
-          ,"orderBy":["created asc"]
-         }
-        ,{ "name"  :"ByOrgPending"
-          ,"description":"List all pending invites for a given organization - used by ListOrgInvites for admin/owner review"
-          ,"from"  :[]
-          ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and status='PE' and deleted is null" } ]
-          ,"orderBy":["created desc"]
-         }
-        ]
-      ,"outputMaps": [
-          { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
-        ]
-     }
-
-    ,{ "name":"Project"
-      ,"description":"A project to pull resources and work together"
-      ,"columns":[
-          { "name":"organizationRefnum", "sameAs":"Organization.refnum", "nullable":true                , "description":"The organization (tenant) this project belongs to" }
-         ,{ "name":"appScope"          , "type"  :"STRING(32)"     , "nullable":false                   , "description":"The app scope for the project"                 }
-         ,{ "name":"title"             , "type"  :"STRING(1024)"   , "nullable":false                   , "description":"The title of the project"                 }
-         ,{ "name":"description"       , "type"  :"STRING(4096)"   , "nullable":true                    , "description":"A free-text description of the project"   }
-         ,{ "name":"area"              , "type"  :"STRING( 256)"   , "nullable":true                    , "description":"Primary area for the project, e.g., Healthcare, Compliance, Supply-Chain, Manufacturing..."  }
-         ,{ "name":"tags"              , "type"  :"STRING{}"       , "nullable":true                    , "description":"User-defined tags attached to the project" }
-         ,{ "name":"creatorRefnum"     , "sameas":"User.refnum"    , "nullable":false                   , "description":"Project initial creator refnum"           }
-         ,{ "name":"creatorId"         , "sameas":"User.id"        , "nullable":false                   , "description":"Project initial creator id"               }
-         ,{ "name":"lastUpdatorRefnum" , "sameas":"User.refnum"    , "nullable":false                   , "description":"Project last updater refnum"              }
-         ,{ "name":"lastUpdatorId"     , "sameas":"User.id"        , "nullable":false                   , "description":"Project last updater id"                  }
-         ,{ "name":"status"            , "type"  :"STRING(2)"      , "nullable":false                   , "description":"Project lifecycle status"
-                                       , "values": [ { "name":"Active"  , "value":"AC", "description":"Active"   , "default":"CREATE"}
-                                                    ,{ "name":"Archived", "value":"AR", "description":"Archived" }
-                                                    ,{ "name":"Deleted" , "value":"DE", "description":"Deleted" }
-                                                   ]
-          }
-         ,{ "name":"hardDeleted"       , "type"  :"DATETIME"       , "nullable":true                    , "description":"When this record was hard-deleted: ready to be removed completely from DB at some later time, not undeletable."        }
-        ]
-      ,"primary": { "autogen": true, "keyBatch": 1000 }
-      ,"foreign": [
-          { "name":"Organization", "srcColumns":["organizationRefnum"], "destObject":"Organization" }
-         ,{ "name":"Creator"     , "srcColumns":["creatorRefnum"]     , "destObject":"User" }
-         ,{ "name":"LastUpdator" , "srcColumns":["lastUpdatorRefnum"] , "destObject":"User" }
-        ]
-      ,"indices": [
-          { "name":"OrgAppScope"           , "columns":["organizationRefnum", "appScope"         ], "subWhere":"organizationRefnum is not null"                         , "orderBy":["lastUpdated desc"] }
-         ,{ "name":"AppScope"              , "columns":[                      "appScope"         ], "subWhere":"organizationRefnum is     null"                         , "orderBy":["lastUpdated desc"]}
-         ,{ "name":"OrgAppScopeTitleActive", "columns":["organizationRefnum", "appScope", "title"], "subWhere":"organizationRefnum is not null and hardDeleted is null" }
-         ,{ "name":"AppScopeTitleActive"   , "columns":[                      "appScope", "title"], "subWhere":"organizationRefnum is     null and hardDeleted is null" }
-        ]
-      ,"queries": [
-          { "name"  :"AppScopeCreatorByTitle"
-           ,"description":"Get all active projects for a user, ordered by title"
-           ,"from"  :[]
-           ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
-           ,"orderBy":["title"]
-          }
-         ,{ "name"  :"OrganizationAppScopeCreatorByTitle"
-           ,"description":"Get all active projects for a user, ordered by title"
-           ,"from"  :[]
-           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
-           ,"orderBy":["title"]
-          }
-         ,{ "name"  :"AppScopeCreatorByLastUpdated"
-           ,"description":"Get all active projects for a user, ordered by last updated"
-           ,"from"  :[]
-           ,"wheres":[ { "db":"*", "clause":"appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
-           ,"orderBy":["lastUpdated desc"]
-          }
-         ,{ "name"  :"OrganizationAppScopeCreatorByLastUpdated"
-           ,"description":"Get all active projects for a user, ordered by last updated"
-           ,"from"  :[]
-           ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?() and appScope=?() and creatorRefnum=?() and title ilike ?() and TILDA.in(tags, ?()) = true and hardDeleted is null" } ]
-           ,"orderBy":["lastUpdated desc"]
-          }
-        ]
-      ,"outputMaps": [
-          { "name":""      , "outTypes":["JSON","CSV"], "columns":["*"] }
-         ,{ "name":"Simple", "outTypes":["JSON"]      , "columns":["refnum", "appScope", "title", "description", "area", "tags", "status", "creatorId", "lastUpdated"] }
-        ]
-     }
-
-
-    ,{ "name":"ProjectACL"
-      ,"description":"Access-control list entries that allow the project creator to share a project with other users at a given role level"
-      ,"columns":[
-          { "name":"projectRefnum"   , "sameAs":"Project.refnum"  , "nullable":false, "invariant":true , "description":"The project being shared"                      }
-         ,{ "name":"userRefnum"      , "sameas":"User.refnum"     , "nullable":false, "invariant":true , "description":"The user being granted access"                 }
-         ,{ "name":"userId"          , "sameas":"User.id"         , "nullable":false                   , "description":"The user id being granted access (denorm)"    }
-         ,{ "name":"role"            , "type"  :"CHAR"                           , "nullable":false                   , "description":"Role granted to the user on this project"
-                                      , "values": [ { "name":"Owner" , "value":"O", "description":"Owner (can delete)"  }
-                                                   ,{ "name":"Admin" , "value":"A", "description":"Admin (can edit, manage ACL)"  }
-                                                   ,{ "name":"Writer", "value":"W", "description":"Can read and create/edit project content" }
-                                                   ,{ "name":"Reader", "value":"R", "description":"Read-only access" }
-                                                  ]
-          }
-         ,{ "name":"grantedByRefnum" , "sameas":"User.refnum"     , "nullable":false                   , "description":"The user who granted this access entry"       }
-         ,{ "name":"grantedById"     , "sameas":"User.id"         , "nullable":false                   , "description":"The user id who granted this access (denorm)" }
-        ]
-      ,"primary": { "autogen": true, "keyBatch": 1000 }
-      ,"foreign": [
-          { "name":"Project"  , "srcColumns":["projectRefnum"  ], "destObject":"Project" }
-         ,{ "name":"User"     , "srcColumns":["userRefnum"     ], "destObject":"User" }
-         ,{ "name":"GrantedBy", "srcColumns":["grantedByRefnum"], "destObject":"User" }
-        ]
-      ,"indices": [
-          { "name":"ProjectUser"  , "columns":["projectRefnum", "userRefnum"], "db":true }
-         ,{ "name":"UserProjects" , "columns":["userRefnum"                 ], "orderBy":["created desc"] }
-        ]
-      ,"queries": [
-          { "name"  :"ProjectActiveByUser"
-           ,"description":"Get all active ACL entries for a project"
-           ,"from"  :[]
-           ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and deleted is null" } ]
-           ,"orderBy":["userId"]
-          }
-         ,{ "name"  :"ProjectActiveByRecent"
-           ,"description":"Get all active ACL entries for a project"
-           ,"from"  :[]
-           ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and deleted is null" } ]
-           ,"orderBy":["lastUpdated desc"]
-          }
-         ,{ "name"  :"UserProjectsActive"
-           ,"description":"Get all active projects shared with a user"
-           ,"from"  :[]
-           ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and deleted is null" } ]
-           ,"orderBy":["lastUpdated desc"]
-          }
-        ]
-      ,"outputMaps": [
-          { "name":"", "outTypes":["JSON","CSV"], "columns":["*"] }
-        ]
-     }     
 
      
 
@@ -2740,6 +2776,280 @@
            { "name":""      , "outTypes":["JSON","CSV"], "columns": ["*"] }
          ]
       }
+      
+      
+      
+     ,{ "name":"UserPlanCreditLedgerMinimalOrganizationProjectView"
+       ,"description":"Minimal, USE-only projection of UserPlanCreditLedger for project-level spend reporting -- excludes itemLabel, billingRefnum, balanceAfter and subscriptionRefnum to keep project/org rollups narrow."
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.organizationRefnum"           }
+          ,{ "sameAs":"Organization.title"         , "name":"organizationTitle" }
+          ,{ "sameAs":"UserPlanCreditLedger.projectRefnum"           }
+          ,{ "sameAs":"Project.title"              , "name":"projectTitle" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount", "name":"amount90Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 90" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount", "name":"amount60Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 60" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount", "name":"amount30Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 30" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.projectRefnum is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 90"
+       ,"queries": [
+           { "name"  :"Project"
+            ,"description":"All USE rows for a project, most recent first"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?()" } ]
+           }
+          ,{ "name"  :"Organization"
+            ,"description":"All USE rows for a project, most recent first"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?()" } ]
+            ,"orderBy":["projectTitle"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+     ,{ "name":"UserPlanCreditLedgerMinimalProjectUserView"
+       ,"description":"Minimal, USE-only projection of UserPlanCreditLedger for project-level spend reporting -- excludes itemLabel, billingRefnum, balanceAfter and subscriptionRefnum to keep project/org rollups narrow."
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.projectRefnum" }
+          ,{ "sameAs":"Project.title"                     , "name":"projectTitle" }
+          ,{ "sameAs":"UserPlanCreditLedger.userRefnum"    }
+          ,{ "sameAs":"User.id"                           , "name":"userId" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"       , "name":"amount90Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 90" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"       , "name":"amount60Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 60" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"       , "name":"amount30Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 30" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.projectRefnum is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 90"
+       ,"queries": [
+           { "name"  :"Project"
+            ,"description":"All USE rows for a project by user, most recent first"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?()" } ]
+            ,"orderBy":["userId"]
+           }
+          ,{ "name"  :"User"
+            ,"description":"All USE rows for a project by user, most recent first"
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?()" } ]
+            ,"orderBy":["projectTitle"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+    
+
+
+     ,{ "name":"UserPlanCreditLedgerMinimalUserItemView"
+       ,"descriptionX":[
+           "Minimal, USE-only projection of UserPlanCreditLedger rolled up per (user, itemType, itemId) IRRESPECTIVE of project, i.e. the"
+          ,"'global' spend a user has incurred on a given item. NOTE: itemId is only guaranteed unique WITHIN an itemType (a Flow and an"
+          ,"Agent can perfectly well share the same id), so itemType+itemId together are the item key and both are always required."
+         ]
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.userRefnum"  }
+          ,{ "sameAs":"User.id"                          , "name":"userId" }
+          ,{ "sameAs":"UserPlanCreditLedger.itemType"    }
+          ,{ "sameAs":"UserPlanCreditLedger.itemId"      }
+          ,{ "sameAs":"UserPlanCreditLedger.itemLabel"   , "name":"itemLabel"   , "aggregate":"MAX" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"      , "name":"amount90Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 90" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"      , "name":"amount60Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 60" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"      , "name":"amount30Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 30" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.itemType is not null and UserPlanCreditLedger.itemId is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 90"
+       ,"queries": [
+           { "name"  :"UserItem"
+            ,"description":"The rolled-up global (all-projects) spend for one user on one specific item. Single row."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and itemType=?() and itemId=?()" } ]
+           }
+          ,{ "name"  :"User"
+            ,"description":"The rolled-up global spend for one user across all items."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?()" } ]
+            ,"orderBy":["itemType", "amount30Days"]
+           }
+          ,{ "name"  :"UserItemType"
+            ,"description":"The rolled-up global spend for one user across all items of a given type."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and itemType=?()" } ]
+            ,"orderBy":["amount30Days"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+
+     ,{ "name":"UserPlanCreditLedgerMinimalProjectItemView"
+       ,"descriptionX":[
+           "Minimal, USE-only projection of UserPlanCreditLedger rolled up per (project, itemType, itemId), i.e. the spend an item has"
+          ,"incurred WITHIN a project, all users combined (no per-user breakdown -- see UserPlanCreditLedgerMinimalProjectUserView for"
+          ,"that). itemType+itemId together are the item key and both are always required."
+         ]
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.projectRefnum" }
+          ,{ "sameAs":"Project.title"                      , "name":"projectTitle" }
+          ,{ "sameAs":"UserPlanCreditLedger.itemType"     }
+          ,{ "sameAs":"UserPlanCreditLedger.itemId"       }
+          ,{ "sameAs":"UserPlanCreditLedger.itemLabel"    , "name":"itemLabel"   , "aggregate":"MAX" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"       , "name":"amount90Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 90" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"       , "name":"amount60Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 60" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"       , "name":"amount30Days", "aggregate":"SUM", "filter":"UserPlanCreditLedger.created >= CURRENT_DATE - 30" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.projectRefnum is not null and UserPlanCreditLedger.itemType is not null and UserPlanCreditLedger.itemId is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 90"
+       ,"queries": [
+           { "name"  :"ProjectItem"
+            ,"description":"The rolled-up spend for one item within one project, all users combined. Single row."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and itemType=?() and itemId=?()" } ]
+           }
+          ,{ "name"  :"Project"
+            ,"description":"The rolled-up spend for all items within one project."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?()" } ]
+            ,"orderBy":["itemType", "amount30Days"]
+           }
+          ,{ "name"  :"ProjectItemType"
+            ,"description":"The rolled-up spend for all items of a given type within one project."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and itemType=?()" } ]
+            ,"orderBy":["amount30Days"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+
+     ,{ "name":"UserPlanCreditLedgerMinimalUserItemDailyView"
+       ,"description":"Per-DAY breakdown (last 30 days) of the global, all-projects spend for a user on a given item. Same key semantics as UserPlanCreditLedgerMinimalUserItemView: itemType+itemId together identify the item. Only days with actual spend produce a row, so the client must zero-fill gaps."
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.userRefnum"  }
+          ,{ "sameAs":"UserPlanCreditLedger.itemType"    }
+          ,{ "sameAs":"UserPlanCreditLedger.itemId"      }
+          ,{ "sameAs":"UserPlanCreditLedger.created"     , "name":"day"   , "expression":"date_trunc('day', ?)::DATE", "type":"DATE" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"      , "name":"amount", "aggregate":"SUM" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.itemType is not null and UserPlanCreditLedger.itemId is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 30"
+       ,"queries": [
+           { "name"  :"UserItem"
+            ,"description":"The daily spend for one user on one specific item over the last 30 days, oldest day first."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and itemType=?() and itemId=?()" } ]
+            ,"orderBy":["day"]
+           }
+          ,{ "name"  :"UserItemType"
+            ,"description":"The daily spend for one user across all items of a given type over the last 30 days."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?() and itemType=?()" } ]
+            ,"orderBy":["day", "itemId"]
+           }
+          ,{ "name"  :"User"
+            ,"description":"The daily spend for one user across all items over the last 30 days."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"userRefnum=?()" } ]
+            ,"orderBy":["day", "itemType", "itemId"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+
+     ,{ "name":"UserPlanCreditLedgerMinimalProjectItemDailyView"
+       ,"description":"Per-DAY breakdown (last 30 days) of the spend within a project, optionally narrowed to one item. Only days with actual spend produce a row, so the client must zero-fill gaps."
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.projectRefnum" }
+          ,{ "sameAs":"UserPlanCreditLedger.itemType"     }
+          ,{ "sameAs":"UserPlanCreditLedger.itemId"       }
+          ,{ "sameAs":"UserPlanCreditLedger.created"      , "name":"day"   , "expression":"date_trunc('day', ?)::DATE", "type":"DATE" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"       , "name":"amount", "aggregate":"SUM" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.projectRefnum is not null and UserPlanCreditLedger.itemType is not null and UserPlanCreditLedger.itemId is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 30"
+       ,"queries": [
+           { "name"  :"ProjectItem"
+            ,"description":"The daily spend for one item within one project over the last 30 days, oldest day first."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and itemType=?() and itemId=?()" } ]
+            ,"orderBy":["day"]
+           }
+          ,{ "name"  :"ProjectItemType"
+            ,"description":"The daily spend for all items of a given type within one project over the last 30 days."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and itemType=?()" } ]
+            ,"orderBy":["day", "itemId"]
+           }
+          ,{ "name"  :"Project"
+            ,"description":"The daily spend for all items within one project over the last 30 days."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?()" } ]
+            ,"orderBy":["day", "itemType", "itemId"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+
+     ,{ "name":"UserPlanCreditLedgerMinimalOrganizationProjectDailyView"
+       ,"description":"Per-DAY breakdown (last 30 days) of project-level spend, for org- or project-level trend charts. Only days with actual spend produce a row, so the client must zero-fill gaps."
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.organizationRefnum" }
+          ,{ "sameAs":"UserPlanCreditLedger.projectRefnum"      }
+          ,{ "sameAs":"Project.title"                           , "name":"projectTitle" }
+          ,{ "sameAs":"UserPlanCreditLedger.created"            , "name":"day"   , "expression":"date_trunc('day', ?)::DATE", "type":"DATE" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"             , "name":"amount", "aggregate":"SUM" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.projectRefnum is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 30"
+       ,"queries": [
+           { "name"  :"Project"
+            ,"description":"The daily spend for one project over the last 30 days, oldest day first."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?()" } ]
+            ,"orderBy":["day"]
+           }
+          ,{ "name"  :"Organization"
+            ,"description":"The daily spend per project for one organization over the last 30 days."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"organizationRefnum=?()" } ]
+            ,"orderBy":["day", "projectTitle"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
+
+     ,{ "name":"UserPlanCreditLedgerMinimalProjectUserDailyView"
+       ,"description":"Per-DAY breakdown (last 30 days) of project spend per user. Only days with actual spend produce a row, so the client must zero-fill gaps."
+       ,"columns":[
+           { "sameAs":"UserPlanCreditLedger.projectRefnum" }
+          ,{ "sameAs":"UserPlanCreditLedger.userRefnum"    }
+          ,{ "sameAs":"User.id"                            , "name":"userId" }
+          ,{ "sameAs":"UserPlanCreditLedger.created"       , "name":"day"   , "expression":"date_trunc('day', ?)::DATE", "type":"DATE" }
+          ,{ "sameAs":"UserPlanCreditLedger.amount"        , "name":"amount", "aggregate":"SUM" }
+         ]
+       ,"subWhere":"UserPlanCreditLedger.type = 'USE' and UserPlanCreditLedger.projectRefnum is not null and UserPlanCreditLedger.created >= CURRENT_DATE - 30"
+       ,"queries": [
+           { "name"  :"Project"
+            ,"description":"The daily spend per user for one project over the last 30 days."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?()" } ]
+            ,"orderBy":["day", "userId"]
+           }
+          ,{ "name"  :"ProjectUser"
+            ,"description":"The daily spend for one user within one project over the last 30 days, oldest day first."
+            ,"from"  :[]
+            ,"wheres":[ { "db":"*", "clause":"projectRefnum=?() and userRefnum=?()" } ]
+            ,"orderBy":["day"]
+           }
+         ]
+       ,"outputMaps": [
+           { "name":"", "outTypes":["JSON","CSV"], "columns": ["*"] }
+         ]
+      }
 
 
      ,{ "name":"DataSourceACLView"
@@ -2826,11 +3136,13 @@
       ]
     ,"renames":[
         { "object":"User", "column":"contentIds", "oldNames":["programs"] }
-       ,{ "object":"AccessLog", "column":"paymentCapture", "oldNames":["payment"] }
-       ,{ "object":"AccessLog", "column":"registrationGuest", "oldNames":["registration"] }
-       ,{ "object":"Project"        , "oldNames":["MSLProject"        ] }
-       ,{ "object":"Project"        , "column":"area", "oldNames":["therapeuticArea"] }
-       ,{ "object":"ProjectACL"     , "oldNames":["MSLProjectACL"     ] }
+       ,{ "object":"AccessLog"           , "column":"paymentCapture", "oldNames":["payment"] }
+       ,{ "object":"AccessLog"           , "column":"registrationGuest", "oldNames":["registration"] }
+       ,{ "object":"Project"             , "oldNames":["MSLProject"        ] }
+       ,{ "object":"Project"             , "column":"area", "oldNames":["therapeuticArea"] }
+       ,{ "object":"ProjectACL"          , "oldNames":["MSLProjectACL"     ] }
+       ,{ "object":"UserPlanCreditLedger", "column":"itemType" , "oldNames":["reference"] }
+       ,{ "object":"UserPlanCreditLedger", "column":"itemLabel", "oldNames":["notes"   ] }
        ,{ "view"  :"ProjectACLView" , "oldNames":["MSLProjectACLView" ] }
        ,{ "view"  :"ProjectRoleView", "oldNames":["MSLProjectRoleView"] }
       ]

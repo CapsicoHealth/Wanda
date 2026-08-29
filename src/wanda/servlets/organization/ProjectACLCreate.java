@@ -41,7 +41,7 @@ public class ProjectACLCreate extends SimpleServlet
 
     public ProjectACLCreate()
       {
-        super(true, true, false);
+        super(true, true, true);
       }
 
     @Override

@@ -191,13 +191,13 @@ import { FloriaPayments } from "./module-payments.js";
 FloriaPayments.CreditGauge.render("creditGauge_AGENTIC", basePath, "CAPSICO-AGENTIC-01", true);
 ```
 
-- **Data source**: `/svc/user/credits/balance?productId=...`, backed by `CreditHelper.getSnapshot` (see
+- **Data source**: `/svc/wanda/credits/balance?productId=...`, backed by `CreditHelper.getSnapshot` (see
   §5.5 below) — cheap enough to call `render()` again whenever you want to refresh it (e.g. right after a
   `topUpCredits` purchase completes, or after a metered operation's own response comes back), since it is
   served from cache far more often than it hits the database.
 - **`active` (4th argument)**: when `true`, the widget shows a pointer cursor and clicking it opens a
   details popup (currently a "feature coming soon" placeholder — the full cost/activity breakdown is
-  planned to be built on top of `/svc/user/credits/history`, which already exists). When `false` (or
+  planned to be built on top of `/svc/wanda/credits/history`, which already exists). When `false` (or
   omitted), the gauge is purely informational: no cursor change, no click handler attached.
 - **Colors are never hardcoded in the widget's JS.** The fill's color tier is expressed only as a CSS
   class (`creditGaugeFill--low` / `--mid` / `--high`); the actual colors are CSS custom properties defined
@@ -301,7 +301,7 @@ DEADLOCKED!" alert. Be consistent about row-touch order across code paths that c
 ### 5.5 Balance-display cache (`CreditHelper.getSnapshot`) and the session-affinity assumption
 
 For a display-only widget (e.g. the front-end credit-meter gauge, `FloriaPayments.CreditGauge` in
-`module-payments.js`, backed by the `/svc/user/credits/balance` servlet) that may poll fairly often,
+`module-payments.js`, backed by the `/svc/wanda/credits/balance` servlet) that may poll fairly often,
 reading the database on every poll is wasteful. `CreditHelper.getSnapshot(C, U, productId)` serves these
 reads from a small, bounded (`CACHE_MAX_ENTRIES`, default 50), in-process cache keyed by
 `userRefnum|productId`, instead of hitting `getWallet()` fresh every time.

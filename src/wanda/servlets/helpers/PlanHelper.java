@@ -334,7 +334,7 @@ public class PlanHelper
      * -- i.e., they are still riding the auto-assigned free/trial plan (see {@link #autoAssignFreePlan}) rather
      * than a plan they actually purchased. Backs the credit-meter widget's one-time "you're on a free trial"
      * welcome message (see {@code FloriaPayments.CreditGauge} in module-payments.js) via
-     * {@code /svc/user/credits/balance} -- display-only, never used for gating/mutation.
+     * {@code /svc/wanda/credits/balance} -- display-only, never used for gating/mutation.
      *
      * @return false if the user has no active billing for the product at all (nothing to report), or if their
      *         active plan isn't an autoPlan one.

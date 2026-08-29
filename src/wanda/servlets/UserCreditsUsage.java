@@ -46,7 +46,7 @@ import wanda.web.SimpleServlet;
  * there is no real value in adding several bespoke aggregate queries here -- shipping the raw rows once and
  * letting the dashboard slice them every way it needs is both simpler and cheaper to maintain.
  */
-@WebServlet("/svc/user/credits/usage")
+@WebServlet("/svc/wanda/credits/usage")
 public class UserCreditsUsage extends SimpleServlet
   {
     private static final long serialVersionUID = 5591943985398431822L;

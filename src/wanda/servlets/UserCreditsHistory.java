@@ -32,7 +32,7 @@ import wanda.web.SimpleServlet;
  * The signed-in user's credit statement for a product: every grant, use and adjustment, most recent first.
  * Reads straight off the WORM ledger, which is the source of truth for balances.
  */
-@WebServlet("/svc/user/credits/history")
+@WebServlet("/svc/wanda/credits/history")
 public class UserCreditsHistory extends SimpleServlet
   {
     private static final long serialVersionUID = 3300950265120885544L;

@@ -40,7 +40,7 @@ public class ProjectDelete extends SimpleServlet
 
     public ProjectDelete()
       {
-        super(true, true, false);
+        super(true, true, true);
       }
 
     @Override
