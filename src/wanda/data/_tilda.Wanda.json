@@ -58,7 +58,7 @@
          ,{ "name":"eulaUrl"        , "type":"STRING(1024)", "nullable":true                    , "description":"The URL for the EULA." }
          ,{ "name":"eulaRenewalDays", "type":"INTEGER"     , "nullable":true                    , "description":"The number of days to force users to resign the EULA." }
          ,{ "name":"maxUsers"       , "type":"INTEGER"     , "nullable":true                    , "description":"The maximum number of users who can use that promo." }
-         ,{ "name":"initialCredits", "type":"NUMERIC"      , "nullable":true                    , "description":"One-time signup bonus, in credit UNITS (1 credit = 1 US cent, same convention as PlanPricing.oneTimeCredits), granted IN ADDITION to a pack's own credits the first time a user registered under this promo completes a credit-pack (planType=C) purchase for a product listed in 'plans'. First-purchase-only per product: see UserPlanSubscription.creditsBonusGranted, which is the idempotency guard. Null/absent = no signup bonus. Meaningless for promos that only list planType=S/X plans." }
+         ,{ "name":"initialCredits" , "type":"SMALLINT"    , "nullable":true                    , "description":"One-time signup bonus, in credit UNITS (1 credit = 1 US cent, same convention as PlanPricing.oneTimeCredits), granted IN ADDITION to a pack's own credits the first time a user registered under this promo completes a credit-pack (planType=C) purchase for a product listed in 'plans'. First-purchase-only per product: see UserPlanSubscription.creditsBonusGranted, which is the idempotency guard. Null/absent = no signup bonus. Meaningless for promos that only list planType=S/X plans." }
         ]
       ,"primary": { "autogen": true }
       ,"indices":[ 
@@ -3161,6 +3161,9 @@
        ,{ "object":"UserPlanPreOrder"    , "columns":["paymentSystemProductId"], "default":"CAPSICO-GENAILEARNING-PERSONAL-01" }
        ,{ "object":"UserPlanSubscription", "columns":["paymentSystemProductId"], "default":"CAPSICO-GENAILEARNING-PERSONAL-01" }
        ,{ "object":"UserPlanBilling"     , "columns":["paymentSystemProductId"], "default":"CAPSICO-GENAILEARNING-PERSONAL-01" }
+      ]
+    ,"conversions":[
+        { "object":"Promo"    , "column":"initialCredits"     , "conversion":"initialCredits::SMALLINT" }
       ]
    }
 }    
