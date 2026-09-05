@@ -48,8 +48,8 @@ public class SessionFilterNonTransactional implements jakarta.servlet.Filter
       {
         LOG.info("\n");
         LOG.info("*************************************************************************************************************************************");
-        Wanda.autoInit();
         ConnectionPool.autoInit();
+        Wanda.autoInit();
         LOG.info("*************************************************************************************************************************************\n\n");
       }
 

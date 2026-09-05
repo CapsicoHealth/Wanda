@@ -52,10 +52,13 @@ public class UserPlanStatus extends SimpleServlet
     public void init(ServletConfig Conf)
       {
       }
-    
+
     String _ENTERPRISE_LEARNING_EMAIL = Wanda.getExtra("learning", "ENTERPRISE_LEARNING_EMAIL");
     String _ENTERPRISE_LEARNING_LABEL = Wanda.getExtra("learning", "ENTERPRISE_LEARNING_LABEL");
- 
+
+    String _ENTERPRISE_AGENTIC_EMAIL  = Wanda.getExtra("llmserver-main", "enterpriseEmail");
+    String _ENTERPRISE_AGENTIC_LABEL  = Wanda.getExtra("llmserver-main", "enterpriseLabel");
+
 
     @Override
     protected void justDo(RequestUtil req, ResponseUtil res, Connection C, User_Data U)
@@ -83,7 +86,12 @@ public class UserPlanStatus extends SimpleServlet
               List<String> descrs = new ArrayList<String>();
               Iterator<String> I = p._Plan.getDescr();
               while (I.hasNext() == true)
-               descrs.add(I.next().replace("${ENTERPRISE_LEARNING_EMAIL}", "<A href=\"mailto:"+URLEncoder.encode(_ENTERPRISE_LEARNING_EMAIL, "UTF-8")+"\">"+_ENTERPRISE_LEARNING_LABEL+"</A>"));
+                {
+                  String descr = I.next();
+                  descr = descr.replace("${ENTERPRISE_LEARNING_EMAIL}", "<A href=\"mailto:" + URLEncoder.encode(_ENTERPRISE_LEARNING_EMAIL, "UTF-8") + "\">" + _ENTERPRISE_LEARNING_LABEL + "</A>");
+                  descr = descr.replace("${ENTERPRISE_AGENTIC_EMAIL}", "<A href=\"mailto:" + URLEncoder.encode(_ENTERPRISE_AGENTIC_EMAIL, "UTF-8") + "\">" + _ENTERPRISE_AGENTIC_LABEL + "</A>");
+                  descrs.add(descr);
+                }
               p._Plan.setDescr(descrs);
 
               // The promo signup bonus is a first-purchase-only perk per product wallet: stop advertising it as
@@ -104,20 +112,22 @@ public class UserPlanStatus extends SimpleServlet
 
     /**
      * Check if the user's SUBSCRIPTION billing status is current.
-     * <UL><LI>Subscription is active</LI>
-     *  <LI>Billing is active</LI>
-     *  <LI>Billing status is "Paid"</LI>
-     *  <LI>Billing expiry date is in the future</LI>
-     *  </UL>
+     * <UL>
+     * <LI>Subscription is active</LI>
+     * <LI>Billing is active</LI>
+     * <LI>Billing status is "Paid"</LI>
+     * <LI>Billing expiry date is in the future</LI>
+     * </UL>
      * Note this deliberately ignores credit (planType=C) billings: a credit pack purchase is not a subscription,
      * and letting the most recent row decide would make "billingCurrent" flip depending on whether the user's
      * last purchase happened to be a top-up rather than a plan.
+     * 
      * @param UBVL
      * @return
      */
     private static boolean isCurrent(List<UserBillingView_Data> UBVL)
       {
-        if (UBVL==null || UBVL.isEmpty() == true)
+        if (UBVL == null || UBVL.isEmpty() == true)
           return false;
 
         for (UserBillingView_Data UBV : UBVL)

@@ -21,7 +21,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -60,13 +62,68 @@ public class Wanda
 
     public static void autoInit()
       {
+        Connection C = null;
+        try
+          {
+            if (_Config == null)
+              readConfigFile();
+            C = ConnectionPool.get("MAIN");
+            loadDbConfig(C);
+          }
+        catch (Throwable T)
+          {
+            LOG.error("An exception occurred while initializing Wanda database configuration.\n", T);
+            throw new RuntimeException("Cannot initialize Wanda database configuration", T);
+          }
+        finally
+          {
+            if (C != null)
+              {
+                try
+                  {
+                    C.rollback();
+                    C.close();
+                  }
+                catch (SQLException E)
+                  {
+                    LOG.error("Cannot close Wanda autoInit connection\n", E);
+                  }
+              }
+          }
+      }
+
+    public synchronized static void reload()
+    throws Exception
+      {
+        readConfigFile();
+        Connection C = null;
+        try
+          {
+            C = ConnectionPool.get("MAIN");
+            loadDbConfig(C);
+          }
+        finally
+          {
+            if (C != null)
+              {
+                try
+                  {
+                    C.rollback();
+                    C.close();
+                  }
+                catch (SQLException E)
+                  {
+                    LOG.error("Cannot close Wanda reload connection\n", E);
+                  }
+              }
+          }
       }
 
     static
       {
         try
           {
-            readConfig();
+            readConfigFile();
           }
         catch (Throwable T)
           {
@@ -86,11 +143,10 @@ public class Wanda
       }
 
 
-    private static void readConfig()
+    public synchronized static void readConfigFile()
     throws Exception
       {
         Reader R = null;
-        Connection C = null;
         try
           {
             LOG.info("Loading '/wanda.config.json' from the classpath.");
@@ -102,42 +158,47 @@ public class Wanda
             URL url = FileUtil.getResourceUrl("wanda.config.json");
             LOG.info("   Found wanda.config.json file in " + url.toString());
 
-            C = ConnectionPool.get("MAIN");
-
             R = new BufferedReader(new InputStreamReader(In));
-            _Config = gson.fromJson(R, WandaDefConfig.class);
-            if (_Config.validate(C) == false)
-              throw new Exception("Invalid Wanda configuration file '" + url.toString() + "'.");
-
-            _Apps = AppView_Factory.lookupWhereAll(C, Wanda.getHostName(), 0, -1);
-            _AppsConfig = Config_Factory.lookupById("MAIN");
-            if (_AppsConfig.read(C) == false)
-              {
-                LOG.warn("The Wanda app configuration is empty. This may be normal if this is the first time the server is started.");
-                // throw new Exception("The Wanda app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
-              }
-            StringBuilder Str = new StringBuilder();
-            Str.append("\n   ************************************************************************************************************************\n");
-            Str.append("   ** Wanda Configuration\n");
-            Str.append("   **\n");
-            Str.append("   ** AuthPassthroughs: " + TextUtil.print(_AppsConfig.getAuthPassthroughs()) + "\n");
-            Str.append("   ** MasterPaths     : " + TextUtil.print(_AppsConfig.getMasterPaths()) + "\n");
-            Str.append("   ** Apps            :\n");
-            for (AppView_Data A : _Apps)
-              Str.append("   **      " + A.getAppLabel() + " (" + A.getAppHome() + ")" + (A.getAppActive() == false ? "  --INACTIVE--" : "") + "\n");
-            Str.append("   ************************************************************************************************************************\n");
-            LOG.info(Str.toString());
+            WandaDefConfig config = gson.fromJson(R, WandaDefConfig.class);
+            if (config == null)
+              throw new Exception("Invalid Wanda configuration file '" + url.toString() + "': JSON returned null.");
+            _Config = config;
           }
         finally
           {
             if (R != null)
               R.close();
-            if (C != null)
-              {
-                C.rollback();
-                C.close();
-              }
           }
+      }
+
+    public synchronized static void loadDbConfig(Connection C)
+    throws Exception
+      {
+        if (_Config == null)
+          readConfigFile();
+
+        if (_Config.validate(C) == false)
+          throw new Exception("Invalid Wanda configuration.");
+
+        _Apps = AppView_Factory.lookupWhereAll(C, Wanda.getHostName(), 0, -1);
+        Config_Data appsConfig = Config_Factory.lookupById("MAIN");
+        if (appsConfig.read(C) == false)
+          {
+            LOG.warn("The Wanda app configuration is empty. This may be normal if this is the first time the server is started.");
+            // throw new Exception("The Wanda app configuration is empty. Make sure to run the utility LoadAppsConfig before launching the server.");
+          }
+        _AppsConfig = appsConfig;
+        StringBuilder Str = new StringBuilder();
+        Str.append("\n   ************************************************************************************************************************\n");
+        Str.append("   ** Wanda Configuration\n");
+        Str.append("   **\n");
+        Str.append("   ** AuthPassthroughs: " + (_AppsConfig == null ? "none" : TextUtil.print(_AppsConfig.getAuthPassthroughs())) + "\n");
+        Str.append("   ** MasterPaths     : " + (_AppsConfig == null ? "none" : TextUtil.print(_AppsConfig.getMasterPaths())) + "\n");
+        Str.append("   ** Apps            :\n");
+        for (AppView_Data A : _Apps)
+          Str.append("   **      " + A.getAppLabel() + " (" + A.getAppHome() + ")" + (A.getAppActive() == false ? "  --INACTIVE--" : "") + "\n");
+        Str.append("   ************************************************************************************************************************\n");
+        LOG.info(Str.toString());
       }
 
     // Getters
@@ -366,17 +427,17 @@ public class Wanda
 
     public static Iterator<String> getAuthPassthroughs()
       {
-        return _AppsConfig.getAuthPassthroughs();
+        return _AppsConfig == null ? Collections.emptyIterator() : _AppsConfig.getAuthPassthroughs();
       }
 
     public static Iterator<String> getMasterPaths()
       {
-        return _AppsConfig.getMasterPaths();
+        return _AppsConfig == null ? Collections.emptyIterator() : _AppsConfig.getMasterPaths();
       }
 
     public static Iterator<String> getGuestPaths()
       {
-        return _AppsConfig.getGuestPaths();
+        return _AppsConfig == null ? Collections.emptyIterator() : _AppsConfig.getGuestPaths();
       }
 
 
