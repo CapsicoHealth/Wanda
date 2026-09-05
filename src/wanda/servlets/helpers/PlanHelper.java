@@ -280,7 +280,7 @@ public class PlanHelper
 
         Promo_Data promo = getUserPromo(C, U);
         if (promo != null && promo.isNullInitialCredits() == false)
-          CreditHelper.grantSignupBonusIfEligible(C, UPS, UPB, promo.getInitialCredits());
+          CreditHelper.grantSignupBonusIfEligible(C, UPS, UPB, BigDecimal.valueOf(promo.getInitialCredits()));
 
         LOG.info("Auto-assigned free plan '" + plan._Plan.getCode() + "' (" + credits + " credits) to user " + U.getRefnum() + " for product " + productId + ".");
       }
@@ -309,7 +309,7 @@ public class PlanHelper
         Promo_Data P = getUserPromo(C, U);
         if (P != null)
           return Plan_Factory.getPlans(P.getPlansAsArray(), P.getDiscountPct(), P.getDiscountMonths(), P.getDiscountYearPct(), P.getAutoRenew()
-                                       , P.isNullInitialCredits() == true ? null : P.getInitialCredits());
+                                       , P.isNullInitialCredits() == true ? null : BigDecimal.valueOf(P.getInitialCredits()));
 
         return null;
       }

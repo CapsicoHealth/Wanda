@@ -141,7 +141,7 @@ public class PaymentOrderCapture extends SimpleServlet
                 // received its bonus on an earlier purchase -- that guard is what makes it first-purchase-only.
                 Promo_Data promo = PlanHelper.getUserPromo(C, U);
                 if (promo != null && promo.isNullInitialCredits() == false)
-                  CreditHelper.grantSignupBonusIfEligible(C, UPS, UPB, promo.getInitialCredits());
+                  CreditHelper.grantSignupBonusIfEligible(C, UPS, UPB, BigDecimal.valueOf(promo.getInitialCredits()));
               }
 
 
