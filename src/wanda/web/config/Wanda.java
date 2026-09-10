@@ -314,7 +314,7 @@ public class Wanda
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._defaultPromoCode;
       }
-    
+
     public static long[] getGuestRegistrationAppRefnums()
       {
         return _Config._guestRegistration == null ? null : _Config._guestRegistration._appRefnums;
@@ -329,7 +329,7 @@ public class Wanda
       {
         return _Config._guestRegistration == null ? true : _Config._guestRegistration.isAllowedDomain(userEmail);
       }
-    
+
     public static List<String> getEmailVerificationTexts()
       {
         return _Config._emailVerificationTexts;
@@ -414,7 +414,7 @@ public class Wanda
       {
         return _Config._laf._dataConfidentiality;
       }
-    
+
     public static String getCopyright()
       {
         return _Config._laf._copyright.replace("%%CURRENT_YEAR%%", "" + DateTimeUtil.nowUTC().getYear());
@@ -476,13 +476,14 @@ public class Wanda
 
         String[][] eulas = new String[_Config._eulas.size() + 1][];
         int i = 0;
-        eulas[0] = new String[] { "", "No EULA", "No active EULA for this promo code" };
+        eulas[0] = new String[] { "", "No EULA", "No active EULA for this promo code"
+        };
         for (Eula E : _Config._eulas)
           eulas[++i] = new String[] { E._url, E._name, E._descr
           };
         return eulas;
       }
-    
+
     public static PaymentSystem getPaymentSystem(String id)
       {
         for (PaymentSystem PS : _Config._paymentSystems)
@@ -517,6 +518,28 @@ public class Wanda
         return getExtra(configName, elementName, null);
       }
 
+    /**
+     * Be careful with this method: it will throw a runtime exception if the extra is not found, which may be what you want in 
+     * some cases, but not in others. In general, people use this to get values at initialization time by capturing values in
+     * statics. Note that if you are not careful, static initialization of a given class may occur at runtime, causing a runtime
+     * failure vs a hard startup one. Make sure this method is called in general from classes that are guaranteed to be initialized
+     * at server startup time, otherwise, you'll get runtime surprise soft failures. 
+     * @param configName
+     * @param elementName
+     * @return
+     */
+    public static String getExtraMandatory(String configName, String elementName)
+      {
+        String val = getExtra(configName, elementName, null);
+        if (val == null)
+          {
+            String err = "\n\n***************************************************************\nMissing WANDA mandatory extra configuration for '" + configName + "." + elementName + "'.\n***************************************************************\n\n";
+            LOG.error(err);
+            throw new RuntimeException(err);
+          }
+        return val;
+      }
+
     public static String getExtra(String configName, String elementName, String defaultValue)
       {
         if (_Config._extras == null)
@@ -540,6 +563,7 @@ public class Wanda
 
     /**
      * Returns the number of minutes before a ticket is due when an alert should be sent out, or null if the ticketing
+     * 
      * @return
      */
     public static int getTicketAlertMinutes()
