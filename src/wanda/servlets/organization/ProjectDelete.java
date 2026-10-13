@@ -19,6 +19,7 @@ package wanda.servlets.organization;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import wanda.data.ProjectCallback;
 import wanda.data.ProjectRoleView_Factory;
 import wanda.data.Project_Data;
 import wanda.data.Project_Factory;
@@ -60,6 +61,17 @@ public class ProjectDelete extends SimpleServlet
         if (p.read(C) == false)
           throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " cannot be found.");
 
+        ProjectCallback callback = Project_Factory.getCallback(p.getAppScope());
+        Project_Data oldP = null;
+        if (callback != null)
+          {
+            if (deleteMode.equalsIgnoreCase("hard") == true && callback.isHardDeleteAllowed(p) == false)
+              throw new Exception("Hard-deleting projects of the '" + p.getAppScope() + "' application is not allowed.");
+            oldP = Project_Factory.lookupByPrimaryKey(refnum);
+            if (oldP.read(C) == false)
+              throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " cannot be found.");
+          }
+
         if (deleteMode.equalsIgnoreCase("hard") == true)
           {
             if (p.isNullDeleted() == true)
@@ -76,8 +88,14 @@ public class ProjectDelete extends SimpleServlet
               p.setDeletedNow();
           }
 
+        if (callback != null)
+          callback.beforeUpdate(C, oldP, p);
+
         if (p.write(C) == false)
           throw new Exception("Cannot '" + deleteMode + "' project " + refnum + " for unknown reasons.");
+
+        if (callback != null)
+          callback.afterUpdate(C, oldP, p);
 
         Res.successJson("", p);
       }

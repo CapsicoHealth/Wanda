@@ -37,6 +37,27 @@ public class Project_Factory extends wanda.data._Tilda.TILDA__PROJECT_Factory
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+   private static final java.util.concurrent.ConcurrentHashMap<String, ProjectCallback> _CALLBACKS = new java.util.concurrent.ConcurrentHashMap<String, ProjectCallback>();
+
+   /**
+    * Registers the callback notified when projects of the given appScope are updated or deleted through the
+    * generic Wanda project servlets. A single callback is kept per appScope: registering again replaces it.
+    */
+   public static void registerCallback(String appScope, ProjectCallback callback)
+    {
+      if (appScope == null || callback == null)
+       throw new IllegalArgumentException("appScope and callback are required.");
+      ProjectCallback previous = _CALLBACKS.put(appScope, callback);
+      if (previous != null && previous.getClass() != callback.getClass())
+       LOG.warn("The project callback for appScope '" + appScope + "' was replaced: " + previous.getClass().getName() + " -> " + callback.getClass().getName());
+    }
+
+   /** Returns the callback registered for the appScope, or null if none. */
+   public static ProjectCallback getCallback(String appScope)
+    {
+      return appScope == null ? null : _CALLBACKS.get(appScope);
+    }
+
    public static void init(Connection C) throws Exception
     {
       // Add logic to initialize your object, for example, caching some values, or validating some things.

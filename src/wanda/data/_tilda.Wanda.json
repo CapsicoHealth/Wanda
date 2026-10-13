@@ -1131,7 +1131,7 @@
           ,{ "name": "url"                  , "type": "STRING(  256)"                   , "description": "HTTP Url" }
           ,{ "name": "responseCode"         , "type": "SHORT"                           , "description": "HTTP Response Code" }
           ,{ "name": "responseStatus"       , "type": "STRING( 2048)"                   , "description": "HTTP Response status" }
-          ,{ "name": "parameters"           , "type": "STRING(132000)"                  , "description": "parameters sent with http request" }
+          ,{ "name": "parameters"           , "type": "STRING(4194304)"                 , "description": "parameters sent with http request" }
           ,{ "name": "login"                , "type": "BOOLEAN"                         , "description": "Login status: null=not login, true=successfull login, false=failed login" }
           ,{ "name": "registrationGuest"    , "type": "BOOLEAN"                         , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }
           ,{ "name": "registrationInvite"   , "type": "BOOLEAN"                         , "description": "Registration status: null=not registration, true=successfull registration, false=failed regiatration" }

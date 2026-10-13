@@ -19,6 +19,7 @@ package wanda.servlets.organization;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import wanda.data.ProjectCallback;
 import wanda.data.Project_Data;
 import wanda.data.Project_Factory;
 
@@ -63,6 +64,7 @@ public class ProjectCreate extends SimpleServlet
         Req.throwIfErrors();
 
         Project_Data p;
+        Project_Data oldP = null;
         if (refnum == SystemValues.EVIL_VALUE) // create
           {
             p = Project_Factory.create(appScope, title, U.getRefnum(), U.getId(), U.getRefnum(), U.getId());
@@ -81,6 +83,13 @@ public class ProjectCreate extends SimpleServlet
               throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " is not found in the specified appScope and organization.");
             if (p.getCreatorRefnum() != U.getRefnum())
               throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " is not updatable by this user.");
+            // Keep an untouched copy of the stored project for the appScope's callback, if any.
+            if (Project_Factory.getCallback(appScope) != null)
+              {
+                oldP = Project_Factory.lookupByPrimaryKey(refnum);
+                if (oldP.read(C) == false)
+                  throw new NotFoundException("Project", "" + refnum, "Project " + refnum + " cannot be found.");
+              }
             p.setTitle(title);
             p.setLastUpdatorRefnum(U.getRefnum());
             p.setLastUpdatorId(U.getId());
@@ -96,6 +105,10 @@ public class ProjectCreate extends SimpleServlet
         if (TextUtil.isNullOrEmpty(status) == false)
           p.setStatus(status);
 
+        ProjectCallback callback = oldP == null ? null : Project_Factory.getCallback(appScope);
+        if (callback != null)
+          callback.beforeUpdate(C, oldP, p);
+
         if (p.write(C) == false)
           {
             p = organizationRefnum==SystemValues.EVIL_VALUE ? Project_Factory.lookupByAppScopeTitleActive(appScope, title)
@@ -107,6 +120,11 @@ public class ProjectCreate extends SimpleServlet
               }
             throw new Exception("Database error: cannot " + (refnum == SystemValues.EVIL_VALUE ? "create" : "update") + " project.");
           }
+
+        // The database write succeeded (title conflicts would have been caught above). Let the app scope
+        // update its own assets; an exception here rolls the whole transaction back.
+        if (callback != null)
+          callback.afterUpdate(C, oldP, p);
 
         Res.successJson("", p);
       }
